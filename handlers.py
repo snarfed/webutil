@@ -86,9 +86,6 @@ class HostMetaHandler(XrdOrJrdHandler):
     return 'templates/host-meta'
 
 
-HOST_META_ROUTE = ('/\.well-known/host-meta(?:\.json)?', HostMetaHandler)
-
-
 class HostMetaXrdsHandler(TemplateHandler):
   """Renders and serves the /.well-known/host-meta.xrds XRDS-Simple file.
   """
@@ -98,4 +95,8 @@ class HostMetaXrdsHandler(TemplateHandler):
   def template_file(self):
     return 'templates/host-meta.xrds'
 
-HOST_META_XRDS_ROUTE = ('/\.well-known/host-meta.xrds', HostMetaXrdsHandler)
+
+HOST_META_ROUTES = [
+  ('/\.well-known/host-meta(?:\.json)?', HostMetaHandler),
+  ('/\.well-known/host-meta.xrds', HostMetaXrdsHandler),
+  ]
