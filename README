@@ -1,4 +1,4 @@
-ommon utilities and handler code for Python App Engine webapps, particularly my
+Common utilities and handler code for Python App Engine webapps, particularly my
 *-unofficial collection of OStatus bridge apps.
 
 webutil is in the public domain.

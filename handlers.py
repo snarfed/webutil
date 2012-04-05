@@ -12,8 +12,8 @@ import os
 import urlparse
 
 import appengine_config
+import webapp2
 
-from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext.webapp import template
 
@@ -26,7 +26,7 @@ BASE_HEADERS = {
   }
 
 
-class TemplateHandler(webapp.RequestHandler):
+class TemplateHandler(webapp2.RequestHandler):
   """Renders and serves a template based on class attributes.
 
   Subclasses must override template_file() and may also override template_vars()
