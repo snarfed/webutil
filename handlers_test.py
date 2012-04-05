@@ -7,6 +7,7 @@ __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 import mox
 import testutil
 import unittest
+import webapp2
 
 import handlers
 
@@ -27,9 +28,9 @@ class FakeTemplateHandler(handlers.TemplateHandler):
 class TemplateHandlerTest(testutil.HandlerTest):
 
   def test_get(self):
-    mox.StubOutWithMock(template, 'render')
-    template.render('my_template_file', {'host': 'xyz', 'foo': 'bar'})\
+    self.mox.StubOutWithMock(template, 'render')
+    template.render('my_template_file', {'host': None, 'foo': 'bar'})\
         .AndReturn('')
     self.mox.ReplayAll()
 
-    FakeTemplateHandler().get()
+    webapp2.WSGIApplication([('/', FakeTemplateHandler)]).get_response('/')

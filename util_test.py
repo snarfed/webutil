@@ -5,8 +5,11 @@
 __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
 import unittest
+from webob import exc
 
+import testutil
 import util
+import webapp2
 
 
 class ToXmlTest(unittest.TestCase):
@@ -89,3 +92,20 @@ class TrimNullsTest(unittest.TestCase):
   def test_nested_dict_with_nones(self):
     self.assertEqual({1: {3: 4}}, util.trim_nulls({1: {2: [], 3: 4}, 5: {6: None}}))
 
+
+class UrlfetchTest(testutil.HandlerTest):
+
+  def test_urlfetch(self):
+    self.expect_urlfetch('http://my/url', 'hello', foo='bar')
+    self.mox.ReplayAll()
+    self.assertEquals('hello', util.urlfetch('http://my/url', foo='bar'))
+
+  def test_urlfetch_error_passes_through(self):
+    self.expect_urlfetch('http://my/url', 'my error', status=408)
+    self.mox.ReplayAll()
+
+    try:
+      util.urlfetch('http://my/url')
+    except exc.HTTPException, e:
+      self.assertEquals(408, e.status_int)
+      self.assertEquals('my error', e.body_template_obj.template)

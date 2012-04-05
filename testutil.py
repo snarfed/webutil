@@ -35,9 +35,8 @@ class HandlerTest(mox.MoxTestBase):
       self.content = content
       self.headers = headers
 
-  def setUp(self, application=None):
+  def setUp(self):
     super(HandlerTest, self).setUp()
-    self.application = application
 
     os.environ['APPLICATION_ID'] = 'app_id'
     self.testbed = testbed.Testbed()

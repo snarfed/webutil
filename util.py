@@ -4,6 +4,11 @@
 
 __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
+import logging
+import webapp2
+
+from google.appengine.api import urlfetch as gae_urlfetch
+
 
 def to_xml(value):
   """Renders a dict (usually from JSON) as an XML snippet."""
@@ -28,3 +33,27 @@ def trim_nulls(value):
     return dict((k, trim_nulls(v)) for k, v in value.items() if trim_nulls(v))
   else:
     return value
+
+
+def urlfetch(url, **kwargs):
+  """Wraps urlfetch. Passes error responses through to the client.
+
+  ...by raising HTTPException.
+
+  Args:
+    url: str
+    kwargs: passed through to urlfetch.fetch()
+
+  Returns:
+    the HTTP response body
+  """
+  logging.debug('Fetching %s with kwargs %s', url, kwargs)
+  resp = gae_urlfetch.fetch(url, deadline=999, **kwargs)
+
+  if resp.status_code == 200:
+    return resp.content
+  else:
+    logging.warning('GET %s returned %d:\n%s',
+                    url, resp.status_code, resp.content)
+    webapp2.abort(resp.status_code, body_template=resp.content,
+                  headers=resp.headers)
