@@ -13,6 +13,7 @@ import wsgiref
 import webapp2
 
 from google.appengine.api import urlfetch
+from google.appengine.datastore import datastore_stub_util
 from google.appengine.ext import testbed
 
 
@@ -42,11 +43,16 @@ class HandlerTest(mox.MoxTestBase):
     self.testbed = testbed.Testbed()
     self.testbed.activate()
     self.testbed.init_urlfetch_stub()
+    hrd_policy = datastore_stub_util.PseudoRandomHRConsistencyPolicy(probability=.5)
+    self.testbed.init_datastore_v3_stub(consistency_policy=hrd_policy)
     self.mox.StubOutWithMock(urlfetch, 'fetch')
 
     self.request = webapp2.Request.blank('/')
     self.response = webapp2.Response()
     self.handler = webapp2.RequestHandler(self.request, self.response)
+
+  def tearDown(self):
+    self.testbed.deactivate()
 
   def expect_urlfetch(self, expected_url, response, status=200, **kwargs):
     """Stubs out urlfetch.fetch() and sets up an expected call.

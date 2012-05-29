@@ -11,6 +11,7 @@ import webapp2
 
 import handlers
 
+# TODO: switch to django.template since this is deprecated
 from google.appengine.ext.webapp import template
 
 
