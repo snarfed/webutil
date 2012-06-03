@@ -3,6 +3,7 @@
 
 __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
+import difflib
 import mox
 import pprint
 import re
@@ -106,3 +107,9 @@ Actual value:   %s""" % (''.join(e.args),
       # backwards, all the way up to the root.
       args = ('[%s] ' % key if key is not None else '') + ''.join(e.args)
       raise AssertionError(args)
+
+  def assert_multiline_equals(self, expected, actual):
+    """Compares two multi-line strings and reports a diff style output."""
+    if expected != actual:
+      self.fail(''.join(difflib.Differ().compare(expected.splitlines(True),
+                                                 actual.splitlines(True))))
