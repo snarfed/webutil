@@ -5,6 +5,7 @@
 __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
 import logging
+import urlparse
 import webapp2
 
 from google.appengine.api import urlfetch as gae_urlfetch
@@ -57,3 +58,6 @@ def urlfetch(url, **kwargs):
                     url, resp.status_code, resp.content)
     webapp2.abort(resp.status_code, body_template=resp.content,
                   headers=resp.headers)
+
+def favicon_for_url(url):
+  return 'http://%s/favicon.ico' % urlparse.urlparse(url).netloc

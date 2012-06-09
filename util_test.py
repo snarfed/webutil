@@ -12,7 +12,7 @@ import util
 import webapp2
 
 
-class ToXmlTest(unittest.TestCase):
+class UtilTest(testutil.HandlerTest):
 
   def test_no_values(self):
     self.assertEqual('', util.to_xml({}))
@@ -65,9 +65,6 @@ class ToXmlTest(unittest.TestCase):
                         'e': (2, 3),
                         }}))
 
-
-class TrimNullsTest(unittest.TestCase):
-
   def test_none(self):
     self.assertEqual(None, util.trim_nulls(None))
 
@@ -92,9 +89,6 @@ class TrimNullsTest(unittest.TestCase):
   def test_nested_dict_with_nones(self):
     self.assertEqual({1: {3: 4}}, util.trim_nulls({1: {2: [], 3: 4}, 5: {6: None}}))
 
-
-class UrlfetchTest(testutil.HandlerTest):
-
   def test_urlfetch(self):
     self.expect_urlfetch('http://my/url', 'hello', foo='bar')
     self.mox.ReplayAll()
@@ -109,3 +103,7 @@ class UrlfetchTest(testutil.HandlerTest):
     except exc.HTTPException, e:
       self.assertEquals(408, e.status_int)
       self.assertEquals('my error', e.body_template_obj.template)
+
+  def test_favicon_for_url(self):
+    for url in ('http://a.org/b/c?d=e&f=g', 'https://a.org/b/c', 'http://a.org/'):
+      self.assertEqual('http://a.org/favicon.ico', util.favicon_for_url(url))
