@@ -3,6 +3,7 @@
 
 __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
+import base64
 import difflib
 import mox
 import pprint
@@ -17,6 +18,14 @@ from google.appengine.api import urlfetch
 from google.appengine.datastore import datastore_stub_util
 from google.appengine.ext import db
 from google.appengine.ext import testbed
+
+
+def get_task_params(task):
+  """Parses a task's POST body and returns the query params in a dict.
+  """
+  params = urlparse.parse_qs(base64.b64decode(task['body']))
+  params = dict((key, val[0]) for key, val in params.items())
+  return params
 
 
 class HandlerTest(mox.MoxTestBase):
@@ -54,6 +63,12 @@ class HandlerTest(mox.MoxTestBase):
     hrd_policy = datastore_stub_util.PseudoRandomHRConsistencyPolicy(probability=.5)
     self.testbed.init_datastore_v3_stub(consistency_policy=hrd_policy)
     self.mox.StubOutWithMock(urlfetch, 'fetch')
+    self.testbed.init_taskqueue_stub(root_path='.')
+
+    # unofficial API, whee! this is so we can call
+    # TaskQueueServiceStub.GetTasks() in tests. see
+    # google/appengine/api/taskqueue/taskqueue_stub.py
+    self.taskqueue_stub = self.testbed.get_stub('taskqueue')
 
     self.request = webapp2.Request.blank('/')
     self.response = webapp2.Response()

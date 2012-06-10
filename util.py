@@ -4,6 +4,7 @@
 
 __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
+import datetime
 import logging
 import urlparse
 import webapp2
@@ -59,6 +60,16 @@ def urlfetch(url, **kwargs):
                     url, resp.status_code, resp.content)
     webapp2.abort(resp.status_code, body_template=resp.content,
                   headers=resp.headers)
+
+
+def tag_uri(domain, name):
+  """Returns a tag URI string for the given domain and name.
+
+  Example return value: 'tag:twitter.com,2012:snarfed_org/172417043893731329'
+
+  Background on tag URIs: http://taguri.org/
+  """
+  return 'tag:%s,%d:%s' % (domain, datetime.datetime.now().year, name)
 
 
 def favicon_for_url(url):
