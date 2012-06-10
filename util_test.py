@@ -9,7 +9,10 @@ from webob import exc
 
 import testutil
 import util
+from util import KeyNameModel, SingleEGModel
 import webapp2
+
+from google.appengine.ext import db
 
 
 class UtilTest(testutil.HandlerTest):
@@ -107,3 +110,36 @@ class UtilTest(testutil.HandlerTest):
   def test_favicon_for_url(self):
     for url in ('http://a.org/b/c?d=e&f=g', 'https://a.org/b/c', 'http://a.org/'):
       self.assertEqual('http://a.org/favicon.ico', util.favicon_for_url(url))
+
+
+class KeyNameModelTest(testutil.HandlerTest):
+
+  def test_constructor(self):
+    # with key name is ok
+    entity = KeyNameModel(key_name='x')
+    entity.save()
+    db.get(entity.key())
+
+    # without key name is not ok
+    self.assertRaises(AssertionError, KeyNameModel)
+
+
+class SingleEGModelTest(testutil.HandlerTest):
+
+  class Foo(SingleEGModel):
+    pass
+
+  def test_shared_parent_key(self):
+    self.assertEqual(db.Key.from_path('Parent', 'Foo'),
+                     self.Foo.shared_parent_key())
+
+  def test_constructor(self):
+    self.assertEqual(self.Foo.shared_parent_key(), self.Foo().parent_key())
+
+  def test_all(self):
+    """Unfortunately Query.list_index() only supports composite indices in the
+    local file stub, so this test can only run in prod. Oh well.
+    """
+    query = self.Foo.all()
+    query.fetch(1)
+    # self.assertTrue(query.index_list()[0].has_ancestor())
