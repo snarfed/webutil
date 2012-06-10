@@ -87,8 +87,7 @@ class SingleEGModel(db.Model):
 
   def __init__(self, *args, **kwargs):
     """Raises AssertionError if key name is not provided."""
-    assert 'parent' not in kwargs, "Can't override parent in SingleEGModel"
-    kwargs['parent'] = self.shared_parent_key()
+    self.enforce_parent(kwargs)
     super(SingleEGModel, self).__init__(*args, **kwargs)
 
   @classmethod
@@ -97,9 +96,25 @@ class SingleEGModel(db.Model):
 
     It's not actually an entity, just a placeholder key.
     """
-    return db.Key.from_path('Parent', cls.__name__)
+    return db.Key.from_path('Parent', cls.kind())
+
+  @classmethod
+  def get_by_id(cls, id):
+    return db.get(db.Key.from_path(cls.kind(), id, parent=cls.shared_parent_key()))
+
+  get_by_key_name = get_by_id
 
   @classmethod
   def all(cls):
     return db.Query(cls).ancestor(cls.shared_parent_key())
-  
+
+  @classmethod
+  def enforce_parent(cls, kwargs):
+    """Sets the parent keyword arg. If it's already set, checks that it's correct."""
+    if '_from_entity' in kwargs:
+      return
+
+    parent = cls.shared_parent_key()
+    if 'parent' in kwargs:
+      assert kwargs['parent'] == parent, "Can't override parent in SingleEGModel"
+    kwargs['parent'] = parent
