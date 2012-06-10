@@ -15,6 +15,7 @@ import webapp2
 
 from google.appengine.api import urlfetch
 from google.appengine.datastore import datastore_stub_util
+from google.appengine.ext import db
 from google.appengine.ext import testbed
 
 
@@ -41,8 +42,14 @@ class HandlerTest(mox.MoxTestBase):
     super(HandlerTest, self).setUp()
 
     os.environ['APPLICATION_ID'] = 'app_id'
+    self.current_user_id = '123'
+    self.current_user_email = 'foo@bar.com'
+
     self.testbed = testbed.Testbed()
+    self.testbed.setup_env(user_id=self.current_user_id,
+                           user_email=self.current_user_email)
     self.testbed.activate()
+
     self.testbed.init_urlfetch_stub()
     hrd_policy = datastore_stub_util.PseudoRandomHRConsistencyPolicy(probability=.5)
     self.testbed.init_datastore_v3_stub(consistency_policy=hrd_policy)
@@ -66,6 +73,47 @@ class HandlerTest(mox.MoxTestBase):
     """
     urlfetch.fetch(expected_url, deadline=999, **kwargs).AndReturn(
       self.UrlfetchResult(status, response))
+
+  def assert_entities_equal(self, a, b, ignore=frozenset(), keys_only=False,
+                            in_order=False):
+    """Asserts that a and b are equivalent entities or lists of entities.
+
+    ...specifically, that they have the same property values, and if they both
+    have populated keys, that their keys are equal too.
+
+    Args:
+      a, b: db.Model instances or lists of instances
+      ignore: sequence of strings, property names not to compare
+      keys_only: boolean, if True only compare keys
+      in_order: boolean. If False, all entities must have keys.
+    """
+    if not isinstance(a, (list, tuple, db.Query)):
+      a = [a]
+    if not isinstance(b, (list, tuple, db.Query)):
+      b = [b]
+
+    if not in_order:
+      key_fn = lambda e: e.key()
+      a = list(sorted(a, key=key_fn))
+      b = list(sorted(b, key=key_fn))
+
+    self.assertEqual(len(a), len(b),
+                     'Different lengths:\n expected %s\n actual %s' % (a, b))
+
+    for x, y in zip(a, b):
+      try:
+        self.assertEqual(x.key().to_path(), y.key().to_path())
+      except (db.BadKeyError, db.NotSavedError):
+        if keys_only:
+          raise
+
+      if not keys_only:
+        self.assert_equals(x.properties(), y.properties())
+
+  def entity_keys(self, entities):
+    """Returns a list of keys for a list of entities.
+    """
+    return [e.key() for e in entities]
 
   def assert_equals(self, expected, actual):
     """Pinpoints individual element differences in lists and dicts.
