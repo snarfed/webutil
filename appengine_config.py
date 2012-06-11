@@ -28,17 +28,6 @@ except AttributeError:
 HOST = os.getenv('HTTP_HOST')
 SCHEME = 'https' if (os.getenv('HTTPS') == 'on') else 'http'
 
-if not os.environ.get('SERVER_SOFTWARE', '').startswith('Development'):
-  DEBUG = False
-  MOCKFACEBOOK = False
-  FACEBOOK_APP_ID_FILE = 'facebook_app_id'
-  FACEBOOK_APP_SECRET_FILE = 'facebook_app_secret'
-else:
-  DEBUG = True
-  MOCKFACEBOOK = False
-  FACEBOOK_APP_ID_FILE = 'facebook_app_id_local' 
-  FACEBOOK_APP_SECRET_FILE = 'facebook_app_secret_local'
-
 
 def read(filename):
   """Returns the contents of filename, or None if it doesn't exist."""
@@ -48,8 +37,19 @@ def read(filename):
   else:
     logging.warning('%s file not found, cannot authenticate!', filename)
   
+MOCKFACEBOOK = False
+DEBUG = os.environ.get('SERVER_SOFTWARE', '').startswith('Development')
 
-FACEBOOK_APP_ID = read(FACEBOOK_APP_ID_FILE)
-FACEBOOK_APP_SECRET = read(FACEBOOK_APP_SECRET_FILE)
+if DEBUG:  
+  FACEBOOK_APP_ID = read('facebook_app_id_local')
+  FACEBOOK_APP_SECRET = read('facebook_app_secret_local')
+  GOOGLEPLUS_CLIENT_ID = read('googleplus_client_id_local')
+  GOOGLEPLUS_CLIENT_SECRET = read('googleplus_client_secret_local')
+else:
+  FACEBOOK_APP_ID = read('facebook_app_id')
+  FACEBOOK_APP_SECRET = read('facebook_app_secret')
+  GOOGLEPLUS_CLIENT_ID = read('googleplus_client_id')
+  GOOGLEPLUS_CLIENT_SECRET = read('googleplus_client_secret')
+
 TWITTER_APP_KEY = read('twitter_app_key')
 TWITTER_APP_SECRET = read('twitter_app_secret')
