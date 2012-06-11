@@ -15,9 +15,11 @@ APP_ENGINE_SDK_PATH = os.path.expanduser('~/google_appengine')
 
 
 def main():
-  # don't show logging messages
-  logging.disable(logging.CRITICAL + 1)
-  # logging.getLogger().setLevel(logging.DEBUG)
+  if '--debug' in sys.argv:
+    sys.argv.remove('--debug')
+    logging.getLogger().setLevel(logging.DEBUG)
+  else:
+    logging.disable(logging.CRITICAL + 1)
 
   # add working directory since this is often symlinked in a different dir by
   # clients, in which case we want it to load and run test in that dir.
