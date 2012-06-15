@@ -64,6 +64,7 @@ class HandlerTest(mox.MoxTestBase):
     self.testbed.init_datastore_v3_stub(consistency_policy=hrd_policy)
     self.mox.StubOutWithMock(urlfetch, 'fetch')
     self.testbed.init_taskqueue_stub(root_path='.')
+    self.testbed.init_user_stub()
 
     # unofficial API, whee! this is so we can call
     # TaskQueueServiceStub.GetTasks() in tests. see
