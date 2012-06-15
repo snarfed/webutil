@@ -146,6 +146,15 @@ class SingleEGModelTest(testutil.HandlerTest):
     key = foo.save()
     self.assert_entities_equal(foo, self.Foo.get_by_id(key.id()))
 
+  def test_get_by_id_with_parent(self):
+    foo = self.Foo()
+    key = foo.save()
+
+    got = self.Foo.get_by_id(key.id(), parent = self.Foo.shared_parent_key())
+    self.assert_entities_equal(foo, got)
+
+    self.assertRaises(AssertionError, self.Foo.get_by_id, key.id(), parent=foo)
+
   def test_all(self):
     """Unfortunately Query.list_index() only supports composite indices in the
     local file stub, so this test can only run in prod. Oh well.

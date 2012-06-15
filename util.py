@@ -110,8 +110,9 @@ class SingleEGModel(db.Model):
     return db.Key.from_path('Parent', cls.kind())
 
   @classmethod
-  def get_by_id(cls, id):
-    return db.get(db.Key.from_path(cls.kind(), id, parent=cls.shared_parent_key()))
+  def get_by_id(cls, id, **kwargs):
+    cls.enforce_parent(kwargs)
+    return db.get(db.Key.from_path(cls.kind(), id, **kwargs))
 
   get_by_key_name = get_by_id
 
