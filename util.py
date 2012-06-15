@@ -117,6 +117,11 @@ class SingleEGModel(db.Model):
   get_by_key_name = get_by_id
 
   @classmethod
+  def wrap_get_or_insert(cls, key_name, **kwargs):
+    cls.enforce_parent(kwargs)
+    return cls.orig_get_or_insert(key_name, **kwargs)
+
+  @classmethod
   def all(cls):
     return db.Query(cls).ancestor(cls.shared_parent_key())
 
@@ -128,5 +133,9 @@ class SingleEGModel(db.Model):
 
     parent = cls.shared_parent_key()
     if 'parent' in kwargs:
+      print `parent`, `kwargs['parent']`
       assert kwargs['parent'] == parent, "Can't override parent in SingleEGModel"
     kwargs['parent'] = parent
+
+SingleEGModel.orig_get_or_insert = SingleEGModel.get_or_insert
+SingleEGModel.get_or_insert = SingleEGModel.wrap_get_or_insert

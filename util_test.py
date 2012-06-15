@@ -146,14 +146,25 @@ class SingleEGModelTest(testutil.HandlerTest):
     key = foo.save()
     self.assert_entities_equal(foo, self.Foo.get_by_id(key.id()))
 
-  def test_get_by_id_with_parent(self):
-    foo = self.Foo()
-    key = foo.save()
-
-    got = self.Foo.get_by_id(key.id(), parent = self.Foo.shared_parent_key())
+    got = self.Foo.get_by_id(key.id(), parent=self.Foo.shared_parent_key())
     self.assert_entities_equal(foo, got)
 
     self.assertRaises(AssertionError, self.Foo.get_by_id, key.id(), parent=foo)
+
+  def test_get_or_insert(self):
+    # doesn't exist
+    foo = self.Foo.get_or_insert(key_name='my name')
+
+    # exists
+    got = self.Foo.get_or_insert(key_name='my name')
+    self.assert_entities_equal(foo, got)
+
+    got = self.Foo.get_or_insert(key_name='my name',
+                                 parent=self.Foo.shared_parent_key())
+    self.assert_entities_equal(foo, got)
+
+    self.assertRaises(AssertionError, self.Foo.get_or_insert,
+                      key_name='my name', parent=foo)
 
   def test_all(self):
     """Unfortunately Query.list_index() only supports composite indices in the
