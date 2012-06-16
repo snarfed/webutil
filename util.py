@@ -5,6 +5,7 @@
 __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
 import datetime
+import functools
 import logging
 import urlparse
 import webapp2
@@ -96,10 +97,19 @@ class SingleEGModel(db.Model):
   this kind with strong consistency.
   """
 
-  def __init__(self, *args, **kwargs):
-    """Raises AssertionError if key name is not provided."""
-    self.enforce_parent(kwargs)
-    super(SingleEGModel, self).__init__(*args, **kwargs)
+  def enforce_parent(fn):
+    """Sets the parent keyword arg. If it's already set, checks that it's correct."""
+    @functools.wraps(fn)
+    def wrapper(self_or_cls, *args, **kwargs):
+      if '_from_entity' not in kwargs:
+        parent = self_or_cls.shared_parent_key()
+        if 'parent' in kwargs:
+          assert kwargs['parent'] == parent, "Can't override parent in SingleEGModel"
+        kwargs['parent'] = parent
+
+      return fn(self_or_cls, *args, **kwargs)
+
+    return wrapper
 
   @classmethod
   def shared_parent_key(cls):
@@ -109,32 +119,25 @@ class SingleEGModel(db.Model):
     """
     return db.Key.from_path('Parent', cls.kind())
 
+  @enforce_parent
+  def __init__(self, *args, **kwargs):
+    super(SingleEGModel, self).__init__(*args, **kwargs)
+
   @classmethod
+  @enforce_parent
   def get_by_id(cls, id, **kwargs):
-    cls.enforce_parent(kwargs)
-    return db.get(db.Key.from_path(cls.kind(), id, **kwargs))
+    return super(SingleEGModel, cls).get_by_id(id, **kwargs)
 
-  get_by_key_name = get_by_id
+  @classmethod
+  @enforce_parent
+  def get_by_key_name(cls, key_name, **kwargs):
+    return super(SingleEGModel, cls).get_by_key_name(key_name, **kwargs)
 
-  # @classmethod
-  # def wrap_get_or_insert(cls, key_name, **kwargs):
-  #   cls.enforce_parent(kwargs)
-  #   return cls.orig_get_or_insert(key_name, **kwargs)
-
+  @classmethod
+  @enforce_parent
+  def get_or_insert(cls, key_name, **kwargs):
+    return super(SingleEGModel, cls).get_or_insert(key_name, **kwargs)
+ 
   @classmethod
   def all(cls):
     return db.Query(cls).ancestor(cls.shared_parent_key())
-
-  @classmethod
-  def enforce_parent(cls, kwargs):
-    """Sets the parent keyword arg. If it's already set, checks that it's correct."""
-    if '_from_entity' in kwargs:
-      return
-
-    parent = cls.shared_parent_key()
-    if 'parent' in kwargs:
-      assert kwargs['parent'] == parent, "Can't override parent in SingleEGModel"
-    kwargs['parent'] = parent
-
-# SingleEGModel.orig_get_or_insert = SingleEGModel.get_or_insert
-# SingleEGModel.get_or_insert = SingleEGModel.wrap_get_or_insert

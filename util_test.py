@@ -151,6 +151,16 @@ class SingleEGModelTest(testutil.HandlerTest):
 
     self.assertRaises(AssertionError, self.Foo.get_by_id, key.id(), parent=foo)
 
+  def test_get_by_key_name(self):
+    foo = self.Foo(key_name='foo')
+    foo.save()
+    self.assert_entities_equal(foo, self.Foo.get_by_key_name('foo'))
+
+    got = self.Foo.get_by_key_name('foo', parent=self.Foo.shared_parent_key())
+    self.assert_entities_equal(foo, got)
+
+    self.assertRaises(AssertionError, self.Foo.get_by_key_name, 'foo', parent=foo)
+
   def test_get_or_insert(self):
     # doesn't exist
     foo = self.Foo.get_or_insert(key_name='my name')
@@ -172,4 +182,4 @@ class SingleEGModelTest(testutil.HandlerTest):
     """
     query = self.Foo.all()
     query.fetch(1)
-    # self.assertTrue(query.index_list()[0].has_ancestor())
+
