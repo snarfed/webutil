@@ -111,6 +111,13 @@ class UtilTest(testutil.HandlerTest):
     for url in ('http://a.org/b/c?d=e&f=g', 'https://a.org/b/c', 'http://a.org/'):
       self.assertEqual('http://a.org/favicon.ico', util.favicon_for_url(url))
 
+  def test_domain_from_link(self):
+    for good_link in 'asdf.com', 'https://asdf.com/', 'asdf.com/foo?bar#baz':
+      self.assertEqual('asdf.com', util.domain_from_link(good_link), good_link)
+
+    for bad_link in '', '  ', 'com', 'com.', 'a/b/c':
+      self.assertRaises(exc.HTTPBadRequest, util.domain_from_link, bad_link)
+
 
 class KeyNameModelTest(testutil.HandlerTest):
 

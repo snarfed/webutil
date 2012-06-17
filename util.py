@@ -7,8 +7,10 @@ __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 import datetime
 import functools
 import logging
+import re
 import urlparse
 import webapp2
+from webob import exc
 
 from google.appengine.api import urlfetch as gae_urlfetch
 from google.appengine.ext import db
@@ -75,6 +77,31 @@ def tag_uri(domain, name):
 
 def favicon_for_url(url):
   return 'http://%s/favicon.ico' % urlparse.urlparse(url).netloc
+
+def domain_from_link(url):
+    parsed = urlparse.urlparse(url)
+    if not parsed.netloc:
+      parsed = urlparse.urlparse('http://' + url)
+
+    domain = parsed.netloc
+    if not domain:
+      raise exc.HTTPBadRequest('No domain found in %r' % url)
+
+    # strip exactly one dot from the right, if present
+    if domain[-1:] == ".":
+      domain = domain[:-1] 
+
+    split = domain.split('.')
+    if len (split) <= 1:
+      raise exc.HTTPBadRequest('No TLD found in domain %r' % domain)
+
+    # http://stackoverflow.com/questions/2532053/validate-hostname-string-in-python
+    allowed = re.compile('(?!-)[A-Z\d-]{1,63}(?<!-)$', re.IGNORECASE)
+    for part in split:
+      if not allowed.match(part):
+        raise exc.HTTPBadRequest('Bad component in domain: %r' % part)
+
+    return domain
 
 
 class KeyNameModel(db.Model):
