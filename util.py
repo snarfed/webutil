@@ -74,6 +74,37 @@ def tag_uri(domain, name):
   return 'tag:%s,%d:%s' % (domain, datetime.datetime.now().year, name)
 
 
+def parse_acct_uri(uri, hosts=None):
+  """Parses acct: URIs of the form acct:user@example.com .
+
+  Background: http://hueniverse.com/2009/08/making-the-case-for-a-new-acct-uri-scheme/
+
+  Args:
+    uri: string
+    hosts: sequence of allowed hosts (usually domains). None means allow all.
+
+  Returns: (username, host) tuple
+
+  Raises: ValueError if the uri is invalid or the host isn't allowed.
+  """
+  parsed = urlparse.urlparse(uri)
+  if parsed.scheme and parsed.scheme != 'acct':
+    raise ValueError('Acct URI %s has unsupported scheme: %s' %
+                     (uri,  parsed.scheme)) 
+
+  try:
+    username, host = parsed.path.split('@')
+    assert username, host
+  except ValueError, AssertionError:
+    raise ValueError('Bad acct URI: %s' % uri)
+
+  if hosts is not None and host not in hosts:
+    raise ValueError('Acct URI %s has unsupported host %s; expected %r.' %
+                     (uri, host, hosts))
+
+  return username, host
+
+
 def favicon_for_url(url):
   return 'http://%s/favicon.ico' % urlparse.urlparse(url).netloc
 

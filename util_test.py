@@ -118,6 +118,23 @@ class UtilTest(testutil.HandlerTest):
     for bad_link in '', '  ', 'com', 'com.', 'a/b/c':
       self.assertRaises(exc.HTTPBadRequest, util.domain_from_link, bad_link)
 
+  def test_parse_acct_uri(self):
+    self.assertEquals(('me', 'x.com'), util.parse_acct_uri('acct:me@x.com'))
+
+  def test_parse_acct_uri_allowed_domain(self):
+    self.assertEquals(('me', 'x.com'),
+                      util.parse_acct_uri('acct:me@x.com', ['x.com', 'y.com']))
+
+  def test_parse_acct_uri_scheme_not_acct_error(self):
+    self.assertRaises(ValueError, util.parse_acct_uri, 'mailto:me@x.com')
+
+  def test_parse_acct_uri_bad_format_error(self):
+    self.assertRaises(ValueError, util.parse_acct_uri, 'acct:foo')
+
+  def test_parse_acct_uri_wrong_domain_error(self):
+    self.assertRaises(ValueError,
+                      util.parse_acct_uri, 'acct:me@a.com', ['x.com'])
+
 
 class KeyNameModelTest(testutil.HandlerTest):
 
