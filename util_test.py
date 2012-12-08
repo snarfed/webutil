@@ -93,9 +93,9 @@ class UtilTest(testutil.HandlerTest):
     self.assertEqual({1: {3: 4}}, util.trim_nulls({1: {2: [], 3: 4}, 5: {6: None}}))
 
   def test_urlfetch(self):
-    self.expect_urlfetch('http://my/url', 'hello', foo='bar')
+    self.expect_urlfetch('http://my/url', 'hello', method='foo')
     self.mox.ReplayAll()
-    self.assertEquals('hello', util.urlfetch('http://my/url', foo='bar'))
+    self.assertEquals('hello', util.urlfetch('http://my/url', method='foo'))
 
   def test_urlfetch_error_passes_through(self):
     self.expect_urlfetch('http://my/url', 'my error', status=408)
