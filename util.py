@@ -134,6 +134,40 @@ def domain_from_link(url):
     return domain
 
 
+def linkify(text, ignore_prefix=None):
+  """Adds HTML links to URLs in the given plain text.
+
+  If ignore_prefix is provided, links that start with it will not be linkified.
+
+  For example: linkify("Hello http://tornadoweb.org!") would return
+  Hello <a href="http://tornadoweb.org">http://tornadoweb.org</a>!
+
+  Ignores URLs starting with 'http://facebook.com/profile.php?id=' since they
+  may have been added to "mention" tags in main().
+
+  Based on https://github.com/silas/huck/blob/master/huck/utils.py#L59
+  """
+  # I originally used the regex from
+  # http://daringfireball.net/2010/07/improved_regex_for_matching_urls
+  # but it gets all exponential on certain patterns (such as too many trailing
+  # dots), causing the regex matcher to never return. This regex should avoid
+  # those problems.
+  _URL_RE = re.compile(ur"""\b((?:([\w-]+):(/{1,3})|www[.])(?:(?:(?:[^\s&()]|&amp;|&quo
+t;)*(?:[^!"#$%&'()*+,.:;<=>?@\[\]^`{|}~\s]))|(?:\((?:[^\s&()]|&amp;|&quot;)*\)))+)""")
+
+  def make_link(m):
+    url = m.group(1)
+    if ignore_prefix and url.startswith(ignore_prefix):
+      return url
+    proto = m.group(2)
+    href = m.group(1)
+    if not proto:
+      href = 'http://' + href
+    return u'<a href="%s">%s</a>' % (href, url)
+ 
+  return _URL_RE.sub(make_link, text)
+
+
 class KeyNameModel(db.Model):
   """A model class that requires a key name."""
 

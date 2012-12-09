@@ -135,6 +135,24 @@ class UtilTest(testutil.HandlerTest):
     self.assertRaises(ValueError,
                       util.parse_acct_uri, 'acct:me@a.com', ['x.com'])
 
+  def test_linkify_empty(self):
+    self.assertEqual('', util.linkify(''))
+
+  def test_linkify_no_links(self):
+    self.assertEqual('asdf qwert', util.linkify('asdf qwert'))
+
+  def test_linkify_links(self):
+    self.assertEqual(
+      'asdf <a href="http://foo.com">http://foo.com</a> qwert '
+      '<a href="http://www.bar.com">www.bar.com</a>',
+      util.linkify('asdf http://foo.com qwert www.bar.com'))
+
+  def test_linkify_ignore_prefix(self):
+    self.assertEqual(
+      'asdf <a href="http://foo.com">http://foo.com</a> qwert www.bar.com',
+      util.linkify('asdf http://foo.com qwert www.bar.com',
+                   ignore_prefix='www.bar'))
+
 
 class KeyNameModelTest(testutil.HandlerTest):
 
