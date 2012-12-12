@@ -163,6 +163,9 @@ Actual value:   %s""" % (''.join(e.args),
         actual = sorted(list(actual))
         for key, (e, a) in enumerate(zip(expected, actual)):
           self._assert_equals(e, a)
+      elif (isinstance(expected, basestring) and isinstance(actual, basestring) and
+            '\n' in expected):
+        self.assert_multiline_equals(expected, actual)
       else:
         self.assertEquals(expected, actual)
 
