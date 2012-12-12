@@ -77,6 +77,9 @@ class UtilTest(testutil.HandlerTest):
   def test_empty_list(self):
     self.assertEqual([], util.trim_nulls([]))
 
+  def test_list(self):
+    self.assertEqual([{'xyz': 3}], util.trim_nulls([{'abc': None, 'xyz': 3}]))
+
   def test_empty_dict(self):
     self.assertEqual({}, util.trim_nulls({}))
 

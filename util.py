@@ -37,6 +37,8 @@ def trim_nulls(value):
   """Recursively removes dict elements with None or empty values."""
   if isinstance(value, dict):
     return dict((k, trim_nulls(v)) for k, v in value.items() if trim_nulls(v))
+  elif isinstance(value, list):
+    return [trim_nulls(v) for v in value]
   else:
     return value
 
