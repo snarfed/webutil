@@ -95,6 +95,9 @@ class UtilTest(testutil.HandlerTest):
   def test_nested_dict_with_nones(self):
     self.assertEqual({1: {3: 4}}, util.trim_nulls({1: {2: [], 3: 4}, 5: {6: None}}))
 
+  def test_zero(self):
+    self.assertEqual({1: 0}, util.trim_nulls({1: 0}))
+
   def test_urlfetch(self):
     self.expect_urlfetch('http://my/url', 'hello', method='foo')
     self.mox.ReplayAll()
