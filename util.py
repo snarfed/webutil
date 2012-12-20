@@ -137,16 +137,14 @@ def domain_from_link(url):
     return domain
 
 
-def linkify(text, ignore_prefix=None):
+def linkify(text):
   """Adds HTML links to URLs in the given plain text.
-
-  If ignore_prefix is provided, links that start with it will not be linkified.
 
   For example: linkify("Hello http://tornadoweb.org!") would return
   Hello <a href="http://tornadoweb.org">http://tornadoweb.org</a>!
 
-  Ignores URLs starting with 'http://facebook.com/profile.php?id=' since they
-  may have been added to "mention" tags in main().
+  Ignores URLs that are inside HTML links, ie anchor tags that look like
+  <a href="..."> .
 
   Based on https://github.com/silas/huck/blob/master/huck/utils.py#L59
   """
@@ -155,13 +153,15 @@ def linkify(text, ignore_prefix=None):
   # but it gets all exponential on certain patterns (such as too many trailing
   # dots), causing the regex matcher to never return. This regex should avoid
   # those problems.
-  _URL_RE = re.compile(ur"""\b((?:([\w-]+):(/{1,3})|www[.])(?:(?:(?:[^\s&()]|&amp;|&quo
-t;)*(?:[^!"#$%&'()*+,.:;<=>?@\[\]^`{|}~\s]))|(?:\((?:[^\s&()]|&amp;|&quot;)*\)))+)""")
+  _URL_RE = re.compile(ur"""
+(?<! href=["'])  # negative lookahead for beginning of HTML anchor tag
+\b((?:([\w-]+):(/{1,3})|www[.])(?:(?:(?:[^\s&()]|&amp;|&quo
+t;)*(?:[^!"#$%&'()*+,.:;<=>?@\[\]^`{|}~\s]))|(?:\((?:[^\s&()]|&amp;|&quot;)*\)))+)
+(?![^<>]*>)  # negative lookahead for end of HTML anchor tag
+""", re.VERBOSE)
 
   def make_link(m):
     url = m.group(1)
-    if ignore_prefix and url.startswith(ignore_prefix):
-      return url
     proto = m.group(2)
     href = m.group(1)
     if not proto:

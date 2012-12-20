@@ -150,14 +150,20 @@ class UtilTest(testutil.HandlerTest):
   def test_linkify_links(self):
     self.assertEqual(
       'asdf <a href="http://foo.com">http://foo.com</a> qwert '
-      '<a href="http://www.bar.com">www.bar.com</a>',
-      util.linkify('asdf http://foo.com qwert www.bar.com'))
+      '<a class="x" href="http://foo.com" >xyz</a> <a href="http://www.bar.com">www.bar.com</a>',
+      util.linkify('asdf http://foo.com qwert <a class="x" href="http://foo.com" >xyz</a> www.bar.com'))
 
-  def test_linkify_ignore_prefix(self):
+  def test_linkify_ignores_anchor_tags(self):
+    for text in ('X <a class="x" href="http://foo.com" >xyz</a> Y',
+                 '<a href="http://foo.com"  class="x">xyz</a> Y',
+                 "X <a href='http//foo.com' />"):
+      self.assertEqual(text, util.linkify(text))
+
+  def test_linkify_links_and_anchor_tags(self):
     self.assertEqual(
-      'asdf <a href="http://foo.com">http://foo.com</a> qwert www.bar.com',
-      util.linkify('asdf http://foo.com qwert www.bar.com',
-                   ignore_prefix='www.bar'))
+      'asdf <a href="http://foo.com">foo</a> qwert '
+      '<a href="http://www.bar.com">www.bar.com</a>',
+      util.linkify('asdf <a href="http://foo.com">foo</a> qwert www.bar.com'))
 
 
 class KeyNameModelTest(testutil.HandlerTest):
