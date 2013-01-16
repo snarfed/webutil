@@ -93,7 +93,7 @@ def parse_acct_uri(uri, hosts=None):
   parsed = urlparse.urlparse(uri)
   if parsed.scheme and parsed.scheme != 'acct':
     raise ValueError('Acct URI %s has unsupported scheme: %s' %
-                     (uri,  parsed.scheme)) 
+                     (uri, parsed.scheme))
 
   try:
     username, host = parsed.path.split('@')
@@ -122,7 +122,7 @@ def domain_from_link(url):
 
     # strip exactly one dot from the right, if present
     if domain[-1:] == ".":
-      domain = domain[:-1] 
+      domain = domain[:-1]
 
     split = domain.split('.')
     if len (split) <= 1:
@@ -167,7 +167,7 @@ t;)*(?:[^!"#$%&'()*+,.:;<=>?@\[\]^`{|}~\s]))|(?:\((?:[^\s&()]|&amp;|&quot;)*\)))
     if not proto:
       href = 'http://' + href
     return u'<a href="%s">%s</a>' % (href, url)
- 
+
   return _URL_RE.sub(make_link, text)
 
 
@@ -231,7 +231,7 @@ class SingleEGModel(db.Model):
   @enforce_parent
   def get_or_insert(cls, key_name, **kwargs):
     return super(SingleEGModel, cls).get_or_insert(key_name, **kwargs)
- 
+
   @classmethod
   def all(cls):
     return db.Query(cls).ancestor(cls.shared_parent_key())
