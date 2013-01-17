@@ -62,7 +62,7 @@ def urlfetch(url, **kwargs):
   if resp.status_code == 200:
     return resp.content
   else:
-    logging.debug('GET %s returned %', url, resp.status_code)
+    logging.debug('GET %s returned %d', url, resp.status_code)
     webapp2.abort(resp.status_code, body_template=resp.content,
                   headers=resp.headers)
 
