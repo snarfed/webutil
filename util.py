@@ -171,6 +171,46 @@ t;)*(?:[^!"#$%&'()*+,.:;<=>?@\[\]^`{|}~\s]))|(?:\((?:[^\s&()]|&amp;|&quot;)*\)))
   return _URL_RE.sub(make_link, text)
 
 
+class SimpleTzinfo(datetime.tzinfo):
+  """A simple, DST-unaware tzinfo subclass.
+  """
+
+  offset = datetime.timedelta(0)
+
+  def utcoffset(self, dt):
+    return self.offset
+
+  def dst(self, dt):
+    return datetime.timedelta(0)
+
+
+def parse_iso8601(str):
+  """Parses an ISO 8601 date/time string and returns a datetime object.
+
+  Time zone designator is optional. If present, the returned datetime will be
+  time zone aware.
+
+  Args:
+    str: string ISO 8601, e.g. '2012-07-23T05:54:49+0000'
+
+  Returns: datetime
+  """
+  # grr, this would be way easier if strptime supported %z, but evidently that
+  # was only added in python 3.2.
+  # http://stackoverflow.com/questions/9959778/is-there-a-wildcard-format-directive-for-strptime
+  base, zone = re.match('(.{19})([+-][0-9]{4})?', str).groups()
+
+  tz = None
+  if zone:
+    tz = SimpleTzinfo()
+    tz.offset = (datetime.datetime.strptime(zone[1:], '%H%M') -
+                 datetime.datetime.strptime('', ''))
+    if zone[0] == '-':
+      tz.offset = -tz.offset
+
+  return datetime.datetime.strptime(base, '%Y-%m-%dT%H:%M:%S').replace(tzinfo=tz)
+
+
 class KeyNameModel(db.Model):
   """A model class that requires a key name."""
 

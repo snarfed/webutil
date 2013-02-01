@@ -4,6 +4,7 @@
 
 __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
+import datetime
 import unittest
 from webob import exc
 
@@ -164,6 +165,21 @@ class UtilTest(testutil.HandlerTest):
       'asdf <a href="http://foo.com">foo</a> qwert '
       '<a href="http://www.bar.com">www.bar.com</a>',
       util.linkify('asdf <a href="http://foo.com">foo</a> qwert www.bar.com'))
+
+  def test_parse_iso8601(self):
+    for str, offset in (
+      ('2012-07-23T05:54:49', None),
+      ('2012-07-23T05:54:49+0000', 0),
+      ('2012-07-23T05:54:49-0000', 0),
+      ('2012-07-23T05:54:49+0130', 90),
+      ('2012-07-23T05:54:49-1300', -780),
+      ):
+      dt = util.parse_iso8601(str)
+      self.assertEqual(datetime.datetime(2012, 07, 23, 5, 54, 49),
+                       dt.replace(tzinfo=None))
+      if offset is not None:
+        offset = datetime.timedelta(minutes=offset)
+      self.assertEqual(offset, dt.utcoffset())
 
 
 class KeyNameModelTest(testutil.HandlerTest):
