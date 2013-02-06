@@ -119,10 +119,11 @@ class UtilTest(testutil.HandlerTest):
       self.assertEqual('http://a.org/favicon.ico', util.favicon_for_url(url))
 
   def test_domain_from_link(self):
+    self.assertEqual('localhost', util.domain_from_link('http://localhost/foo'))
     for good_link in 'asdf.com', 'https://asdf.com/', 'asdf.com/foo?bar#baz':
       self.assertEqual('asdf.com', util.domain_from_link(good_link), good_link)
 
-    for bad_link in '', '  ', 'com', 'com.', 'a/b/c':
+    for bad_link in '', '  ', 'a&b.com', 'http://', 'file:///':
       self.assertRaises(exc.HTTPBadRequest, util.domain_from_link, bad_link)
 
   def test_parse_acct_uri(self):
@@ -252,4 +253,3 @@ class SingleEGModelTest(testutil.HandlerTest):
     """
     query = self.Foo.all()
     query.fetch(1)
-

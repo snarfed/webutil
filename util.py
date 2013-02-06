@@ -124,12 +124,9 @@ def domain_from_link(url):
     if domain[-1:] == ".":
       domain = domain[:-1]
 
-    split = domain.split('.')
-    if len (split) <= 1:
-      raise exc.HTTPBadRequest('No TLD found in domain %r' % domain)
-
     # http://stackoverflow.com/questions/2532053/validate-hostname-string-in-python
     allowed = re.compile('(?!-)[A-Z\d-]{1,63}(?<!-)$', re.IGNORECASE)
+    split = domain.split('.')
     for part in split:
       if not allowed.match(part):
         raise exc.HTTPBadRequest('Bad component in domain: %r' % part)
