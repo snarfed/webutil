@@ -36,20 +36,18 @@ def read(filename):
       return f.read().strip()
   else:
     logging.warning('%s file not found, cannot authenticate!', filename)
-  
+
 MOCKFACEBOOK = False
 DEBUG = os.environ.get('SERVER_SOFTWARE', '').startswith('Development')
 
-if DEBUG:  
+if DEBUG:
   FACEBOOK_APP_ID = read('facebook_app_id_local')
   FACEBOOK_APP_SECRET = read('facebook_app_secret_local')
-  GOOGLEPLUS_CLIENT_ID = read('googleplus_client_id_local')
-  GOOGLEPLUS_CLIENT_SECRET = read('googleplus_client_secret_local')
 else:
   FACEBOOK_APP_ID = read('facebook_app_id')
   FACEBOOK_APP_SECRET = read('facebook_app_secret')
-  GOOGLEPLUS_CLIENT_ID = read('googleplus_client_id')
-  GOOGLEPLUS_CLIENT_SECRET = read('googleplus_client_secret')
 
+GOOGLEPLUS_CLIENT_ID = read('googleplus_client_id')
+GOOGLEPLUS_CLIENT_SECRET = read('googleplus_client_secret')
 TWITTER_APP_KEY = read('twitter_app_key')
 TWITTER_APP_SECRET = read('twitter_app_secret')
