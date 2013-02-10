@@ -52,10 +52,18 @@ class TemplateHandler(webapp2.RequestHandler):
     for key, val in BASE_HEADERS.items():
       self.response.headers[key] = val
 
-    template_vars = {'host': appengine_config.HOST}
-    template_vars.update(self.template_vars())
-    template_vars.update(self.request.params)
-    self.response.out.write(template.render(self.template_file(), template_vars))
+    vars = {'host': appengine_config.HOST}
+
+    # add query params. use a list for params with multiple values.
+    for key in self.request.params:
+      values = self.request.params.getall(key)
+      if len(values) == 1:
+        values = values[0]
+      vars[key] = values
+
+    vars.update(self.template_vars())
+
+    self.response.out.write(template.render(self.template_file(), vars))
 
 
 class XrdOrJrdHandler(TemplateHandler):
