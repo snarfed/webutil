@@ -47,7 +47,7 @@ else:
   FACEBOOK_APP_ID = read('facebook_app_id')
   FACEBOOK_APP_SECRET = read('facebook_app_secret')
 
-GOOGLEPLUS_CLIENT_ID = read('googleplus_client_id')
-GOOGLEPLUS_CLIENT_SECRET = read('googleplus_client_secret')
+GOOGLE_CLIENT_ID = read('google_client_id')
+GOOGLE_CLIENT_SECRET = read('google_client_secret')
 TWITTER_APP_KEY = read('twitter_app_key')
 TWITTER_APP_SECRET = read('twitter_app_secret')
