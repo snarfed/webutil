@@ -36,7 +36,10 @@ def to_xml(value):
 def trim_nulls(value):
   """Recursively removes dict elements with None or empty values."""
   if isinstance(value, dict):
-    return dict((k, trim_nulls(v)) for k, v in value.items() if trim_nulls(v))
+    return dict((k, trim_nulls(v)) for k, v in value.items()
+                if trim_nulls(v) not in (None, {}, [], ()))
+  elif isinstance(value, list):
+    return [trim_nulls(v) for v in value]
   else:
     return value
 
@@ -59,7 +62,7 @@ def urlfetch(url, **kwargs):
   if resp.status_code == 200:
     return resp.content
   else:
-    logging.debug('GET %s returned %d:\n%s', url, resp.status_code)
+    logging.debug('GET %s returned %d', url, resp.status_code)
     webapp2.abort(resp.status_code, body_template=resp.content,
                   headers=resp.headers)
 
@@ -90,7 +93,7 @@ def parse_acct_uri(uri, hosts=None):
   parsed = urlparse.urlparse(uri)
   if parsed.scheme and parsed.scheme != 'acct':
     raise ValueError('Acct URI %s has unsupported scheme: %s' %
-                     (uri,  parsed.scheme)) 
+                     (uri, parsed.scheme))
 
   try:
     username, host = parsed.path.split('@')
@@ -119,14 +122,11 @@ def domain_from_link(url):
 
     # strip exactly one dot from the right, if present
     if domain[-1:] == ".":
-      domain = domain[:-1] 
-
-    split = domain.split('.')
-    if len (split) <= 1:
-      raise exc.HTTPBadRequest('No TLD found in domain %r' % domain)
+      domain = domain[:-1]
 
     # http://stackoverflow.com/questions/2532053/validate-hostname-string-in-python
     allowed = re.compile('(?!-)[A-Z\d-]{1,63}(?<!-)$', re.IGNORECASE)
+    split = domain.split('.')
     for part in split:
       if not allowed.match(part):
         raise exc.HTTPBadRequest('Bad component in domain: %r' % part)
@@ -134,16 +134,14 @@ def domain_from_link(url):
     return domain
 
 
-def linkify(text, ignore_prefix=None):
+def linkify(text):
   """Adds HTML links to URLs in the given plain text.
-
-  If ignore_prefix is provided, links that start with it will not be linkified.
 
   For example: linkify("Hello http://tornadoweb.org!") would return
   Hello <a href="http://tornadoweb.org">http://tornadoweb.org</a>!
 
-  Ignores URLs starting with 'http://facebook.com/profile.php?id=' since they
-  may have been added to "mention" tags in main().
+  Ignores URLs that are inside HTML links, ie anchor tags that look like
+  <a href="..."> .
 
   Based on https://github.com/silas/huck/blob/master/huck/utils.py#L59
   """
@@ -152,20 +150,62 @@ def linkify(text, ignore_prefix=None):
   # but it gets all exponential on certain patterns (such as too many trailing
   # dots), causing the regex matcher to never return. This regex should avoid
   # those problems.
-  _URL_RE = re.compile(ur"""\b((?:([\w-]+):(/{1,3})|www[.])(?:(?:(?:[^\s&()]|&amp;|&quo
-t;)*(?:[^!"#$%&'()*+,.:;<=>?@\[\]^`{|}~\s]))|(?:\((?:[^\s&()]|&amp;|&quot;)*\)))+)""")
+  _URL_RE = re.compile(ur"""
+(?<! href=["'])  # negative lookahead for beginning of HTML anchor tag
+\b((?:([\w-]+):(/{1,3})|www[.])(?:(?:(?:[^\s&()]|&amp;|&quo
+t;)*(?:[^!"#$%&'()*+,.:;<=>?@\[\]^`{|}~\s]))|(?:\((?:[^\s&()]|&amp;|&quot;)*\)))+)
+(?![^<>]*>)  # negative lookahead for end of HTML anchor tag
+""", re.VERBOSE)
 
   def make_link(m):
     url = m.group(1)
-    if ignore_prefix and url.startswith(ignore_prefix):
-      return url
     proto = m.group(2)
     href = m.group(1)
     if not proto:
       href = 'http://' + href
     return u'<a href="%s">%s</a>' % (href, url)
- 
+
   return _URL_RE.sub(make_link, text)
+
+
+class SimpleTzinfo(datetime.tzinfo):
+  """A simple, DST-unaware tzinfo subclass.
+  """
+
+  offset = datetime.timedelta(0)
+
+  def utcoffset(self, dt):
+    return self.offset
+
+  def dst(self, dt):
+    return datetime.timedelta(0)
+
+
+def parse_iso8601(str):
+  """Parses an ISO 8601 date/time string and returns a datetime object.
+
+  Time zone designator is optional. If present, the returned datetime will be
+  time zone aware.
+
+  Args:
+    str: string ISO 8601, e.g. '2012-07-23T05:54:49+0000'
+
+  Returns: datetime
+  """
+  # grr, this would be way easier if strptime supported %z, but evidently that
+  # was only added in python 3.2.
+  # http://stackoverflow.com/questions/9959778/is-there-a-wildcard-format-directive-for-strptime
+  base, zone = re.match('(.{19})([+-][0-9]{4})?', str).groups()
+
+  tz = None
+  if zone:
+    tz = SimpleTzinfo()
+    tz.offset = (datetime.datetime.strptime(zone[1:], '%H%M') -
+                 datetime.datetime.strptime('', ''))
+    if zone[0] == '-':
+      tz.offset = -tz.offset
+
+  return datetime.datetime.strptime(base, '%Y-%m-%dT%H:%M:%S').replace(tzinfo=tz)
 
 
 class KeyNameModel(db.Model):
@@ -228,7 +268,7 @@ class SingleEGModel(db.Model):
   @enforce_parent
   def get_or_insert(cls, key_name, **kwargs):
     return super(SingleEGModel, cls).get_or_insert(key_name, **kwargs)
- 
+
   @classmethod
   def all(cls):
     return db.Query(cls).ancestor(cls.shared_parent_key())

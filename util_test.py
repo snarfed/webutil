@@ -4,6 +4,7 @@
 
 __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
+import datetime
 import unittest
 from webob import exc
 
@@ -77,6 +78,9 @@ class UtilTest(testutil.HandlerTest):
   def test_empty_list(self):
     self.assertEqual([], util.trim_nulls([]))
 
+  def test_list(self):
+    self.assertEqual([{'xyz': 3}], util.trim_nulls([{'abc': None, 'xyz': 3}]))
+
   def test_empty_dict(self):
     self.assertEqual({}, util.trim_nulls({}))
 
@@ -91,6 +95,9 @@ class UtilTest(testutil.HandlerTest):
 
   def test_nested_dict_with_nones(self):
     self.assertEqual({1: {3: 4}}, util.trim_nulls({1: {2: [], 3: 4}, 5: {6: None}}))
+
+  def test_zero(self):
+    self.assertEqual({1: 0}, util.trim_nulls({1: 0}))
 
   def test_urlfetch(self):
     self.expect_urlfetch('http://my/url', 'hello', method='foo')
@@ -112,10 +119,11 @@ class UtilTest(testutil.HandlerTest):
       self.assertEqual('http://a.org/favicon.ico', util.favicon_for_url(url))
 
   def test_domain_from_link(self):
+    self.assertEqual('localhost', util.domain_from_link('http://localhost/foo'))
     for good_link in 'asdf.com', 'https://asdf.com/', 'asdf.com/foo?bar#baz':
       self.assertEqual('asdf.com', util.domain_from_link(good_link), good_link)
 
-    for bad_link in '', '  ', 'com', 'com.', 'a/b/c':
+    for bad_link in '', '  ', 'a&b.com', 'http://', 'file:///':
       self.assertRaises(exc.HTTPBadRequest, util.domain_from_link, bad_link)
 
   def test_parse_acct_uri(self):
@@ -144,14 +152,35 @@ class UtilTest(testutil.HandlerTest):
   def test_linkify_links(self):
     self.assertEqual(
       'asdf <a href="http://foo.com">http://foo.com</a> qwert '
-      '<a href="http://www.bar.com">www.bar.com</a>',
-      util.linkify('asdf http://foo.com qwert www.bar.com'))
+      '<a class="x" href="http://foo.com" >xyz</a> <a href="http://www.bar.com">www.bar.com</a>',
+      util.linkify('asdf http://foo.com qwert <a class="x" href="http://foo.com" >xyz</a> www.bar.com'))
 
-  def test_linkify_ignore_prefix(self):
+  def test_linkify_ignores_anchor_tags(self):
+    for text in ('X <a class="x" href="http://foo.com" >xyz</a> Y',
+                 '<a href="http://foo.com"  class="x">xyz</a> Y',
+                 "X <a href='http//foo.com' />"):
+      self.assertEqual(text, util.linkify(text))
+
+  def test_linkify_links_and_anchor_tags(self):
     self.assertEqual(
-      'asdf <a href="http://foo.com">http://foo.com</a> qwert www.bar.com',
-      util.linkify('asdf http://foo.com qwert www.bar.com',
-                   ignore_prefix='www.bar'))
+      'asdf <a href="http://foo.com">foo</a> qwert '
+      '<a href="http://www.bar.com">www.bar.com</a>',
+      util.linkify('asdf <a href="http://foo.com">foo</a> qwert www.bar.com'))
+
+  def test_parse_iso8601(self):
+    for str, offset in (
+      ('2012-07-23T05:54:49', None),
+      ('2012-07-23T05:54:49+0000', 0),
+      ('2012-07-23T05:54:49-0000', 0),
+      ('2012-07-23T05:54:49+0130', 90),
+      ('2012-07-23T05:54:49-1300', -780),
+      ):
+      dt = util.parse_iso8601(str)
+      self.assertEqual(datetime.datetime(2012, 07, 23, 5, 54, 49),
+                       dt.replace(tzinfo=None))
+      if offset is not None:
+        offset = datetime.timedelta(minutes=offset)
+      self.assertEqual(offset, dt.utcoffset())
 
 
 class KeyNameModelTest(testutil.HandlerTest):
@@ -224,4 +253,3 @@ class SingleEGModelTest(testutil.HandlerTest):
     """
     query = self.Foo.all()
     query.fetch(1)
-
