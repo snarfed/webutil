@@ -11,7 +11,9 @@ import os
 import sys
 import unittest
 
-APP_ENGINE_SDK_PATH = os.path.expanduser('~/google_appengine')
+APP_ENGINE_SDK_PATH = os.path.expanduser('/usr/local/google_appengine')
+sys.path += [os.path.join(APP_ENGINE_SDK_PATH, 'lib', lib)
+             for lib in ('django-1.4', 'mox', 'yaml/lib')]
 
 
 def main():
