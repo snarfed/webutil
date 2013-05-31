@@ -23,7 +23,10 @@ def main():
 
   # add working directory since this is often symlinked in a different dir by
   # clients, in which case we want it to load and run test in that dir.
-  sys.path = [os.getcwd(), APP_ENGINE_SDK_PATH] + sys.path
+  sys.path = ([os.getcwd(), APP_ENGINE_SDK_PATH] +
+              [os.path.join(APP_ENGINE_SDK_PATH, 'lib', lib) for lib in
+               'mox', 'webob-1.2.3', 'yaml-3.10', 'django-1.4'] +
+              sys.path)
 
   for filename in glob.glob('*_test.py'):
     name = os.path.splitext(filename)[0]
