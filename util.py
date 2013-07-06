@@ -195,7 +195,10 @@ def parse_iso8601(str):
   # grr, this would be way easier if strptime supported %z, but evidently that
   # was only added in python 3.2.
   # http://stackoverflow.com/questions/9959778/is-there-a-wildcard-format-directive-for-strptime
-  base, zone = re.match('(.{19})([+-][0-9]{4})?', str).groups()
+  try:
+    base, zone = re.match('(.{19})([+-][0-9]{4})?', str).groups()
+  except AttributeError, e:
+    raise ValueError(e)
 
   tz = None
   if zone:
@@ -206,6 +209,23 @@ def parse_iso8601(str):
       tz.offset = -tz.offset
 
   return datetime.datetime.strptime(base, '%Y-%m-%dT%H:%M:%S').replace(tzinfo=tz)
+
+
+def maybe_iso8601_to_rfc3339(input):
+  """Tries to convert an ISO 8601 date/time string to RFC 3339.
+
+  The formats are similar, but not identical, eg. RFC 3339 includes a colon in
+  the timezone offset at the end (+0000 instead of +00:00), but ISO 8601
+  doesn't.
+
+  If the input can't be parsed as ISO 8601, it's silently returned, unchanged!
+
+  http://www.rfc-editor.org/rfc/rfc3339.txt
+  """
+  try:
+    return parse_iso8601(input).isoformat('T')
+  except ValueError:
+    return input
 
 
 class KeyNameModel(db.Model):
