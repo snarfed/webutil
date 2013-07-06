@@ -184,6 +184,7 @@ class UtilTest(testutil.HandlerTest):
 
   def test_maybe_iso8601_to_rfc3339(self):
     for input, expected in (
+      (None, None),
       ('', ''),
       ('not iso8601!', 'not iso8601!'),
       ('2012-07-23T05:54:49+0000', '2012-07-23T05:54:49+00:00'),

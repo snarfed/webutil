@@ -224,7 +224,7 @@ def maybe_iso8601_to_rfc3339(input):
   """
   try:
     return parse_iso8601(input).isoformat('T')
-  except ValueError:
+  except (ValueError, TypeError):
     return input
 
 
