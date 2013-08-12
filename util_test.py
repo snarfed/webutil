@@ -155,6 +155,11 @@ class UtilTest(testutil.HandlerTest):
       '<a class="x" href="http://foo.com" >xyz</a> <a href="http://www.bar.com">www.bar.com</a>',
       util.linkify('asdf http://foo.com qwert <a class="x" href="http://foo.com" >xyz</a> www.bar.com'))
 
+  def test_linkify_tco(self):
+    self.assertEqual(
+      'asdf <a href="http://t.co/asdf">http://t.co/asdf</a> qwert',
+      util.linkify('asdf http://t.co/asdf qwert'))
+
   def test_linkify_ignores_anchor_tags(self):
     for text in ('X <a class="x" href="http://foo.com" >xyz</a> Y',
                  '<a href="http://foo.com"  class="x">xyz</a> Y',
