@@ -10,6 +10,8 @@ google_client_id
 google_client_secret
 instagram_client_id
 instagram_client_secret
+instagram_client_id_local
+instagram_client_secret_local
 twitter_app_key
 twitter_app_secret
 """
@@ -44,13 +46,15 @@ DEBUG = os.environ.get('SERVER_SOFTWARE', '').startswith('Development')
 if DEBUG:
   FACEBOOK_APP_ID = read('facebook_app_id_local')
   FACEBOOK_APP_SECRET = read('facebook_app_secret_local')
+  INSTAGRAM_CLIENT_ID = read('instagram_client_id_local')
+  INSTAGRAM_CLIENT_SECRET = read('instagram_client_secret_local')
 else:
   FACEBOOK_APP_ID = read('facebook_app_id')
   FACEBOOK_APP_SECRET = read('facebook_app_secret')
+  INSTAGRAM_CLIENT_ID = read('instagram_client_id')
+  INSTAGRAM_CLIENT_SECRET = read('instagram_client_secret')
 
 GOOGLE_CLIENT_ID = read('google_client_id')
 GOOGLE_CLIENT_SECRET = read('google_client_secret')
-INSTAGRAM_CLIENT_ID = read('instagram_client_id')
-INSTAGRAM_CLIENT_SECRET = read('instagram_client_secret')
 TWITTER_APP_KEY = read('twitter_app_key')
 TWITTER_APP_SECRET = read('twitter_app_secret')
