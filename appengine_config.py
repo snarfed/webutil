@@ -6,6 +6,10 @@ facebook_app_id
 facebook_app_secret
 facebook_app_id_local
 facebook_app_secret_local
+google_client_id
+google_client_secret
+instagram_client_id
+instagram_client_secret
 twitter_app_key
 twitter_app_secret
 """
