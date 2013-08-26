@@ -11,7 +11,6 @@ twitter_app_secret
 """
 
 from __future__ import with_statement
-import logging
 import os
 
 from google.appengine.api import app_identity
@@ -34,8 +33,6 @@ def read(filename):
   if os.path.exists(filename):
     with open(filename) as f:
       return f.read().strip()
-  else:
-    logging.warning('%s file not found, cannot authenticate!', filename)
 
 MOCKFACEBOOK = False
 DEBUG = os.environ.get('SERVER_SOFTWARE', '').startswith('Development')
@@ -49,5 +46,7 @@ else:
 
 GOOGLE_CLIENT_ID = read('google_client_id')
 GOOGLE_CLIENT_SECRET = read('google_client_secret')
+INSTAGRAM_CLIENT_ID = read('instagram_client_id')
+INSTAGRAM_CLIENT_SECRET = read('instagram_client_secret')
 TWITTER_APP_KEY = read('twitter_app_key')
 TWITTER_APP_SECRET = read('twitter_app_secret')
