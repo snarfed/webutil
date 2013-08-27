@@ -16,6 +16,12 @@ from google.appengine.api import urlfetch as gae_urlfetch
 from google.appengine.ext import db
 
 
+class Struct(object):
+  """A generic class that initializes its attributes from constructor kwargs."""
+  def __init__(self, **kwargs):
+    vars(self).update(**kwargs)
+
+
 def to_xml(value):
   """Renders a dict (usually from JSON) as an XML snippet."""
   if isinstance(value, dict):
