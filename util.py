@@ -234,6 +234,14 @@ def maybe_iso8601_to_rfc3339(input):
     return input
 
 
+def maybe_timestamp_to_rfc3339(input):
+  """Tries to convert a string or int UNIX timestamp to RFC 3339."""
+  try:
+    return datetime.datetime.fromtimestamp(int(input)).isoformat('T')
+  except (ValueError, TypeError):
+    return input
+
+
 class KeyNameModel(db.Model):
   """A model class that requires a key name."""
 

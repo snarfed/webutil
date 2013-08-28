@@ -196,6 +196,16 @@ class UtilTest(testutil.HandlerTest):
       ):
       self.assertEqual(expected, util.maybe_iso8601_to_rfc3339(input))
 
+  def test_maybe_timestamp_to_rfc3339(self):
+    for input, expected in (
+      (None, None),
+      ('', ''),
+      ('not a timestamp!', 'not a timestamp!'),
+      (1349588757, '2012-10-06T22:45:57'),
+      ('1349588757', '2012-10-06T22:45:57'),
+      ):
+      self.assertEqual(expected, util.maybe_timestamp_to_rfc3339(input))
+
 
 class KeyNameModelTest(testutil.HandlerTest):
 
