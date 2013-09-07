@@ -179,6 +179,7 @@ class UtilTest(testutil.HandlerTest):
       ('2012-07-23T05:54:49-0000', 0),
       ('2012-07-23T05:54:49+0130', 90),
       ('2012-07-23T05:54:49-1300', -780),
+      ('2012-07-23T05:54:49-13:00', -780),
       ):
       dt = util.parse_iso8601(str)
       self.assertEqual(datetime.datetime(2012, 07, 23, 5, 54, 49),

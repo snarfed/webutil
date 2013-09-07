@@ -188,13 +188,13 @@ class SimpleTzinfo(datetime.tzinfo):
 
 
 def parse_iso8601(str):
-  """Parses an ISO 8601 date/time string and returns a datetime object.
+  """Parses an ISO 8601 or RFC 3339 date/time string and returns a datetime.
 
   Time zone designator is optional. If present, the returned datetime will be
   time zone aware.
 
   Args:
-    str: string ISO 8601, e.g. '2012-07-23T05:54:49+0000'
+    str: string ISO 8601 or RFC 3339, e.g. '2012-07-23T05:54:49+0000'
 
   Returns: datetime
   """
@@ -202,12 +202,13 @@ def parse_iso8601(str):
   # was only added in python 3.2.
   # http://stackoverflow.com/questions/9959778/is-there-a-wildcard-format-directive-for-strptime
   try:
-    base, zone = re.match('(.{19})([+-][0-9]{4})?', str).groups()
+    base, zone = re.match('(.{19})([+-]\d{2}:?\d{2})?', str).groups()
   except AttributeError, e:
     raise ValueError(e)
 
   tz = None
   if zone:
+    zone = zone.replace(':', '')
     tz = SimpleTzinfo()
     tz.offset = (datetime.datetime.strptime(zone[1:], '%H%M') -
                  datetime.datetime.strptime('', ''))
