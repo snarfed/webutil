@@ -77,6 +77,7 @@ class HandlerTest(mox.MoxTestBase):
 
   def tearDown(self):
     self.testbed.deactivate()
+    super(HandlerTest, self).tearDown()
 
   def expect_urlfetch(self, expected_url, response, status=200, **kwargs):
     """Stubs out urlfetch.fetch() and sets up an expected call.
