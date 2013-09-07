@@ -46,6 +46,10 @@ class TemplateHandler(webapp2.RequestHandler):
     """Returns the string content type."""
     return 'text/html'
 
+  def force_to_sequence(self):
+    """Returns variables that should be coerced to sequences if necessary."""
+    return set()
+
   def get(self):
     self.response.headers['Content-Type'] = self.content_type()
     # can't update() because wsgiref.headers.Headers doesn't have it.
@@ -62,6 +66,11 @@ class TemplateHandler(webapp2.RequestHandler):
       vars[key] = values
 
     vars.update(self.template_vars())
+
+    for key in self.force_to_sequence():
+      val = vars.get(key, None)
+      if val is not None and not isinstance(val, (list, tuple)):
+        vars[key] = (val,)
 
     self.response.out.write(template.render(self.template_file(), vars))
 
