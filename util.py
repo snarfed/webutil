@@ -47,18 +47,19 @@ def trim_nulls(value):
 
 
 # TODO: post support
-def urlread(url):
+def urlread(url, headers={}):
   """Wraps urllib2.urlopen, returns body or raises exception.
 
   Args:
     url: str
+    headers: dict
 
   Returns: the HTTP response body
 
   Raises: subclass of webob.exc.HTTPError
   """
   logging.debug('Fetching %s', url)
-  resp = urllib2.urlopen(url, timeout=999)
+  resp = urllib2.urlopen(urllib2.Request(url, headers=headers), timeout=999)
   body = resp.read()
 
   if resp.getcode() == 200:

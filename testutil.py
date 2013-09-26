@@ -100,8 +100,8 @@ class HandlerTest(mox.MoxTestBase):
       response: string
       status: int, HTTP response code
     """
-    urllib2.urlopen(expected_url, timeout=999).AndReturn(
-      self.UrlopenResult(status, response))
+    urllib2.urlopen(mox.Func(lambda req: req.get_full_url() == expected_url),
+                    timeout=999).AndReturn(self.UrlopenResult(status, response))
 
   def assert_entities_equal(self, a, b, ignore=frozenset(), keys_only=False,
                             in_order=False):
