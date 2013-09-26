@@ -57,7 +57,7 @@ def urlread(url):
 
   Raises: subclass of webob.exc.HTTPError
   """
-  logging.debug('Fetching %s with kwargs %s', url)
+  logging.debug('Fetching %s', url)
   resp = urllib2.urlopen(url, timeout=999)
   body = resp.read()
 
