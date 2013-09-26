@@ -17,7 +17,6 @@ import wsgiref
 
 import webapp2
 
-from google.appengine.api import urlfetch
 from google.appengine.datastore import datastore_stub_util
 from google.appengine.ext import db
 from google.appengine.ext import testbed
@@ -73,10 +72,8 @@ class HandlerTest(mox.MoxTestBase):
                            user_email=self.current_user_email)
     self.testbed.activate()
 
-    self.testbed.init_urlfetch_stub()
     hrd_policy = datastore_stub_util.PseudoRandomHRConsistencyPolicy(probability=.5)
     self.testbed.init_datastore_v3_stub(consistency_policy=hrd_policy)
-    self.mox.StubOutWithMock(urlfetch, 'fetch')
     self.testbed.init_taskqueue_stub(root_path='.')
     self.testbed.init_user_stub()
 
@@ -94,18 +91,6 @@ class HandlerTest(mox.MoxTestBase):
   def tearDown(self):
     self.testbed.deactivate()
     super(HandlerTest, self).tearDown()
-
-  def expect_urlfetch(self, expected_url, response, status=200, **kwargs):
-    """Stubs out urlfetch.fetch() and sets up an expected call.
-
-    Args:
-      expected_url: string, regex or mox.Comparator
-      response: string
-      status: int, HTTP response code
-      kwargs: passed to urlfetch.fetch()
-    """
-    urlfetch.fetch(expected_url, deadline=999, **kwargs).AndReturn(
-      self.UrlfetchResult(status, response))
 
   def expect_urlopen(self, expected_url, response, status=200, **kwargs):
     """Stubs out urllib2.open() and sets up an expected call.
