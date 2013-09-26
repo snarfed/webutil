@@ -9,6 +9,9 @@ import mox
 import pprint
 import re
 import os
+import rfc822
+import StringIO
+import urllib2
 import urlparse
 import wsgiref
 
@@ -39,13 +42,24 @@ class HandlerTest(mox.MoxTestBase):
     handler: webapp2.RequestHandler
   """
 
-  class UrlfetchResult(object):
-    """A fake urlfetch.fetch() result object.
+  class UrlopenResult(object):
+    """A fake urllib2.urlopen() result object. Also works for urlfetch.fetch().
     """
     def __init__(self, status_code, content, headers={}):
       self.status_code = status_code
       self.content = content
       self.headers = headers
+
+    def read(self):
+      return self.content
+
+    def getcode(self):
+      return self.status_code
+
+    def info(self):
+      return rfc822.Message(StringIO.StringIO(
+          '\n'.join('%s: %s' % item for item in self.headers.items())))
+
 
   def setUp(self):
     super(HandlerTest, self).setUp()
@@ -65,6 +79,8 @@ class HandlerTest(mox.MoxTestBase):
     self.mox.StubOutWithMock(urlfetch, 'fetch')
     self.testbed.init_taskqueue_stub(root_path='.')
     self.testbed.init_user_stub()
+
+    self.mox.StubOutWithMock(urllib2, 'urlopen')
 
     # unofficial API, whee! this is so we can call
     # TaskQueueServiceStub.GetTasks() in tests. see
@@ -90,6 +106,17 @@ class HandlerTest(mox.MoxTestBase):
     """
     urlfetch.fetch(expected_url, deadline=999, **kwargs).AndReturn(
       self.UrlfetchResult(status, response))
+
+  def expect_urlopen(self, expected_url, response, status=200, **kwargs):
+    """Stubs out urllib2.open() and sets up an expected call.
+
+    Args:
+      expected_url: string, regex or mox.Comparator
+      response: string
+      status: int, HTTP response code
+    """
+    urllib2.urlopen(expected_url, timeout=999).AndReturn(
+      self.UrlopenResult(status, response))
 
   def assert_entities_equal(self, a, b, ignore=frozenset(), keys_only=False,
                             in_order=False):

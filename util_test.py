@@ -9,7 +9,6 @@ from webob import exc
 
 import testutil
 import util
-import webapp2
 
 
 class UtilTest(testutil.HandlerTest):
@@ -95,17 +94,18 @@ class UtilTest(testutil.HandlerTest):
   def test_zero(self):
     self.assertEqual({1: 0}, util.trim_nulls({1: 0}))
 
-  def test_urlfetch(self):
-    self.expect_urlfetch('http://my/url', 'hello', method='foo')
-    self.mox.ReplayAll()
-    self.assertEquals('hello', util.urlfetch('http://my/url', method='foo'))
 
-  def test_urlfetch_error_passes_through(self):
-    self.expect_urlfetch('http://my/url', 'my error', status=408)
+  def test_urlread(self):
+    self.expect_urlopen('http://my/url', 'hello')
+    self.mox.ReplayAll()
+    self.assertEquals('hello', util.urlread('http://my/url'))
+
+  def test_urlread_error_passes_through(self):
+    self.expect_urlopen('http://my/url', 'my error', status=408)
     self.mox.ReplayAll()
 
     try:
-      util.urlfetch('http://my/url')
+      util.urlread('http://my/url')
     except exc.HTTPException, e:
       self.assertEquals(408, e.status_int)
       self.assertEquals('my error', e.body_template_obj.template)

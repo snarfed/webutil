@@ -7,11 +7,9 @@ __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 import datetime
 import logging
 import re
+import urllib2
 import urlparse
-import webapp2
 from webob import exc
-
-from google.appengine.api import urlfetch as gae_urlfetch
 
 
 class Struct(object):
@@ -48,27 +46,26 @@ def trim_nulls(value):
     return value
 
 
-def urlfetch(url, **kwargs):
-  """Wraps urlfetch. Passes error responses through to the client.
-
-  ...by raising HTTPException.
+# TODO: post support
+def urlread(url):
+  """Wraps urllib2.urlopen, returns body or raises exception.
 
   Args:
     url: str
-    kwargs: passed through to urlfetch.fetch()
 
-  Returns:
-    the HTTP response body
+  Returns: the HTTP response body
+
+  Raises: subclass of webob.exc.HTTPError
   """
-  logging.debug('Fetching %s with kwargs %s', url, kwargs)
-  resp = gae_urlfetch.fetch(url, deadline=999, **kwargs)
+  logging.debug('Fetching %s with kwargs %s', url)
+  resp = urllib2.urlopen(url, timeout=999)
+  body = resp.read()
 
-  if resp.status_code == 200:
-    return resp.content
+  if resp.getcode() == 200:
+    return body
   else:
     logging.debug('GET %s returned %d', url, resp.status_code)
-    webapp2.abort(resp.status_code, body_template=resp.content,
-                  headers=resp.headers)
+    raise exc.status_map[resp.getcode()](body_template=body, headers=resp.info())
 
 
 def tag_uri(domain, name):
