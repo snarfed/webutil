@@ -92,16 +92,24 @@ class HandlerTest(mox.MoxTestBase):
     self.testbed.deactivate()
     super(HandlerTest, self).tearDown()
 
-  def expect_urlopen(self, expected_url, response, status=200):
+  def expect_urlopen(self, url, response, status=200, data=None, headers={}):
     """Stubs out urllib2.open() and sets up an expected call.
 
     Args:
-      expected_url: string, regex or mox.Comparator
+      url: string
       response: string
       status: int, HTTP response code
+      data: optional string POST body
+      headers: optional header dict
     """
-    urllib2.urlopen(mox.Func(lambda req: req.get_full_url() == expected_url),
-                    timeout=999).AndReturn(self.UrlopenResult(status, response))
+    def check_request(req):
+      self.assertEqual(url, req.get_full_url())
+      self.assertEqual(data, req.get_data())
+      self.assertEqual(headers.items(), req.header_items())
+      return True
+
+    urllib2.urlopen(mox.Func(check_request), timeout=999
+                    ).AndReturn(self.UrlopenResult(status, response))
 
   def assert_entities_equal(self, a, b, ignore=frozenset(), keys_only=False,
                             in_order=False):

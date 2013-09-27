@@ -50,7 +50,7 @@ def trim_nulls(value):
 def urlread(url, **kwargs):
   """Wraps urllib2.urlopen, returns body or raises exception.
 
-  Keyword args are passed through to urlopen.
+  Keyword args are passed through to urllib2.Request().
 
   Args:
     url: str
@@ -60,14 +60,15 @@ def urlread(url, **kwargs):
   Raises: subclass of webob.exc.HTTPError
   """
   logging.debug('Fetching %s', url)
-  resp = urllib2.urlopen(urllib2.Request(url, **kwargs), timeout=999)
-  body = resp.read()
 
-  if resp.getcode() == 200:
-    return body
-  else:
-    logging.debug('GET %s returned %d', url, resp.status_code)
-    raise exc.status_map[resp.getcode()](body_template=body, headers=resp.info())
+  try:
+    resp = urllib2.urlopen(urllib2.Request(url, **kwargs), timeout=999)
+  except urllib2.URLError:
+    logging.exception('GET %s returned %d', url, resp.status_code)
+    raise exc.status_map[resp.getcode()](body_template=resp.read(),
+                                         headers=resp.info())
+
+  return resp.read()
 
 
 def tag_uri(domain, name):
