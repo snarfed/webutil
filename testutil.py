@@ -92,7 +92,7 @@ class HandlerTest(mox.MoxTestBase):
     self.testbed.deactivate()
     super(HandlerTest, self).tearDown()
 
-  def expect_urlopen(self, url, response, status=200, data=None, headers={}):
+  def expect_urlopen(self, url, response, status=200, data=None, headers=None):
     """Stubs out urllib2.open() and sets up an expected call.
 
     Args:
@@ -105,7 +105,10 @@ class HandlerTest(mox.MoxTestBase):
     def check_request(req):
       self.assertEqual(url, req.get_full_url())
       self.assertEqual(data, req.get_data())
-      self.assertEqual(headers.items(), req.header_items())
+      if isinstance(headers, mox.Comparator):
+        self.assertTrue(headers.equals(req.header_items()))
+      elif headers is not None:
+        self.assertEqual(headers.items(), req.header_items())
       return True
 
     urllib2.urlopen(mox.Func(check_request), timeout=999
