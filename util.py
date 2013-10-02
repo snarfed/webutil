@@ -63,10 +63,8 @@ def urlread(url, **kwargs):
 
   try:
     resp = urllib2.urlopen(urllib2.Request(url, **kwargs), timeout=999)
-  except urllib2.URLError:
-    logging.exception('GET %s returned %d', url, resp.status_code)
-    raise exc.status_map[resp.getcode()](body_template=resp.read(),
-                                         headers=resp.info())
+  except urllib2.HTTPError, e:
+    raise exc.status_map[e.code](body_template=str(e))
 
   return resp.read()
 
