@@ -27,7 +27,7 @@ def urlread(url, **kwargs):
   """
   logging.debug('Fetching %s', url)
   try:
-    return urllib2.urlopen(urllib2.Request(url, **kwargs), timeout=999).read()
+    return urllib2.urlopen(urllib2.Request(url, **kwargs)).read()
   except urllib2.HTTPError, e:
     raise exc.status_map[e.code](body_template=str(e))
 

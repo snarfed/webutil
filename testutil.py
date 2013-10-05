@@ -103,6 +103,8 @@ class HandlerTest(mox.MoxTestBase):
       headers: optional header dict
     """
     def check_request(req):
+      if isinstance(req, basestring) and isinstance(url, basestring):
+        return req == url
       self.assertEqual(url, req.get_full_url())
       self.assertEqual(data, req.get_data())
       if isinstance(headers, mox.Comparator):
@@ -111,8 +113,8 @@ class HandlerTest(mox.MoxTestBase):
         self.assertEqual(headers.items(), req.header_items())
       return True
 
-    urllib2.urlopen(mox.Func(check_request), timeout=999
-                    ).AndReturn(self.UrlopenResult(status, response))
+    urllib2.urlopen(mox.Func(check_request)).AndReturn(
+      self.UrlopenResult(status, response))
 
   def assert_entities_equal(self, a, b, ignore=frozenset(), keys_only=False,
                             in_order=False):
