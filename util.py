@@ -9,7 +9,6 @@ import logging
 import re
 import urllib2
 import urlparse
-from webob import exc
 
 
 class Struct(object):
@@ -44,29 +43,6 @@ def trim_nulls(value):
     return [trim_nulls(v) for v in value]
   else:
     return value
-
-
-# TODO: post support
-def urlread(url, **kwargs):
-  """Wraps urllib2.urlopen, returns body or raises exception.
-
-  Keyword args are passed through to urllib2.Request().
-
-  Args:
-    url: str
-
-  Returns: the HTTP response body
-
-  Raises: subclass of webob.exc.HTTPError
-  """
-  logging.debug('Fetching %s', url)
-
-  try:
-    resp = urllib2.urlopen(urllib2.Request(url, **kwargs), timeout=999)
-  except urllib2.HTTPError, e:
-    raise exc.status_map[e.code](body_template=str(e))
-
-  return resp.read()
 
 
 def tag_uri(domain, name):
@@ -113,27 +89,28 @@ def parse_acct_uri(uri, hosts=None):
 def favicon_for_url(url):
   return 'http://%s/favicon.ico' % urlparse.urlparse(url).netloc
 
+
 def domain_from_link(url):
-    parsed = urlparse.urlparse(url)
-    if not parsed.netloc:
-      parsed = urlparse.urlparse('http://' + url)
+  parsed = urlparse.urlparse(url)
+  if not parsed.netloc:
+    parsed = urlparse.urlparse('http://' + url)
 
-    domain = parsed.netloc
-    if not domain:
-      raise exc.HTTPBadRequest('No domain found in %r' % url)
+  domain = parsed.netloc
+  if not domain:
+    raise ValueError('No domain found in %r' % url)
 
-    # strip exactly one dot from the right, if present
-    if domain[-1:] == ".":
-      domain = domain[:-1]
+  # strip exactly one dot from the right, if present
+  if domain[-1:] == ".":
+    domain = domain[:-1]
 
-    # http://stackoverflow.com/questions/2532053/validate-hostname-string-in-python
-    allowed = re.compile('(?!-)[A-Z\d-]{1,63}(?<!-)$', re.IGNORECASE)
-    split = domain.split('.')
-    for part in split:
-      if not allowed.match(part):
-        raise exc.HTTPBadRequest('Bad component in domain: %r' % part)
+  # http://stackoverflow.com/questions/2532053/validate-hostname-string-in-python
+  allowed = re.compile('(?!-)[A-Z\d-]{1,63}(?<!-)$', re.IGNORECASE)
+  split = domain.split('.')
+  for part in split:
+    if not allowed.match(part):
+      raise ValueError('Bad component in domain: %r' % part)
 
-    return domain
+  return domain
 
 
 def linkify(text):

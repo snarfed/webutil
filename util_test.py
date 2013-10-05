@@ -94,22 +94,6 @@ class UtilTest(testutil.HandlerTest):
   def test_zero(self):
     self.assertEqual({1: 0}, util.trim_nulls({1: 0}))
 
-
-  def test_urlread(self):
-    self.expect_urlopen('http://my/url', 'hello')
-    self.mox.ReplayAll()
-    self.assertEquals('hello', util.urlread('http://my/url'))
-
-  def test_urlread_error_passes_through(self):
-    self.expect_urlopen('http://my/url', 'my error', status=408)
-    self.mox.ReplayAll()
-
-    try:
-      util.urlread('http://my/url')
-    except exc.HTTPException, e:
-      self.assertEquals(408, e.status_int)
-      self.assertEquals('my error', e.body_template_obj.template)
-
   def test_favicon_for_url(self):
     for url in ('http://a.org/b/c?d=e&f=g', 'https://a.org/b/c', 'http://a.org/'):
       self.assertEqual('http://a.org/favicon.ico', util.favicon_for_url(url))
@@ -120,7 +104,7 @@ class UtilTest(testutil.HandlerTest):
       self.assertEqual('asdf.com', util.domain_from_link(good_link), good_link)
 
     for bad_link in '', '  ', 'a&b.com', 'http://', 'file:///':
-      self.assertRaises(exc.HTTPBadRequest, util.domain_from_link, bad_link)
+      self.assertRaises(ValueError, util.domain_from_link, bad_link)
 
   def test_parse_acct_uri(self):
     self.assertEquals(('me', 'x.com'), util.parse_acct_uri('acct:me@x.com'))
