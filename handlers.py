@@ -14,7 +14,6 @@ import urlparse
 import appengine_config
 import webapp2
 
-from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext.webapp import template
 
 # Included in most static HTTP responses.
