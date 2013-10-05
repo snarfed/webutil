@@ -26,16 +26,33 @@ BASE_HEADERS = {
   }
 
 
-class BaseHandler(webapp2.RequestHandler):
-  """Base handler class that converts and passes through urllib2.HTTPErrors.
+def handle_exception(self, e, debug):
+  """Use this as a webapp2.RequestHandler handle_exception() method.
+
+  To use, put this line inside your handler class definition:
+
+    handle_exception = handlers.handle_exception
+
+  I originally tried to put this in a RequestHandler subclass, but it gave me
+  this exception:
+
+  File ".../webapp2-2.5.1/webapp2_extras/local.py", line 136, in _get_current_object
+    raise RuntimeError('no object bound to %s' % self.__name__)
+    RuntimeError: no object bound to app
+
+  These are probably related:
+  http://eemyop.blogspot.com/2013/05/digging-around-in-webapp2-finding-out.html
+  http://code.google.com/p/webapp-improved/source/detail?r=d962ac4625ce3c43a3e59fd7fc07daf8d7b7c46a
   """
-  def handle_exception(self, e, debug):
+  if isinstance(e, urllib2.HTTPError):
     logging.exception(e)
-    self.response.set_status(e.code if isinstance(e, urllib2.HTTPError) else 500)
+    self.response.set_status(e.code)
     self.response.write(str(e))
+  else:
+    raise
 
 
-class TemplateHandler(BaseHandler):
+class TemplateHandler(webapp2.RequestHandler):
   """Renders and serves a template based on class attributes.
 
   Subclasses must override template_file() and may also override template_vars()

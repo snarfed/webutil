@@ -25,11 +25,11 @@ class FakeTemplateHandler(handlers.TemplateHandler):
   def content_type(self):
     return 'text/baz'
 
+class HandlersTest(testutil.HandlerTest):
 
-class BaseHandlerTest(testutil.HandlerTest):
-
-  def test_get(self):
-    class FakeHandler(handlers.BaseHandler):
+  def test_handle_exception(self):
+    class FakeHandler(webapp2.RequestHandler):
+      handle_exception = handlers.handle_exception
       def get(self):
         raise urllib2.HTTPError('/', 408, 'foo bar', None, None)
 
@@ -38,9 +38,7 @@ class BaseHandlerTest(testutil.HandlerTest):
     self.assertEquals('HTTP Error 408: foo bar', resp.body)
 
 
-class TemplateHandlerTest(testutil.HandlerTest):
-
-  def test_get(self):
+  def test_template_handler_get(self):
     self.mox.StubOutWithMock(template, 'render')
     template.render('my_template_file', {'host': None, 'foo': 'bar'})\
         .AndReturn('')
@@ -48,7 +46,7 @@ class TemplateHandlerTest(testutil.HandlerTest):
 
     webapp2.WSGIApplication([('/', FakeTemplateHandler)]).get_response('/')
 
-  def test_force_to_sequence(self):
+  def test_template_handler_force_to_sequence(self):
     class ForceFoo(FakeTemplateHandler):
       def force_to_sequence(self):
         return ['foo']
