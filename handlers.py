@@ -15,7 +15,6 @@ import appengine_config
 import webapp2
 
 from google.appengine.ext.webapp.util import run_wsgi_app
-# TODO: switch to django.template since this is deprecated
 from google.appengine.ext.webapp import template
 
 # Included in most static HTTP responses.
