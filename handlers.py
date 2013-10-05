@@ -9,6 +9,7 @@ __author__ = 'Ryan Barrett <webutil@ryanb.org>'
 
 import logging
 import os
+import urllib2
 import urlparse
 
 import appengine_config
@@ -25,7 +26,16 @@ BASE_HEADERS = {
   }
 
 
-class TemplateHandler(webapp2.RequestHandler):
+class BaseHandler(webapp2.RequestHandler):
+  """Base handler class that converts and passes through urllib2.HTTPErrors.
+  """
+  def handle_exception(self, e, debug):
+    logging.exception(e)
+    self.response.set_status(e.code if isinstance(e, urllib2.HTTPError) else 500)
+    self.response.write(str(e))
+
+
+class TemplateHandler(BaseHandler):
   """Renders and serves a template based on class attributes.
 
   Subclasses must override template_file() and may also override template_vars()
