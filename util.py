@@ -97,7 +97,8 @@ def domain_from_link(url):
 
   domain = parsed.netloc
   if not domain:
-    raise ValueError('No domain found in %r' % url)
+    logging.error('domain_from_link: No domain found in %r', url)
+    return None
 
   # strip exactly one dot from the right, if present
   if domain[-1:] == ".":
@@ -108,7 +109,8 @@ def domain_from_link(url):
   split = domain.split('.')
   for part in split:
     if not allowed.match(part):
-      raise ValueError('Bad component in domain: %r' % part)
+      logging.error('domain_from_link: Bad component in domain: %r', part)
+      return None
 
   return domain
 

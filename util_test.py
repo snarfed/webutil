@@ -104,7 +104,7 @@ class UtilTest(testutil.HandlerTest):
       self.assertEqual('asdf.com', util.domain_from_link(good_link), good_link)
 
     for bad_link in '', '  ', 'a&b.com', 'http://', 'file:///':
-      self.assertRaises(ValueError, util.domain_from_link, bad_link)
+      self.assertEquals(None, util.domain_from_link(bad_link))
 
   def test_parse_acct_uri(self):
     self.assertEquals(('me', 'x.com'), util.parse_acct_uri('acct:me@x.com'))
