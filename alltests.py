@@ -27,7 +27,11 @@ def main():
   # clients, in which case we want it to load and run test in that dir.
   sys.path = ([os.getcwd(), APP_ENGINE_SDK_PATH] +
               [os.path.join(APP_ENGINE_SDK_PATH, 'lib', lib) for lib in
-               'mox', 'webapp2-2.5.2', 'webob-1.2.3', 'yaml-3.10', 'django-1.4'] +
+               'mox', 'webob-1.2.3', 'yaml-3.10', 'django-1.4',
+               # webapp2 2.5.2 has a change that breaks get_response(). it
+               # starts returning None for the response. not sure why. changes:
+               # http://code.google.com/p/webapp-improved/source/list
+               'webapp2-2.5.1'] +
               sys.path)
 
   for filename in glob.glob('*_test.py'):
