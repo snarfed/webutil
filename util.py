@@ -216,3 +216,9 @@ def maybe_timestamp_to_rfc3339(input):
     return datetime.datetime.fromtimestamp(int(input)).isoformat('T')
   except (ValueError, TypeError):
     return input
+
+def ellipsize(str, limit=20):
+  """Truncates and ellipsizes str if it's longer than limit.
+  """
+  assert limit > 3
+  return str if len(str) <= limit else str[:limit-3] + '...'

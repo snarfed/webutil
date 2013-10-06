@@ -186,3 +186,9 @@ class UtilTest(testutil.HandlerTest):
       ('1349588757', '2012-10-06T22:45:57'),
       ):
       self.assertEqual(expected, util.maybe_timestamp_to_rfc3339(input))
+
+  def test_ellipsize(self):
+    self.assertEqual('', util.ellipsize(''))
+    self.assertEqual('asdf', util.ellipsize('asdf'))
+    self.assertEqual('asdf qwert', util.ellipsize('asdf qwert', limit=10))
+    self.assertEqual('asdf qw...', util.ellipsize('asdf qwert foo', limit=10))
