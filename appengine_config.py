@@ -16,6 +16,8 @@ instagram_client_id_local
 instagram_client_secret_local
 twitter_app_key
 twitter_app_secret
+tumblr_app_key
+tumblr_app_secret
 wordpress_client_id
 wordpress_client_secret
 wordpress_client_id_local
@@ -68,5 +70,7 @@ DROPBOX_APP_KEY = read('dropbox_app_key')
 DROPBOX_APP_SECRET = read('dropbox_app_secret')
 GOOGLE_CLIENT_ID = read('google_client_id')
 GOOGLE_CLIENT_SECRET = read('google_client_secret')
+TUMBLR_APP_KEY = read('tumblr_app_key')
+TUMBLR_APP_SECRET = read('tumblr_app_secret')
 TWITTER_APP_KEY = read('twitter_app_key')
 TWITTER_APP_SECRET = read('twitter_app_secret')
