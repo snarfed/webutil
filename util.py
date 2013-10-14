@@ -7,7 +7,7 @@ __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 import datetime
 import logging
 import re
-import urllib2
+import urllib
 import urlparse
 
 
@@ -217,8 +217,26 @@ def maybe_timestamp_to_rfc3339(input):
   except (ValueError, TypeError):
     return input
 
+
 def ellipsize(str, limit=20):
   """Truncates and ellipsizes str if it's longer than limit.
   """
   assert limit > 3
   return str if len(str) <= limit else str[:limit-3] + '...'
+
+
+def add_query_params(url, params):
+  """Adds new query parameters to a URL.
+
+  Args:
+    url: string URL. May already have query parameters.
+    params: list of (string key, string value) tuples. Keys may repeat.
+
+  Returns: string URL
+  """
+  # convert to list so we can modify later
+  parsed = list(urlparse.urlparse(url))
+  # query params are in index 4
+  params = urlparse.parse_qsl(parsed[4]) + params
+  parsed[4] = urllib.urlencode(params)
+  return urlparse.urlunparse(parsed)

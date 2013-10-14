@@ -192,3 +192,14 @@ class UtilTest(testutil.HandlerTest):
     self.assertEqual('asdf', util.ellipsize('asdf'))
     self.assertEqual('asdf qwert', util.ellipsize('asdf qwert', limit=10))
     self.assertEqual('asdf qw...', util.ellipsize('asdf qwert foo', limit=10))
+
+  def test_add_query_param(self):
+    for expected, url, params in (
+      ('http://a.com?x=', 'http://a.com', [('x', '')]),
+      ('http://a.com?x=y', 'http://a.com', [('x', 'y')]),
+      ('http://a.com?x=y&u=v', 'http://a.com', [('x', 'y'), ('u', 'v')]),
+      ('http://a.com?x=y&u=v', 'http://a.com?x=y', [('u', 'v')]),
+      ('http://a.com?x=y&u=v', 'http://a.com?x=y', [('u', 'v')]),
+      ('http://a.com?x=y&x=z', 'http://a.com', [('x', 'y'), ('x', 'z')]),
+      ('http://a.com?x=y&x=z&x=w', 'http://a.com?x=y&x=z', [('x', 'w')])):
+      self.assertEqual(expected, util.add_query_params(url, params))
