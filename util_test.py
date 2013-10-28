@@ -1,4 +1,3 @@
-#!/usr/bin/python
 """Unit tests for util.py.
 """
 
@@ -73,8 +72,12 @@ class UtilTest(testutil.HandlerTest):
   def test_empty_list(self):
     self.assertEqual([], util.trim_nulls([]))
 
-  def test_list(self):
+  def test_list_container(self):
     self.assertEqual([{'xyz': 3}], util.trim_nulls([{'abc': None, 'xyz': 3}]))
+
+  def test_list_values(self):
+    self.assertEqual({'a': ['b'], 'd': ['e']}, util.trim_nulls(
+        {'a': ['b'], 'c': [None], 'd': [None, 'e', None], 'f': [None, None]}))
 
   def test_empty_dict(self):
     self.assertEqual({}, util.trim_nulls({}))
