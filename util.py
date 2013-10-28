@@ -39,7 +39,7 @@ def trim_nulls(value):
     return dict((k, trim_nulls(v)) for k, v in value.items()
                 if trim_nulls(v) not in (None, {}, [], ()))
   elif isinstance(value, list):
-    return [trim_nulls(v) for v in value if v is not None]
+    return [trim_nulls(v) for v in value if v]
   else:
     return value
 
