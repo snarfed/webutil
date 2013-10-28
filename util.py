@@ -35,11 +35,14 @@ def to_xml(value):
 
 def trim_nulls(value):
   """Recursively removes dict and list elements with None or empty values."""
+  NULLS = (None, {}, [], (), '')
+
   if isinstance(value, dict):
-    return dict((k, trim_nulls(v)) for k, v in value.items()
-                if trim_nulls(v) not in (None, {}, [], ()))
+    trimmed = {k: trim_nulls(v) for k, v in value.items()}
+    return {k: v for k, v in trimmed.items() if v not in NULLS}
   elif isinstance(value, list):
-    return [trim_nulls(v) for v in value if v]
+    trimmed = [trim_nulls(v) for v in value]
+    return [v for v in trimmed if v if v not in NULLS]
   else:
     return value
 
