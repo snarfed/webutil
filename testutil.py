@@ -157,7 +157,7 @@ class HandlerTest(mox.MoxTestBase):
     """
     return [e.key() for e in entities]
 
-  def assert_equals(self, expected, actual):
+  def assert_equals(self, expected, actual, msg=None):
     """Pinpoints individual element differences in lists and dicts.
 
     Ignores order in lists.
@@ -166,9 +166,10 @@ class HandlerTest(mox.MoxTestBase):
       self._assert_equals(expected, actual)
     except AssertionError, e:
       raise AssertionError("""\
-%s
+%s%s
 Expected value: %s
-Actual value:   %s""" % (''.join(e.args),
+Actual value:   %s""" % ('%s: ' % msg if msg else '',
+                         ''.join(e.args),
                          pprint.pformat(expected),
                          pprint.pformat(actual)))
 
