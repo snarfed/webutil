@@ -165,13 +165,16 @@ class HandlerTest(mox.MoxTestBase):
     try:
       self._assert_equals(expected, actual)
     except AssertionError, e:
+      if not isinstance(expected, basestring):
+        expected = pprint.pformat(expected)
+      if not isinstance(actual, basestring):
+        actual = pprint.pformat(actual)
       raise AssertionError("""\
 %s%s
-Expected value: %s
-Actual value:   %s""" % ('%s: ' % msg if msg else '',
-                         ''.join(e.args),
-                         pprint.pformat(expected),
-                         pprint.pformat(actual)))
+Expected value:
+%s
+Actual value:
+%s""" % ('%s: ' % msg if msg else '', ''.join(e.args), expected, actual))
 
   def _assert_equals(self, expected, actual):
     """Recursive helper for assert_equals().
@@ -203,7 +206,11 @@ Actual value:   %s""" % ('%s: ' % msg if msg else '',
       raise AssertionError(args)
 
   def assert_multiline_equals(self, expected, actual):
-    """Compares two multi-line strings and reports a diff style output."""
-    if expected != actual:
-      self.fail(''.join(difflib.Differ().compare(expected.splitlines(True),
-                                                 actual.splitlines(True))))
+    """Compares two multi-line strings and reports a diff style output.
+
+    Ignores leading and trailing whitespace on each line!
+    """
+    exp_lines = [l.strip() + '\n' for l in expected.splitlines(True)]
+    act_lines = [l.strip() + '\n' for l in actual.splitlines(True)]
+    if exp_lines != act_lines:
+      self.fail(''.join(difflib.Differ().compare(exp_lines, act_lines)))
