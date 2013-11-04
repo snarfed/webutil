@@ -127,12 +127,14 @@ def linkify(text):
   <a href="..."> .
 
   Based on https://github.com/silas/huck/blob/master/huck/utils.py#L59
+
+  TODO: this blows up on some URLs with underscores in query params.
   """
-  # I originally used the regex from
+  # Huck: "I originally used the regex from
   # http://daringfireball.net/2010/07/improved_regex_for_matching_urls
   # but it gets all exponential on certain patterns (such as too many trailing
   # dots), causing the regex matcher to never return. This regex should avoid
-  # those problems.
+  # those problems."
   _URL_RE = re.compile(ur"""
 (?<! href=["'])  # negative lookahead for beginning of HTML anchor tag
 \b((?:([\w-]+):(/{1,3})|www[.])(?:(?:(?:[^\s&()]|&amp;|&quo

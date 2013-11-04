@@ -155,6 +155,12 @@ class UtilTest(testutil.HandlerTest):
       '<a href="http://www.bar.com">www.bar.com</a>',
       util.linkify('asdf <a href="http://foo.com">foo</a> qwert www.bar.com'))
 
+  # TODO: make this work
+  # def test_linkify_broken(self):
+  #   self.assertEqual('', util.linkify(
+  #       '<a href="http://www.example.com/?feature_embedded">'))
+
+
   def test_parse_iso8601(self):
     for str, offset in (
       ('2012-07-23T05:54:49', None),
