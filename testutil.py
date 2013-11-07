@@ -92,7 +92,8 @@ class HandlerTest(mox.MoxTestBase):
     self.testbed.deactivate()
     super(HandlerTest, self).tearDown()
 
-  def expect_urlopen(self, url, response, status=200, data=None, headers=None):
+  def expect_urlopen(self, url, response, status=200, data=None, headers=None,
+                     **kwargs):
     """Stubs out urllib2.open() and sets up an expected call.
 
     Args:
@@ -101,6 +102,7 @@ class HandlerTest(mox.MoxTestBase):
       status: int, HTTP response code
       data: optional string POST body
       headers: optional header dict
+      kwargs: other keyword args, e.g. timeout
     """
     def check_request(req):
       if isinstance(req, basestring) and isinstance(url, basestring):
@@ -113,7 +115,7 @@ class HandlerTest(mox.MoxTestBase):
         self.assertEqual(headers.items(), req.header_items())
       return True
 
-    urllib2.urlopen(mox.Func(check_request)).AndReturn(
+    urllib2.urlopen(mox.Func(check_request), **kwargs).AndReturn(
       self.UrlopenResult(status, response))
 
   def assert_entities_equal(self, a, b, ignore=frozenset(), keys_only=False,
