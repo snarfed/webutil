@@ -234,10 +234,13 @@ def add_query_params(url, params):
 
   Args:
     url: string URL. May already have query parameters.
-    params: list of (string key, string value) tuples. Keys may repeat.
+    params: dict or list of (string key, string value) tuples. Keys may repeat.
 
   Returns: string URL
   """
+  if isinstance(params, dict):
+    params = params.items()
+
   # convert to list so we can modify later
   parsed = list(urlparse.urlparse(url))
   # query params are in index 4

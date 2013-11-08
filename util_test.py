@@ -210,5 +210,7 @@ class UtilTest(testutil.HandlerTest):
       ('http://a.com?x=y&u=v', 'http://a.com?x=y', [('u', 'v')]),
       ('http://a.com?x=y&u=v', 'http://a.com?x=y', [('u', 'v')]),
       ('http://a.com?x=y&x=z', 'http://a.com', [('x', 'y'), ('x', 'z')]),
-      ('http://a.com?x=y&x=z&x=w', 'http://a.com?x=y&x=z', [('x', 'w')])):
+      ('http://a.com?x=y&x=z&x=w', 'http://a.com?x=y&x=z', [('x', 'w')]),
+      ('http://a.com?x=y', 'http://a.com', {'x': 'y'}),
+      ):
       self.assertEqual(expected, util.add_query_params(url, params))
