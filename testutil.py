@@ -11,6 +11,7 @@ import re
 import os
 import rfc822
 import StringIO
+import sys
 import urllib2
 import urlparse
 import wsgiref
@@ -105,14 +106,19 @@ class HandlerTest(mox.MoxTestBase):
       kwargs: other keyword args, e.g. timeout
     """
     def check_request(req):
-      if isinstance(req, basestring) and isinstance(url, basestring):
-        return req == url
-      self.assertEqual(url, req.get_full_url())
-      self.assertEqual(data, req.get_data())
-      if isinstance(headers, mox.Comparator):
-        self.assertTrue(headers.equals(req.header_items()))
-      elif headers is not None:
-        self.assertEqual(headers.items(), req.header_items())
+      try:
+        if isinstance(req, basestring):
+          self.assertEqual(url, req)
+        else:
+          self.assertEqual(url, req.get_full_url())
+          self.assertEqual(data, req.get_data())
+          if isinstance(headers, mox.Comparator):
+            self.assertTrue(headers.equals(req.header_items()))
+          elif headers is not None:
+            self.assertEqual(headers.items(), req.header_items())
+      except AssertionError, e:
+        print >> sys.stderr, str(e)
+        return False
       return True
 
     urllib2.urlopen(mox.Func(check_request), **kwargs).AndReturn(
