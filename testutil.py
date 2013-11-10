@@ -95,10 +95,10 @@ class HandlerTest(mox.MoxTestBase):
 
   def expect_urlopen(self, url, response, status=200, data=None, headers=None,
                      **kwargs):
-    """Stubs out urllib2.open() and sets up an expected call.
+    """Stubs out urllib2.urlopen() and sets up an expected call.
 
     Args:
-      url: string
+      url: string or regex
       response: string
       status: int, HTTP response code
       data: optional string POST body
@@ -108,9 +108,9 @@ class HandlerTest(mox.MoxTestBase):
     def check_request(req):
       try:
         if isinstance(req, basestring):
-          self.assertEqual(url, req)
+          self.assertRegexpMatches(req, url)
         else:
-          self.assertEqual(url, req.get_full_url())
+          self.assertRegexpMatches(req.get_full_url(), url)
           self.assertEqual(data, req.get_data())
           if isinstance(headers, mox.Comparator):
             self.assertTrue(headers.equals(req.header_items()))
