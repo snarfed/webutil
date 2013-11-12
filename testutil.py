@@ -121,8 +121,14 @@ class HandlerTest(mox.MoxTestBase):
         return False
       return True
 
-    urllib2.urlopen(mox.Func(check_request), **kwargs).AndReturn(
-      self.UrlopenResult(status, response))
+    def check_timeout(timeout):
+      if timeout not in (None, 999):
+        print >> sys.stderr, 'timeout is %r, expected None or 999' % timeout
+        return False
+      return True
+
+    urllib2.urlopen(mox.Func(check_request), timeout=mox.IgnoreArg(), **kwargs
+                    ).AndReturn(self.UrlopenResult(status, response))
 
   def assert_entities_equal(self, a, b, ignore=frozenset(), keys_only=False,
                             in_order=False):
