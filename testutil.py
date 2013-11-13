@@ -110,7 +110,7 @@ class HandlerTest(mox.MoxTestBase):
       try:
         if isinstance(expected, re._pattern_type):
           self.assertRegexpMatches(req, expected)
-        elif isinstance(expected, basestring):
+        elif isinstance(req, basestring):
           self.assertEqual(expected, req)
         else:
           self.assertEqual(expected, req.get_full_url())
@@ -120,6 +120,7 @@ class HandlerTest(mox.MoxTestBase):
           elif headers is not None:
             self.assertEqual(headers.items(), req.header_items())
       except AssertionError, e:
+        print >> sys.stderr, str(e)
         return False
       return True
 
