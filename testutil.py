@@ -9,6 +9,7 @@ import mox
 import pprint
 import re
 import os
+import re
 import rfc822
 import StringIO
 import sys
@@ -93,12 +94,12 @@ class HandlerTest(mox.MoxTestBase):
     self.testbed.deactivate()
     super(HandlerTest, self).tearDown()
 
-  def expect_urlopen(self, url, response, status=200, data=None, headers=None,
-                     **kwargs):
+  def expect_urlopen(self, expected, response, status=200, data=None,
+                     headers=None, **kwargs):
     """Stubs out urllib2.urlopen() and sets up an expected call.
 
     Args:
-      url: string or regex
+      url: string, re.RegexObject, or webob.Request
       response: string
       status: int, HTTP response code
       data: optional string POST body
@@ -107,23 +108,18 @@ class HandlerTest(mox.MoxTestBase):
     """
     def check_request(req):
       try:
-        if isinstance(req, basestring):
-          self.assertRegexpMatches(req, url)
+        if isinstance(expected, re._pattern_type):
+          self.assertRegexpMatches(req, expected)
+        elif isinstance(expected, basestring):
+          self.assertEqual(expected, req)
         else:
-          self.assertRegexpMatches(req.get_full_url(), url)
+          self.assertEqual(expected, req.get_full_url())
           self.assertEqual(data, req.get_data())
           if isinstance(headers, mox.Comparator):
             self.assertTrue(headers.equals(req.header_items()))
           elif headers is not None:
             self.assertEqual(headers.items(), req.header_items())
       except AssertionError, e:
-        print >> sys.stderr, str(e)
-        return False
-      return True
-
-    def check_timeout(timeout):
-      if timeout not in (None, 999):
-        print >> sys.stderr, 'timeout is %r, expected None or 999' % timeout
         return False
       return True
 
