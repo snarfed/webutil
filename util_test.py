@@ -8,6 +8,7 @@ from webob import exc
 
 import testutil
 import util
+import webapp2
 
 
 class UtilTest(testutil.HandlerTest):
@@ -214,3 +215,12 @@ class UtilTest(testutil.HandlerTest):
       ('http://a.com?x=y', 'http://a.com', {'x': 'y'}),
       ):
       self.assertEqual(expected, util.add_query_params(url, params))
+
+  def test_get_required_param(self):
+    handler = webapp2.RequestHandler(webapp2.Request.blank('/?a=b'), None)
+    self.assertEqual('b', util.get_required_param(handler, 'a'))
+    try:
+      util.get_required_param(handler, 'c')
+      self.fail('Expected HTTPException')
+    except exc.HTTPException, e:
+      self.assertEqual(400, e.status_int)

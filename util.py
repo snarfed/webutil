@@ -247,3 +247,9 @@ def add_query_params(url, params):
   params = urlparse.parse_qsl(parsed[4]) + params
   parsed[4] = urllib.urlencode(params)
   return urlparse.urlunparse(parsed)
+
+def get_required_param(handler, name):
+  if name not in handler.request.params:
+    handler.abort(400, 'Missing required parameter: %s' % name)
+  return handler.request.params[name]
+
