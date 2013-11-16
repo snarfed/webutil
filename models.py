@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Misc utilities.
+"""App Engine datastore model base classes and utilites.
 """
 
 __author__ = ['Ryan Barrett <webutil@ryanb.org>']
@@ -19,6 +19,9 @@ class KeyNameModel(db.Model):
       assert self.key().name()
     except db.NotSavedError:
       assert False, 'key name required but not provided'
+
+  def __str__(self):
+    return self.key().to_path()
 
 
 class SingleEGModel(db.Model):
