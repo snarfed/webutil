@@ -92,29 +92,21 @@ def favicon_for_url(url):
   return 'http://%s/favicon.ico' % urlparse.urlparse(url).netloc
 
 
+# http://stackoverflow.com/questions/2532053/validate-hostname-string-in-python
+_HOSTNAME_RE_STR = r'%s(\.%s)*\.?' % ((r'(?!-)[A-Za-z\d-]{1,63}(?<!-)',) * 2)
+_HOSTNAME_RE = re.compile(_HOSTNAME_RE_STR + '$')
+
 def domain_from_link(url):
   parsed = urlparse.urlparse(url)
   if not parsed.netloc:
     parsed = urlparse.urlparse('http://' + url)
 
   domain = parsed.netloc
-  if not domain:
-    logging.error('domain_from_link: No domain found in %r', url)
-    return None
+  if domain and _HOSTNAME_RE.match(domain):
+    return domain
 
-  # strip exactly one dot from the right, if present
-  if domain[-1:] == ".":
-    domain = domain[:-1]
-
-  # http://stackoverflow.com/questions/2532053/validate-hostname-string-in-python
-  allowed = re.compile('(?!-)[A-Z\d-]{1,63}(?<!-)$', re.IGNORECASE)
-  split = domain.split('.')
-  for part in split:
-    if not allowed.match(part):
-      logging.error('domain_from_link: Bad component in domain: %r', part)
-      return None
-
-  return domain
+  logging.error('domain_from_link: Invalid domain in %r', url)
+  return None
 
 
 _LINK_RE = re.compile(ur'\bhttps?://\S+\b')
@@ -125,6 +117,20 @@ def extract_links(text):
   """Returns a set of string URLs in the given text.
   """
   return set(match.group() for match in _LINK_RE.finditer(text))
+
+
+_PSC_RE = re.compile(r'\((%s) [^\s)]+\)' % _HOSTNAME_RE_STR)
+def extract_permashortcitations(text):
+  """Returns a set of string permashortcitations in the given text.
+
+  Permashortcitations are short references to canonical copies of a given
+  (usually syndicated) post, of the form (DOMAIN PATH). Details:
+  http://indiewebcamp.com/permashortcitation
+
+  Returned permashortcitation strings do not include parentheses.
+  """
+  return set(match.group()[1:-1] for match in _PSC_RE.finditer(text)
+             if '.' in match.group(1))
 
 
 _LINKIFY_RE = re.compile(ur"""

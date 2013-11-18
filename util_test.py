@@ -104,8 +104,12 @@ class UtilTest(testutil.HandlerTest):
 
   def test_domain_from_link(self):
     self.assertEqual('localhost', util.domain_from_link('http://localhost/foo'))
+    self.assertEqual('a.b.c.d', util.domain_from_link('http://a.b.c.d/foo'))
     for good_link in 'asdf.com', 'https://asdf.com/', 'asdf.com/foo?bar#baz':
-      self.assertEqual('asdf.com', util.domain_from_link(good_link), good_link)
+      actual = util.domain_from_link(good_link)
+      self.assertEqual('asdf.com', actual, '%s returned %s' % (good_link, actual))
+
+    self.assertEqual('asdf.com.', util.domain_from_link('http://asdf.com./x'))
 
     for bad_link in '', '  ', 'a&b.com', 'http://', 'file:///':
       self.assertEquals(None, util.domain_from_link(bad_link))
@@ -149,6 +153,14 @@ class UtilTest(testutil.HandlerTest):
     self.assertEquals(
       set(['http://foo.com', 'http://bar.com']),
       util.extract_links('asdf http://foo.com qwert <a class="x" href="http://bar.com" >xyz</a> www.baz.com'))
+
+  def test_extract_permashortcitations(self):
+    fn = util.extract_permashortcitations
+    for text in '', 'asdf qwert', '(hello there)':
+      self.assertEquals(set(), fn(text))
+    self.assertEquals(set(['sn.fd 123']), fn('(sn.fd 123)'))
+    self.assertEquals(set(['sn.fd 123', 'a.bc D/EF']),
+                      fn('x (sn.fd 123) y (a.bc D/EF) z'))
 
   def test_linkify(self):
     self.assertEqual('', util.linkify(''))
