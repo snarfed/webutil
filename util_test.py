@@ -127,30 +127,45 @@ class UtilTest(testutil.HandlerTest):
     self.assertRaises(ValueError,
                       util.parse_acct_uri, 'acct:me@a.com', ['x.com'])
 
-  def test_linkify_empty(self):
+  def test_extract_links(self):
+    self.assertEquals(set(), util.extract_links(''))
+    self.assertEquals(set(), util.extract_links('asdf qwert'))
+
+    for text in ('http://foo.com',
+                 '  http://foo.com  ',
+                 '  http://foo.com \n http://foo.com  ',
+                 'x http://foo.com\ny',
+                 'x\thttp://foo.com.',
+                 'x\rhttp://foo.com! ',
+                 'x http://foo.com? ',
+                 '<a href="http://foo.com">',
+                 "<a href='http://foo.com'>"):
+      self.assertEquals(set(['http://foo.com']), util.extract_links(text),
+                        'Failed on %r' % text)
+
+    self.assertEquals(
+      set(['http://foo.com', 'https://www.bar.com']),
+      util.extract_links('x http://foo.com y https://www.bar.com z'))
+    self.assertEquals(
+      set(['http://foo.com', 'http://bar.com']),
+      util.extract_links('asdf http://foo.com qwert <a class="x" href="http://bar.com" >xyz</a> www.baz.com'))
+
+  def test_linkify(self):
     self.assertEqual('', util.linkify(''))
-
-  def test_linkify_no_links(self):
     self.assertEqual('asdf qwert', util.linkify('asdf qwert'))
-
-  def test_linkify_links(self):
     self.assertEqual(
       'asdf <a href="http://foo.com">http://foo.com</a> qwert '
       '<a class="x" href="http://foo.com" >xyz</a> <a href="http://www.bar.com">www.bar.com</a>',
       util.linkify('asdf http://foo.com qwert <a class="x" href="http://foo.com" >xyz</a> www.bar.com'))
-
-  def test_linkify_tco(self):
     self.assertEqual(
       'asdf <a href="http://t.co/asdf">http://t.co/asdf</a> qwert',
       util.linkify('asdf http://t.co/asdf qwert'))
 
-  def test_linkify_ignores_anchor_tags(self):
     for text in ('X <a class="x" href="http://foo.com" >xyz</a> Y',
                  '<a href="http://foo.com"  class="x">xyz</a> Y',
                  "X <a href='http//foo.com' />"):
       self.assertEqual(text, util.linkify(text))
 
-  def test_linkify_links_and_anchor_tags(self):
     self.assertEqual(
       'asdf <a href="http://foo.com">foo</a> qwert '
       '<a href="http://www.bar.com">www.bar.com</a>',
@@ -160,7 +175,6 @@ class UtilTest(testutil.HandlerTest):
   # def test_linkify_broken(self):
   #   self.assertEqual('', util.linkify(
   #       '<a href="http://www.example.com/?feature_embedded">'))
-
 
   def test_parse_iso8601(self):
     for str, offset in (

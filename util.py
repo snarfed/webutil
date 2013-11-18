@@ -117,6 +117,23 @@ def domain_from_link(url):
   return domain
 
 
+_LINK_RE = re.compile(ur'\bhttps?://\S+\b')
+# more complicated alternative:
+# http://stackoverflow.com/questions/720113#comment23297770_2102648
+
+def extract_links(text):
+  """Returns a set of string URLs in the given text.
+  """
+  return set(match.group() for match in _LINK_RE.finditer(text))
+
+
+_LINKIFY_RE = re.compile(ur"""
+(?<! href=["'])  # negative lookahead for beginning of HTML anchor tag
+\b((?:([\w-]+):(/{1,3})|www[.])(?:(?:(?:[^\s&()]|&amp;|&quo
+t;)*(?:[^!"#$%&'()*+,.:;<=>?@\[\]^`{|}~\s]))|(?:\((?:[^\s&()]|&amp;|&quot;)*\)))+)
+(?![^<>]*>)  # negative lookahead for end of HTML anchor tag
+""", re.VERBOSE)
+
 def linkify(text):
   """Adds HTML links to URLs in the given plain text.
 
@@ -135,13 +152,6 @@ def linkify(text):
   # but it gets all exponential on certain patterns (such as too many trailing
   # dots), causing the regex matcher to never return. This regex should avoid
   # those problems."
-  _URL_RE = re.compile(ur"""
-(?<! href=["'])  # negative lookahead for beginning of HTML anchor tag
-\b((?:([\w-]+):(/{1,3})|www[.])(?:(?:(?:[^\s&()]|&amp;|&quo
-t;)*(?:[^!"#$%&'()*+,.:;<=>?@\[\]^`{|}~\s]))|(?:\((?:[^\s&()]|&amp;|&quot;)*\)))+)
-(?![^<>]*>)  # negative lookahead for end of HTML anchor tag
-""", re.VERBOSE)
-
   def make_link(m):
     url = m.group(1)
     proto = m.group(2)
@@ -150,7 +160,7 @@ t;)*(?:[^!"#$%&'()*+,.:;<=>?@\[\]^`{|}~\s]))|(?:\((?:[^\s&()]|&amp;|&quot;)*\)))
       href = 'http://' + href
     return u'<a href="%s">%s</a>' % (href, url)
 
-  return _URL_RE.sub(make_link, text)
+  return _LINKIFY_RE.sub(make_link, text)
 
 
 class SimpleTzinfo(datetime.tzinfo):
