@@ -121,7 +121,7 @@ def extract_links(text):
 
 _PSC_RE = re.compile(r'\((%s) [^\s)]+\)' % _HOSTNAME_RE_STR)
 def extract_permashortcitations(text):
-  """Returns a set of string permashortcitations in the given text.
+  """Returns a set of string permashortcitations in the given text *as URLs*.
 
   Permashortcitations are short references to canonical copies of a given
   (usually syndicated) post, of the form (DOMAIN PATH). Details:
@@ -129,7 +129,8 @@ def extract_permashortcitations(text):
 
   Returned permashortcitation strings do not include parentheses.
   """
-  return set(match.group()[1:-1] for match in _PSC_RE.finditer(text)
+  return set('http://%s/%s' % tuple(match.group()[1:-1].split())
+             for match in _PSC_RE.finditer(text)
              if '.' in match.group(1))
 
 

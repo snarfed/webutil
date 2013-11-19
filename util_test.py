@@ -158,8 +158,8 @@ class UtilTest(testutil.HandlerTest):
     fn = util.extract_permashortcitations
     for text in '', 'asdf qwert', '(hello there)':
       self.assertEquals(set(), fn(text))
-    self.assertEquals(set(['sn.fd 123']), fn('(sn.fd 123)'))
-    self.assertEquals(set(['sn.fd 123', 'a.bc D/EF']),
+    self.assertEquals(set(['http://sn.fd/123']), fn('(sn.fd 123)'))
+    self.assertEquals(set(['http://sn.fd/123', 'http://a.bc/D/EF']),
                       fn('x (sn.fd 123) y (a.bc D/EF) z'))
 
   def test_linkify(self):
