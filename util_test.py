@@ -114,6 +114,10 @@ class UtilTest(testutil.HandlerTest):
     for bad_link in '', '  ', 'a&b.com', 'http://', 'file:///':
       self.assertEquals(None, util.domain_from_link(bad_link))
 
+  def test_parse_tag_uri(self):
+    self.assertEquals(('x.com', 'foo'), util.parse_tag_uri('tag:x.com,2013:foo'))
+    self.assertEquals(None, util.parse_tag_uri('asdf'))
+
   def test_parse_acct_uri(self):
     self.assertEquals(('me', 'x.com'), util.parse_acct_uri('acct:me@x.com'))
 

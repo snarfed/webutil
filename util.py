@@ -57,6 +57,20 @@ def tag_uri(domain, name):
   return 'tag:%s,%d:%s' % (domain, datetime.datetime.now().year, name)
 
 
+_TAG_URI_RE = re.compile('tag:(.+),\d+:(.+)$')
+
+def parse_tag_uri(uri):
+  """Returns the domain and name in a tag URI string.
+
+  Inverse of tag_uri().
+
+  Returns: (string domain, string name) tuple, or None if the tag URI couldn't
+    be parsed
+  """
+  match = _TAG_URI_RE.match(uri)
+  return match.groups() if match else None
+
+
 def parse_acct_uri(uri, hosts=None):
   """Parses acct: URIs of the form acct:user@example.com .
 
