@@ -107,8 +107,8 @@ def favicon_for_url(url):
 
 
 # http://stackoverflow.com/questions/2532053/validate-hostname-string-in-python
-_HOSTNAME_RE_STR = r'%s(\.%s)*\.?' % ((r'(?!-)[A-Za-z\d-]{1,63}(?<!-)',) * 2)
-_HOSTNAME_RE = re.compile(_HOSTNAME_RE_STR + '$')
+HOSTNAME_RE_STR = r'%s(\.%s)*\.?' % ((r'(?!-)[A-Za-z\d-]{1,63}(?<!-)',) * 2)
+HOSTNAME_RE = re.compile(HOSTNAME_RE_STR + '$')
 
 def domain_from_link(url):
   parsed = urlparse.urlparse(url)
@@ -116,7 +116,7 @@ def domain_from_link(url):
     parsed = urlparse.urlparse('http://' + url)
 
   domain = parsed.netloc
-  if domain and _HOSTNAME_RE.match(domain):
+  if domain and HOSTNAME_RE.match(domain):
     return domain
 
   logging.error('domain_from_link: Invalid domain in %r', url)
@@ -131,21 +131,6 @@ def extract_links(text):
   """Returns a set of string URLs in the given text.
   """
   return set(match.group() for match in _LINK_RE.finditer(text))
-
-
-_PSC_RE = re.compile(r'\((%s) [^\s)]+\)' % _HOSTNAME_RE_STR)
-def extract_permashortcitations(text):
-  """Returns a set of string permashortcitations in the given text *as URLs*.
-
-  Permashortcitations are short references to canonical copies of a given
-  (usually syndicated) post, of the form (DOMAIN PATH). Details:
-  http://indiewebcamp.com/permashortcitation
-
-  Returned permashortcitation strings do not include parentheses.
-  """
-  return set('http://%s/%s' % tuple(match.group()[1:-1].split())
-             for match in _PSC_RE.finditer(text)
-             if '.' in match.group(1))
 
 
 _LINKIFY_RE = re.compile(ur"""

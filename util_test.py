@@ -158,14 +158,6 @@ class UtilTest(testutil.HandlerTest):
       set(['http://foo.com', 'http://bar.com']),
       util.extract_links('asdf http://foo.com qwert <a class="x" href="http://bar.com" >xyz</a> www.baz.com'))
 
-  def test_extract_permashortcitations(self):
-    fn = util.extract_permashortcitations
-    for text in '', 'asdf qwert', '(hello there)':
-      self.assertEquals(set(), fn(text))
-    self.assertEquals(set(['http://sn.fd/123']), fn('(sn.fd 123)'))
-    self.assertEquals(set(['http://sn.fd/123', 'http://a.bc/D/EF']),
-                      fn('x (sn.fd 123) y (a.bc D/EF) z'))
-
   def test_linkify(self):
     self.assertEqual('', util.linkify(''))
     self.assertEqual('asdf qwert', util.linkify('asdf qwert'))
