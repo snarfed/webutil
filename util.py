@@ -123,7 +123,7 @@ def domain_from_link(url):
   return None
 
 
-_LINK_RE = re.compile(ur'\bhttps?://\S+\b')
+_LINK_RE = re.compile(ur'\bhttps?://[^\s<>]+\b')
 # more complicated alternative:
 # http://stackoverflow.com/questions/720113#comment23297770_2102648
 

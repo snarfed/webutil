@@ -147,7 +147,9 @@ class UtilTest(testutil.HandlerTest):
                  'x\rhttp://foo.com! ',
                  'x http://foo.com? ',
                  '<a href="http://foo.com">',
-                 "<a href='http://foo.com'>"):
+                 "<a href='http://foo.com'>",
+                 '<a href="xyz">http://foo.com</a>',
+                 ):
       self.assertEquals(set(['http://foo.com']), util.extract_links(text),
                         'Failed on %r' % text)
 
