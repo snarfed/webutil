@@ -114,6 +114,14 @@ class UtilTest(testutil.HandlerTest):
     for bad_link in '', '  ', 'a&b.com', 'http://', 'file:///':
       self.assertEquals(None, util.domain_from_link(bad_link))
 
+  def test_update_scheme(self):
+    for orig in 'http', 'https':
+      for new in 'http', 'https':
+        self.assertEqual(new + '://foo', util.update_scheme(orig + '://foo', new))
+
+    # when running in unit tests, appengine_config.py defaults to http
+    self.assertEqual('http://foo', util.update_scheme('https://foo'))
+
   def test_parse_tag_uri(self):
     self.assertEquals(('x.com', 'foo'), util.parse_tag_uri('tag:x.com,2013:foo'))
     self.assertEquals(None, util.parse_tag_uri('asdf'))

@@ -9,6 +9,8 @@ import re
 import urllib
 import urlparse
 
+import appengine_config
+
 
 class Struct(object):
   """A generic class that initializes its attributes from constructor kwargs."""
@@ -121,6 +123,11 @@ def domain_from_link(url):
 
   logging.error('domain_from_link: Invalid domain in %r', url)
   return None
+
+
+def update_scheme(url, scheme=appengine_config.SCHEME):
+  """Returns a modified string url with a new scheme."""
+  return urlparse.urlunparse([scheme] + list(urlparse.urlparse(url)[1:]))
 
 
 _LINK_RE = re.compile(ur'\bhttps?://[^\s<>]+\b')
@@ -264,8 +271,10 @@ def add_query_params(url, params):
   parsed[4] = urllib.urlencode(params)
   return urlparse.urlunparse(parsed)
 
+
 def get_required_param(handler, name):
-  if name not in handler.request.params:
+  val = handler.request.get(name)
+  if not val:
     handler.abort(400, 'Missing required parameter: %s' % name)
-  return handler.request.params[name]
+  return val
 
