@@ -219,9 +219,15 @@ Actual value:
   def assert_multiline_equals(self, expected, actual):
     """Compares two multi-line strings and reports a diff style output.
 
-    Ignores leading and trailing whitespace on each line!
+    Ignores leading and trailing whitespace on each line, and squeezes repeated
+    blank lines down to just one.
     """
-    exp_lines = [l.strip() + '\n' for l in expected.splitlines(True)]
-    act_lines = [l.strip() + '\n' for l in actual.splitlines(True)]
+    def normalize(val):
+      lines = [l.strip() + '\n' for l in val.splitlines(True)]
+      return [l for i, l in enumerate(lines)
+              if i <= 1 or not (lines[i - 1] == l == '\n')]
+
+    exp_lines = normalize(expected)
+    act_lines = normalize(actual)
     if exp_lines != act_lines:
       self.fail(''.join(difflib.Differ().compare(exp_lines, act_lines)))
