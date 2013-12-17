@@ -125,9 +125,14 @@ def domain_from_link(url):
   return None
 
 
-def update_scheme(url, scheme=appengine_config.SCHEME):
-  """Returns a modified string url with a new scheme."""
-  return urlparse.urlunparse([scheme] + list(urlparse.urlparse(url)[1:]))
+def update_scheme(url, handler):
+  """Returns a modified string url with the current request's scheme.
+
+  Useful for converting URLs to https if and only if the current request itself
+  is being served over https.
+  """
+  return urlparse.urlunparse([handler.request.scheme] +
+                             list(urlparse.urlparse(url)[1:]))
 
 
 _LINK_RE = re.compile(ur'\bhttps?://[^\s<>]+\b')

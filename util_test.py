@@ -117,10 +117,9 @@ class UtilTest(testutil.HandlerTest):
   def test_update_scheme(self):
     for orig in 'http', 'https':
       for new in 'http', 'https':
-        self.assertEqual(new + '://foo', util.update_scheme(orig + '://foo', new))
-
-    # when running in unit tests, appengine_config.py defaults to http
-    self.assertEqual('http://foo', util.update_scheme('https://foo'))
+        self.handler.request.scheme = new
+        updated = util.update_scheme(orig + '://foo', self.handler)
+        self.assertEqual(new + '://foo', updated)
 
   def test_parse_tag_uri(self):
     self.assertEquals(('x.com', 'foo'), util.parse_tag_uri('tag:x.com,2013:foo'))
