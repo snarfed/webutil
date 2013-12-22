@@ -125,8 +125,11 @@ class HandlerTest(mox.MoxTestBase):
         return False
       return True
 
-    urllib2.urlopen(mox.Func(check_request), timeout=mox.IgnoreArg(), **kwargs
-                    ).AndReturn(self.UrlopenResult(status, response))
+    call = urllib2.urlopen(mox.Func(check_request), timeout=mox.IgnoreArg(), **kwargs)
+    if status / 100 in (4, 5):
+      call.AndRaise(urllib2.HTTPError('url', status, 'message', None, None))
+    else:
+      call.AndReturn(self.UrlopenResult(status, response))
 
   def assert_entities_equal(self, a, b, ignore=frozenset(), keys_only=False,
                             in_order=False):
