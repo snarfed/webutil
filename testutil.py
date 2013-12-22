@@ -206,6 +206,9 @@ Actual value:
       elif isinstance(expected, (list, tuple)) and isinstance(actual, (list, tuple)):
         expected = sorted(list(expected))
         actual = sorted(list(actual))
+        self.assertEqual(len(expected), len(actual),
+                         'Different lengths:\n expected %s\n actual %s' %
+                         (len(expected), len(actual)))
         for key, (e, a) in enumerate(zip(expected, actual)):
           self._assert_equals(e, a)
       elif (isinstance(expected, basestring) and isinstance(actual, basestring) and
