@@ -84,7 +84,8 @@ class UtilTest(testutil.HandlerTest):
     self.assertEqual({}, util.trim_nulls({}))
 
   def test_simple_dict_with_nulls(self):
-    self.assertEqual({}, util.trim_nulls({1: None, 2: [], 3: {}}))
+    self.assertEqual({}, util.trim_nulls({1: None, 2: [], 3: {}, 4: set(),
+                                          5: frozenset()}))
 
   def test_simple_dict(self):
     self.assertEqual({1: 2, 3: 4}, util.trim_nulls({1: 2, 3: 4}))
