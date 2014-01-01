@@ -122,8 +122,14 @@ class UtilTest(testutil.HandlerTest):
         updated = util.update_scheme(orig + '://foo', self.handler)
         self.assertEqual(new + '://foo', updated)
 
+  def test_tag_uri(self):
+    self.assertEquals('tag:x.com:foo', util.tag_uri('x.com', 'foo'))
+    self.assertEquals('tag:x.com,2013:foo',
+                      util.tag_uri('x.com', 'foo', year=2013))
+
   def test_parse_tag_uri(self):
     self.assertEquals(('x.com', 'foo'), util.parse_tag_uri('tag:x.com,2013:foo'))
+    self.assertEquals(('x.com', 'foo'), util.parse_tag_uri('tag:x.com:foo'))
     self.assertEquals(None, util.parse_tag_uri('asdf'))
 
   def test_parse_acct_uri(self):
