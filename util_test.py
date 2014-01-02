@@ -122,6 +122,12 @@ class UtilTest(testutil.HandlerTest):
         updated = util.update_scheme(orig + '://foo', self.handler)
         self.assertEqual(new + '://foo', updated)
 
+    self.handler.request.scheme = 'https'
+    self.assertEqual(
+      'https://distillery.s3.amazonaws.com/profiles/xyz.jpg',
+      util.update_scheme('http://images.ak.instagram.com/profiles/xyz.jpg',
+                         self.handler))
+
   def test_tag_uri(self):
     self.assertEquals('tag:x.com:foo', util.tag_uri('x.com', 'foo'))
     self.assertEquals('tag:x.com,2013:foo',

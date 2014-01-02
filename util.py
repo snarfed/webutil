@@ -9,8 +9,6 @@ import re
 import urllib
 import urlparse
 
-import appengine_config
-
 
 class Struct(object):
   """A generic class that initializes its attributes from constructor kwargs."""
@@ -135,6 +133,10 @@ def update_scheme(url, handler):
   Useful for converting URLs to https if and only if the current request itself
   is being served over https.
   """
+  # Instagram can't serve images over SSL, so switch to their S3 URL, which can.
+  # https://groups.google.com/d/msg/instagram-api-developers/fB4mwYXZF1c/q9n9gPO11JQJ
+  url = re.sub('^http://images\.(ak\.)instagram\.com',
+               'http://distillery.s3.amazonaws.com', url)
   return urlparse.urlunparse([handler.request.scheme] +
                              list(urlparse.urlparse(url)[1:]))
 
