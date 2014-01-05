@@ -264,7 +264,7 @@ def ellipsize(str, limit=20):
 
 
 def add_query_params(url, params):
-  """Adds new query parameters to a URL.
+  """Adds new query parameters to a URL. Encodes as UTF-8 and URL-safe.
 
   Args:
     url: string URL. May already have query parameters.
@@ -278,7 +278,8 @@ def add_query_params(url, params):
   # convert to list so we can modify later
   parsed = list(urlparse.urlparse(url))
   # query params are in index 4
-  params = urlparse.parse_qsl(parsed[4]) + params
+  params = [(k, unicode(v).encode('utf-8')) for k, v in
+            urlparse.parse_qsl(parsed[4]) + params]
   parsed[4] = urllib.urlencode(params)
   return urlparse.urlunparse(parsed)
 

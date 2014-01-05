@@ -1,9 +1,11 @@
+# -*- coding: utf-8 -*-
 """Unit tests for util.py.
 """
 
 __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
 import datetime
+import urlparse
 from webob import exc
 
 import testutil
@@ -257,8 +259,14 @@ class UtilTest(testutil.HandlerTest):
       ('http://a.com?x=y&x=z', 'http://a.com', [('x', 'y'), ('x', 'z')]),
       ('http://a.com?x=y&x=z&x=w', 'http://a.com?x=y&x=z', [('x', 'w')]),
       ('http://a.com?x=y', 'http://a.com', {'x': 'y'}),
+      # note encoding declaration at top of file
+      ('http://a.com?x=Ryan+%C3%87elik', 'http://a.com', {'x': u'Ryan Çelik'}),
       ):
       self.assertEqual(expected, util.add_query_params(url, params))
+
+    query_string = util.add_query_params('', {'x': u'Ryan Çelik'})[1:] # strip ? char
+    parsed = urlparse.parse_qs(query_string)
+    self.assertEquals(u'Ryan Çelik', parsed['x'][0].decode('utf-8'))
 
   def test_get_required_param(self):
     handler = webapp2.RequestHandler(webapp2.Request.blank('/?a=b'), None)
