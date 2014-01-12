@@ -96,7 +96,7 @@ class HandlerTest(mox.MoxTestBase):
     super(HandlerTest, self).tearDown()
 
   def expect_urlopen(self, expected, response, status=200, data=None,
-                     headers=None, **kwargs):
+                     headers=None, response_headers={}, **kwargs):
     """Stubs out urllib2.urlopen() and sets up an expected call.
 
     Args:
@@ -104,32 +104,38 @@ class HandlerTest(mox.MoxTestBase):
       response: string
       status: int, HTTP response code
       data: optional string POST body
-      headers: optional header dict
+      headers: optional expected request header dict
+      response_headers: optional response header dict
       kwargs: other keyword args, e.g. timeout
     """
     def check_request(req):
       try:
         if isinstance(expected, re._pattern_type):
           self.assertRegexpMatches(req, expected)
+          assert not data, data
+          assert not headers, headers
         elif isinstance(req, basestring):
           self.assertEqual(expected, req)
+          assert not data, data
+          assert not headers, headers
         else:
           self.assertEqual(expected, req.get_full_url())
           self.assertEqual(data, req.get_data())
           if isinstance(headers, mox.Comparator):
             self.assertTrue(headers.equals(req.header_items()))
           elif headers is not None:
-            self.assertEqual(headers.items(), req.header_items())
+            missing = set(headers.items()) - set(req.header_items())
+            assert not missing, 'Missing request headers: %s' % missing
       except AssertionError, e:
         print >> sys.stderr, str(e)
         return False
       return True
 
     call = urllib2.urlopen(mox.Func(check_request), timeout=mox.IgnoreArg(), **kwargs)
-    if status / 100 in (4, 5):
+    if status / 100 != 2:
       call.AndRaise(urllib2.HTTPError('url', status, 'message', None, None))
     else:
-      call.AndReturn(self.UrlopenResult(status, response))
+      call.AndReturn(self.UrlopenResult(status, response, headers=response_headers))
 
   def assert_entities_equal(self, a, b, ignore=frozenset(), keys_only=False,
                             in_order=False):
