@@ -133,7 +133,10 @@ class HandlerTest(mox.MoxTestBase):
 
     call = urllib2.urlopen(mox.Func(check_request), timeout=mox.IgnoreArg(), **kwargs)
     if status / 100 != 2:
-      call.AndRaise(urllib2.HTTPError('url', status, 'message', None, None))
+      if response:
+        response = StringIO.StringIO(response)
+      call.AndRaise(urllib2.HTTPError('url', status, 'message',
+                                      response_headers, response))
     else:
       call.AndReturn(self.UrlopenResult(status, response, headers=response_headers))
 
