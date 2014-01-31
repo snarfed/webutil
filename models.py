@@ -7,21 +7,16 @@ __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 import functools
 
 from google.appengine.ext import db
+from google.appengine.ext import ndb
 
 
-class KeyNameModel(db.Model):
+class KeyNameModel(ndb.Model):
   """A model class that requires a key name."""
 
   def __init__(self, *args, **kwargs):
     """Raises AssertionError if key name is not provided."""
     super(KeyNameModel, self).__init__(*args, **kwargs)
-    try:
-      assert self.key().name()
-    except db.NotSavedError:
-      assert False, 'key name required but not provided'
-
-  def __str__(self):
-    return self.key().to_path()
+    assert self.key and self.key.string_id(), 'key name required but not provided'
 
 
 class SingleEGModel(db.Model):

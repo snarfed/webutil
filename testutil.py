@@ -79,6 +79,7 @@ class HandlerTest(mox.MoxTestBase):
     self.testbed.init_taskqueue_stub(root_path='.')
     self.testbed.init_user_stub()
     self.testbed.init_mail_stub()
+    self.testbed.init_memcache_stub()
 
     self.mox.StubOutWithMock(urllib2, 'urlopen')
 

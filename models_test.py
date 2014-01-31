@@ -8,15 +8,16 @@ import testutil
 from models import KeyNameModel, SingleEGModel
 
 from google.appengine.ext import db
+from google.appengine.ext import ndb
 
 
 class KeyNameModelTest(testutil.HandlerTest):
 
   def test_constructor(self):
     # with key name is ok
-    entity = KeyNameModel(key_name='x')
-    entity.save()
-    db.get(entity.key())
+    entity = KeyNameModel(id='x')
+    entity.put()
+    entity.key.get()
 
     # without key name is not ok
     self.assertRaises(AssertionError, KeyNameModel)
