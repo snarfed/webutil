@@ -80,6 +80,7 @@ class HandlerTest(mox.MoxTestBase):
     self.testbed.init_user_stub()
     self.testbed.init_mail_stub()
     self.testbed.init_memcache_stub()
+    self.testbed.init_logservice_stub()
 
     self.mox.StubOutWithMock(urllib2, 'urlopen')
 
