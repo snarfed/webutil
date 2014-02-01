@@ -10,13 +10,28 @@ from google.appengine.ext import db
 from google.appengine.ext import ndb
 
 
-class KeyNameModel(ndb.Model):
-  """A model class that requires a key name."""
+class StringIdModel(ndb.Model):
+  """An ndb model class that requires a string id."""
+
+  def put(self, *args, **kwargs):
+    """Raises AssertionError if string id is not provided."""
+    assert self.key and self.key.string_id(), 'string id required but not provided'
+    super(StringIdModel, self).put(*args, **kwargs)
+
+
+class KeyNameModel(db.Model):
+  """A db model class that requires a key name."""
 
   def __init__(self, *args, **kwargs):
     """Raises AssertionError if key name is not provided."""
     super(KeyNameModel, self).__init__(*args, **kwargs)
-    assert self.key and self.key.string_id(), 'key name required but not provided'
+    try:
+      assert self.key().name()
+    except db.NotSavedError:
+      assert False, 'key name required but not provided'
+
+  def __str__(self):
+    return self.key().to_path()
 
 
 class SingleEGModel(db.Model):

@@ -5,19 +5,27 @@
 __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
 import testutil
-from models import KeyNameModel, SingleEGModel
+from models import StringIdModel, KeyNameModel, SingleEGModel
 
 from google.appengine.ext import db
 from google.appengine.ext import ndb
+
+
+class StringIdModelTest(testutil.HandlerTest):
+
+  def test_put(self):
+    StringIdModel(id='x').put()
+    self.assertRaises(AssertionError, StringIdModel().put)
+    self.assertRaises(AssertionError, StringIdModel(id=1).put)
 
 
 class KeyNameModelTest(testutil.HandlerTest):
 
   def test_constructor(self):
     # with key name is ok
-    entity = KeyNameModel(id='x')
-    entity.put()
-    entity.key.get()
+    entity = KeyNameModel(key_name='x')
+    entity.save()
+    db.get(entity.key())
 
     # without key name is not ok
     self.assertRaises(AssertionError, KeyNameModel)
