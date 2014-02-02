@@ -256,11 +256,15 @@ def maybe_timestamp_to_rfc3339(input):
     return input
 
 
-def ellipsize(str, limit=20):
-  """Truncates and ellipsizes str if it's longer than limit.
+def ellipsize(str, words=14, chars=140):
+  """Truncates and ellipsizes str if it's longer than words or chars.
+
+  Words are simply tokenized on whitespace, nothing smart.
   """
-  assert limit > 3
-  return str if len(str) <= limit else str[:limit-3] + '...'
+  split = str.split()
+  if len(split) <= words and len(str) <= chars:
+    return str
+  return ' '.join(split[:words])[:chars-3] + '...'
 
 
 def add_query_params(url, params):

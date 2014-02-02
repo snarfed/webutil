@@ -246,8 +246,11 @@ class UtilTest(testutil.HandlerTest):
   def test_ellipsize(self):
     self.assertEqual('', util.ellipsize(''))
     self.assertEqual('asdf', util.ellipsize('asdf'))
-    self.assertEqual('asdf qwert', util.ellipsize('asdf qwert', limit=10))
-    self.assertEqual('asdf qw...', util.ellipsize('asdf qwert foo', limit=10))
+    self.assertEqual('asdf qwert', util.ellipsize('asdf qwert'))
+    self.assertEqual('asdf...', util.ellipsize('asdf qwert', words=1))
+    self.assertEqual('asdf q...', util.ellipsize('asdf qwert', chars=9))
+    self.assertEqual('asdf...', util.ellipsize('asdf qwert', words=1, chars=9))
+    self.assertEqual('asdf q...', util.ellipsize('asdf qwert', words=2, chars=9))
 
   def test_add_query_param(self):
     for expected, url, params in (
