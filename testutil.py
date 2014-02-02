@@ -21,6 +21,7 @@ import webapp2
 
 from google.appengine.datastore import datastore_stub_util
 from google.appengine.ext import db
+from google.appengine.ext import ndb
 from google.appengine.ext import testbed
 
 
@@ -150,33 +151,35 @@ class HandlerTest(mox.MoxTestBase):
     have populated keys, that their keys are equal too.
 
     Args:
-      a, b: db.Model instances or lists of instances
+      a, b: db.Model or ndb.Model instances or lists of instances
       ignore: sequence of strings, property names not to compare
       keys_only: boolean, if True only compare keys
       in_order: boolean. If False, all entities must have keys.
     """
-    if not isinstance(a, (list, tuple, db.Query)):
+    if not isinstance(a, (list, tuple, db.Query, ndb.Query)):
       a = [a]
-    if not isinstance(b, (list, tuple, db.Query)):
+    if not isinstance(b, (list, tuple, db.Query, ndb.Query)):
       b = [b]
 
+    key_fn = lambda e: e.key if isinstance(e, ndb.Model) else e.key()
     if not in_order:
-      key_fn = lambda e: e.key()
       a = list(sorted(a, key=key_fn))
       b = list(sorted(b, key=key_fn))
 
     self.assertEqual(len(a), len(b),
                      'Different lengths:\n expected %s\n actual %s' % (a, b))
 
+    flat_key = lambda e: e.key.flat() if isinstance(e, ndb.Model) else e.key().to_path()
     for x, y in zip(a, b):
       try:
-        self.assertEqual(x.key().to_path(), y.key().to_path())
+        self.assertEqual(flat_key(x), flat_key(y))
       except (db.BadKeyError, db.NotSavedError):
         if keys_only:
           raise
 
+      props_fn = lambda e: e.to_dict() if isinstance(e, ndb.Model) else e.properties()
       if not keys_only:
-        self.assert_equals(x.properties(), y.properties())
+        self.assert_equals(props_fn(x), props_fn(y))
 
   def entity_keys(self, entities):
     """Returns a list of keys for a list of entities.
