@@ -263,7 +263,8 @@ class UtilTest(testutil.HandlerTest):
       ('http://a.com?x=y&x=z&x=w', 'http://a.com?x=y&x=z', [('x', 'w')]),
       ('http://a.com?x=y', 'http://a.com', {'x': 'y'}),
       # note encoding declaration at top of file
-      ('http://a.com?x=Ryan+%C3%87elik', 'http://a.com', {'x': u'Ryan Çelik'}),
+      ('http://a.com?x=R+%C3%87', 'http://a.com', {'x': u'R Ç'}),
+      ('http://a.com?x=R+%C3%87&x=R+%C3%87', 'http://a.com?x=R+%C3%87', {'x': u'R Ç'}),
       ):
       self.assertEqual(expected, util.add_query_params(url, params))
 
