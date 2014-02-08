@@ -13,6 +13,7 @@ import re
 import rfc822
 import StringIO
 import sys
+import traceback
 import urllib2
 import urlparse
 import wsgiref
@@ -130,7 +131,7 @@ class HandlerTest(mox.MoxTestBase):
             missing = set(headers.items()) - set(req.header_items())
             assert not missing, 'Missing request headers: %s' % missing
       except AssertionError, e:
-        print >> sys.stderr, str(e)
+        traceback.print_exc()
         return False
       return True
 
