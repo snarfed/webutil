@@ -18,6 +18,7 @@ import urllib2
 import urlparse
 import wsgiref
 
+from appengine_config import HTTP_TIMEOUT
 import webapp2
 
 from google.appengine.datastore import datastore_stub_util
@@ -135,7 +136,7 @@ class HandlerTest(mox.MoxTestBase):
         return False
       return True
 
-    call = urllib2.urlopen(mox.Func(check_request), timeout=mox.IgnoreArg(), **kwargs)
+    call = urllib2.urlopen(mox.Func(check_request), timeout=HTTP_TIMEOUT, **kwargs)
     if status / 100 != 2:
       if response:
         response = StringIO.StringIO(response)
