@@ -69,7 +69,7 @@ class TemplateHandler(webapp2.RequestHandler):
 
   def content_type(self):
     """Returns the string content type."""
-    return 'text/html'
+    return 'text/html; charset=utf-8'
 
   def force_to_sequence(self):
     """Returns variables that should be coerced to sequences if necessary."""
