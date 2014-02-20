@@ -35,6 +35,13 @@ def get_task_params(task):
   return params
 
 
+class FakeCache(dict):
+  """Fake cache object. Useful for testing util.if_changed().
+  """
+  pass
+FakeCache.set_multi = FakeCache.update
+
+
 class HandlerTest(mox.MoxTestBase):
   """Base test class for webapp2 request handlers.
 
