@@ -280,3 +280,23 @@ class UtilTest(testutil.HandlerTest):
       self.fail('Expected HTTPException')
     except exc.HTTPException, e:
       self.assertEqual(400, e.status_int)
+
+  def test_if_changed(self):
+    cache = {}
+    updates = {}
+
+    for val in (0, '', []):  # should all be normalized to None
+      self.assertIsNone(None, util.if_changed(cache, updates, 'x', val))
+      cache['x'] = 0
+      self.assertIsNone(None, util.if_changed(cache, updates, 'x', val))
+      del cache['x']
+
+    self.assertEquals(1, util.if_changed(cache, updates, 'x', 1))
+    self.assertEquals(1, updates['x'])
+    cache['x'] = 1
+    self.assertIsNone(util.if_changed(cache, updates, 'x', 1))
+    self.assertEquals(2, util.if_changed(cache, updates, 'x', 2))
+    self.assertEquals(2, updates['x'])
+
+    self.assertIsNone(util.if_changed(cache, updates, 'x', None))
+    self.assertEquals(None, updates['x'])

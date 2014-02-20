@@ -294,3 +294,38 @@ def get_required_param(handler, name):
     handler.abort(400, 'Missing required parameter: %s' % name)
   return val
 
+
+def if_changed(cache, updates, key, value):
+  """Returns a value if it's different from the cached value, otherwise None.
+
+  Values that evaluate to False are considered equivalent to None, in order to
+  save cache space.
+
+  If the values differ, updates[key] is set to value. You can use this to
+  collect changes that should be made to the cache in batch. None values in
+  updates mean that the corresponding key should be deleted.
+
+  Args:
+    cache: any object with a get(key) method
+    updates: mapping (e.g. dict)
+    key: anything supported by cache
+    value: anything supported by cache
+
+  Returns: value or None
+  """
+  if cache is None:
+    return value
+  cached = cache.get(key)
+
+  # normalize to None
+  if not value:
+    value = None
+  if not cached:
+    cached = None
+
+  if value == cached:
+    return None
+
+  updates[key] = value
+  return value
+
