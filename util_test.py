@@ -214,6 +214,8 @@ class UtilTest(testutil.HandlerTest):
     self.assertEquals(
       '<a href="http://foo/bar/baz/baj/asdf_qwert">foo/bar/baz/baj/asdf...</a>',
       pl('http://foo/bar/baz/baj/asdf_qwert'))
+    self.assertEquals('<a href="http://foo/bar/baz">foo/ba...</a>',
+                      pl('http://foo/bar/baz', max_length=6))
 
   # TODO: make this work
   # def test_linkify_broken(self):
