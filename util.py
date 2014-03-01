@@ -187,6 +187,32 @@ def linkify(text):
   return _LINKIFY_RE.sub(make_link, text)
 
 
+def pretty_link(url, glyphicon=None, a_class=None, new_tab=False):
+  """Renders a pretty, short HTML link to a URL.
+
+  In the the link text, Removes the leading http(s)://[www.] and ellipsizes at
+  the end if necessary.
+
+  Args:
+    url: string
+    glyphicon: string glyphicon to render after the link text, if provided.
+      Details: http://glyphicons.com/
+    new_tab: boolean, include target="_blank" if True
+    class: string, included in a tag if provided
+  """
+  parsed = urlparse.urlparse(url)
+  text = url[len(parsed.scheme) + 3:]  # strip scheme and ://
+  if text.startswith('www.'):
+    text = text[4:]
+  max_len = max(20, len(parsed.netloc) + 1)
+  if len(text) > max_len + 3:
+    text = text[:max_len] + '...'
+  if glyphicon is not None:
+    text += ' <span class="glyphicon glyphicon-%s"></span>' % glyphicon
+  cls = 'class="%s" ' % a_class if a_class else ''
+  target = 'target="_blank" ' if new_tab else ''
+  return ('<a %s%shref="%s">%s</a>' % (cls, target, url, text))
+
 class SimpleTzinfo(datetime.tzinfo):
   """A simple, DST-unaware tzinfo subclass.
   """

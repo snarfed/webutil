@@ -203,6 +203,18 @@ class UtilTest(testutil.HandlerTest):
       '<a href="http://www.bar.com">www.bar.com</a>',
       util.linkify('asdf <a href="http://foo.com">foo</a> qwert www.bar.com'))
 
+  def test_pretty_link(self):
+    pl = util.pretty_link
+    self.assertEquals('<a href="http://foo">foo</a>', pl('http://foo'))
+    self.assertEquals('<a class="my cls" href="http://foo">foo</a>',
+                      pl('http://foo', a_class='my cls'))
+    self.assertEquals('<a target="_blank" href="http://foo">foo</a>',
+                      pl('http://foo', new_tab=True))
+    self.assertEquals('<a href="http://www.foo">foo</a>', pl('http://www.foo'))
+    self.assertEquals(
+      '<a href="http://foo/bar/baz/baj/asdf_qwert">foo/bar/baz/baj/asdf...</a>',
+      pl('http://foo/bar/baz/baj/asdf_qwert'))
+
   # TODO: make this work
   # def test_linkify_broken(self):
   #   self.assertEqual('', util.linkify(
