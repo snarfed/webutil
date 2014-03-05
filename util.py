@@ -214,6 +214,7 @@ def pretty_link(url, glyphicon=None, a_class=None, new_tab=False, max_length=20)
   target = 'target="_blank" ' if new_tab else ''
   return ('<a %s%shref="%s">%s</a>' % (cls, target, url, text))
 
+
 class SimpleTzinfo(datetime.tzinfo):
   """A simple, DST-unaware tzinfo subclass.
   """
