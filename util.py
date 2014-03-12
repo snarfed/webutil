@@ -310,9 +310,8 @@ def add_query_params(url, params):
   # convert to list so we can modify later
   parsed = list(urlparse.urlparse(url))
   # query params are in index 4
-  params = urlparse.parse_qsl(parsed[4]) + \
-      [(k, unicode(v).encode('utf-8')) for k, v in params]
-  parsed[4] = urllib.urlencode(params)
+  params = set((k, unicode(v).encode('utf-8')) for k, v in params)
+  parsed[4] += ('&' if parsed[4] else '') + urllib.urlencode(list(params))
   return urlparse.urlunparse(parsed)
 
 

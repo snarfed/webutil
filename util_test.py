@@ -282,9 +282,12 @@ class UtilTest(testutil.HandlerTest):
       ):
       self.assertEqual(expected, util.add_query_params(url, params))
 
-    query_string = util.add_query_params('', {'x': u'Ryan Çelik'})[1:] # strip ? char
-    parsed = urlparse.parse_qs(query_string)
-    self.assertEquals(u'Ryan Çelik', parsed['x'][0].decode('utf-8'))
+    query_string = ''
+    for i in range(2):
+      query_string = util.add_query_params(query_string, {'x': u'Ryan Çelik'})
+      for key, val in urlparse.parse_qsl(query_string[1:]):
+        self.assertEquals('x', key)
+        self.assertEquals(u'Ryan Çelik', val.decode('utf-8'))
 
   def test_get_required_param(self):
     handler = webapp2.RequestHandler(webapp2.Request.blank('/?a=b'), None)
