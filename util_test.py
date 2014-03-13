@@ -211,6 +211,8 @@ class UtilTest(testutil.HandlerTest):
     self.assertEquals('<a target="_blank" href="http://foo">foo</a>',
                       pl('http://foo', new_tab=True))
     self.assertEquals('<a href="http://www.foo">foo</a>', pl('http://www.foo'))
+    self.assertEquals('<a href="http://www.foo/bar">foo/ba...</a>',
+                      pl('http://www.foo/bar', max_length=6))
     self.assertEquals(
       '<a href="http://foo/bar/baz/baj/asdf_qwert">foo/bar/baz/baj/asdf...</a>',
       pl('http://foo/bar/baz/baj/asdf_qwert'))
@@ -221,6 +223,14 @@ class UtilTest(testutil.HandlerTest):
   # def test_linkify_broken(self):
   #   self.assertEqual('', util.linkify(
   #       '<a href="http://www.example.com/?feature_embedded">'))
+
+  def test_linkify_pretty(self):
+    lp = lambda url: util.linkify(url, pretty=True, max_length=6)
+    self.assertEqual('', lp(''))
+    self.assertEqual('asdf qwert', lp('asdf qwert'))
+    self.assertEquals('x <a href="http://foo">foo</a> y', lp('x http://foo y'))
+    self.assertEquals('x <a href="http://www.foo/baz/baj">foo/ba...</a> y',
+                      lp('x http://www.foo/baz/baj y'))
 
   def test_parse_iso8601(self):
     for str, offset in (

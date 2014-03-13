@@ -158,7 +158,7 @@ t;)*(?:[^!"#$%&'()*+,.:;<=>?@\[\]^`{|}~\s]))|(?:\((?:[^\s&()]|&amp;|&quot;)*\)))
 (?![^<>]*>)  # negative lookahead for end of HTML anchor tag
 """, re.VERBOSE)
 
-def linkify(text):
+def linkify(text, pretty=False, **kwargs):
   """Adds HTML links to URLs in the given plain text.
 
   For example: linkify("Hello http://tornadoweb.org!") would return
@@ -182,7 +182,10 @@ def linkify(text):
     href = m.group(1)
     if not proto:
       href = 'http://' + href
-    return u'<a href="%s">%s</a>' % (href, url)
+    if pretty:
+      return pretty_link(href, **kwargs)
+    else:
+      return u'<a href="%s">%s</a>' % (href, url)
 
   return _LINKIFY_RE.sub(make_link, text)
 
@@ -203,10 +206,12 @@ def pretty_link(url, glyphicon=None, a_class=None, new_tab=False, max_length=20)
   """
   parsed = urlparse.urlparse(url)
   text = url[len(parsed.scheme) + 3:]  # strip scheme and ://
+  host_len = len(parsed.netloc)
   if text.startswith('www.'):
     text = text[4:]
-  max_len = max(max_length, len(parsed.netloc) + 1)
-  if len(text) > max_len + 3:
+    host_len -= 4
+  max_len = max(max_length, host_len + 1)
+  if len(text) > max_len:
     text = text[:max_len] + '...'
   if glyphicon is not None:
     text += ' <span class="glyphicon glyphicon-%s"></span>' % glyphicon
