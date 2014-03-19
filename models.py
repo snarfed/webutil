@@ -1,4 +1,3 @@
-#!/usr/bin/python
 """App Engine datastore model base classes and utilites.
 """
 
@@ -16,7 +15,7 @@ class StringIdModel(ndb.Model):
   def put(self, *args, **kwargs):
     """Raises AssertionError if string id is not provided."""
     assert self.key and self.key.string_id(), 'string id required but not provided'
-    super(StringIdModel, self).put(*args, **kwargs)
+    return super(StringIdModel, self).put(*args, **kwargs)
 
 
 class KeyNameModel(db.Model):

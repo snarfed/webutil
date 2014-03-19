@@ -1,4 +1,3 @@
-#!/usr/bin/python
 """Unit tests for models.py.
 """
 
@@ -14,7 +13,9 @@ from google.appengine.ext import ndb
 class StringIdModelTest(testutil.HandlerTest):
 
   def test_put(self):
-    StringIdModel(id='x').put()
+    self.assertEquals(ndb.Key('StringIdModel', 'x'),
+                      StringIdModel(id='x').put())
+
     self.assertRaises(AssertionError, StringIdModel().put)
     self.assertRaises(AssertionError, StringIdModel(id=1).put)
 
