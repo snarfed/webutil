@@ -186,9 +186,12 @@ class HandlerTest(mox.MoxTestBase):
         if keys_only:
           raise
 
-      props_fn = lambda e: e.to_dict() if isinstance(e, ndb.Model) else e.properties()
+      def props(e):
+        all = e.to_dict() if isinstance(e, ndb.Model) else e.properties()
+        return {k: v for k, v in all.items() if k not in ignore}
+
       if not keys_only:
-        self.assert_equals(props_fn(x), props_fn(y))
+        self.assert_equals(props(x), props(y))
 
   def entity_keys(self, entities):
     """Returns a list of keys for a list of entities.
