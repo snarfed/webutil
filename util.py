@@ -120,6 +120,8 @@ def domain_from_link(url):
     parsed = urlparse.urlparse('http://' + url)
 
   domain = parsed.netloc
+  if domain.startswith('www.'):
+    domain = domain[4:]
   if domain and HOSTNAME_RE.match(domain):
     return domain
 
