@@ -192,11 +192,16 @@ def linkify(text, pretty=False, **kwargs):
   return _LINKIFY_RE.sub(make_link, text)
 
 
-def pretty_link(url, glyphicon=None, a_class=None, new_tab=False, max_length=20):
+def pretty_link(url, glyphicon=None, a_class=None, new_tab=False, max_length=None):
   """Renders a pretty, short HTML link to a URL.
 
   In the the link text, Removes the leading http(s)://[www.] and ellipsizes at
   the end if necessary.
+
+  The default maximum length follow's Twitter's rules: full domain plus 15
+  characters of path (including leading slash).
+  https://dev.twitter.com/docs/tco-link-wrapper/faq
+  https://dev.twitter.com/docs/counting-characters
 
   Args:
     url: string
@@ -212,9 +217,10 @@ def pretty_link(url, glyphicon=None, a_class=None, new_tab=False, max_length=20)
   if text.startswith('www.'):
     text = text[4:]
     host_len -= 4
-  max_len = max(max_length, host_len + 1)
-  if len(text) > max_len:
-    text = text[:max_len] + '...'
+  if max_length is None:
+    max_length = host_len + 15
+  if len(text) > max_length:
+    text = text[:max_length] + '...'
   if glyphicon is not None:
     text += ' <span class="glyphicon glyphicon-%s"></span>' % glyphicon
   cls = 'class="%s" ' % a_class if a_class else ''
