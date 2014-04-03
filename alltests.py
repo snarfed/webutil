@@ -12,14 +12,12 @@ import sys
 import unittest
 
 APP_ENGINE_SDK_PATH = os.path.expanduser('/usr/local/google_appengine')
-sys.path += [os.path.join(APP_ENGINE_SDK_PATH, 'lib', lib)
-             for lib in ('django-1.3', 'mox', 'yaml/lib')]
-
 
 # Monkey patch to fix template loader issue:
 #
 # File "/usr/local/google_appengine/lib/django-1.4/django/template/loader.py", line 101, in find_template_loader:
 # ImproperlyConfigured: Error importing template source loader django.template.loaders.filesystem.load_template_source: "'module' object has no attribute 'load_template_source'"
+sys.path.append(os.path.join(APP_ENGINE_SDK_PATH, 'lib', 'django-1.3'))
 from django.template.loaders import filesystem
 filesystem.load_template_source = filesystem._loader.load_template_source
 
