@@ -66,40 +66,27 @@ class UtilTest(testutil.HandlerTest):
                         'e': (2, 3),
                         }}))
 
-  def test_none(self):
+  def test_trim_nulls(self):
+    # basic
     self.assertEqual(None, util.trim_nulls(None))
-
-  def test_string(self):
     self.assertEqual('foo', util.trim_nulls('foo'))
-
-  def test_empty_list(self):
     self.assertEqual([], util.trim_nulls([]))
+    self.assertEqual({}, util.trim_nulls({}))
+    self.assertEqual(set(), util.trim_nulls(set()))
+    self.assertEqual((), util.trim_nulls(()))
+    self.assertEqual({1: 0}, util.trim_nulls({1: 0}))  # numeric zero
 
-  def test_list_container(self):
+    # lists
     self.assertEqual([{'xyz': 3}], util.trim_nulls([{'abc': None, 'xyz': 3}]))
-
-  def test_list_values(self):
     self.assertEqual({'a': ['b'], 'd': ['e']}, util.trim_nulls(
         {'a': ['b'], 'c': [None], 'd': [None, 'e', None], 'f': [[{}], {'a': []}]}))
-
-  def test_empty_dict(self):
-    self.assertEqual({}, util.trim_nulls({}))
-
-  def test_simple_dict_with_nulls(self):
     self.assertEqual({}, util.trim_nulls({1: None, 2: [], 3: {}, 4: set(),
                                           5: frozenset()}))
 
-  def test_simple_dict(self):
+    # dicts
     self.assertEqual({1: 2, 3: 4}, util.trim_nulls({1: 2, 3: 4}))
-
-  def test_simple_dict_with_nones(self):
     self.assertEqual({3: 4, 2: 9}, util.trim_nulls({1: None, 3: 4, 5: [], 2: 9}))
-
-  def test_nested_dict_with_nones(self):
     self.assertEqual({1: {3: 4}}, util.trim_nulls({1: {2: [], 3: 4}, 5: {6: None}}))
-
-  def test_zero(self):
-    self.assertEqual({1: 0}, util.trim_nulls({1: 0}))
 
   def test_favicon_for_url(self):
     for url in ('http://a.org/b/c?d=e&f=g', 'https://a.org/b/c', 'http://a.org/'):
