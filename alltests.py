@@ -11,7 +11,7 @@ import os
 import sys
 import unittest
 
-APP_ENGINE_SDK_PATH = os.path.expanduser('/usr/local/google_appengine')
+APP_ENGINE_SDK_PATH = os.path.expanduser('~/google_appengine')
 
 # Monkey patch to fix template loader issue:
 #
