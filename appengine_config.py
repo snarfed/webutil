@@ -3,13 +3,12 @@
 
 import os
 
-from google.appengine.api import app_identity
-
 HTTP_TIMEOUT = 60  # seconds
 
 try:
+  from google.appengine.api import app_identity
   APP_ID = app_identity.get_application_id()
-except AttributeError:
+except (ImportError, AttributeError):
   # this is probably a unit test
   APP_ID = None
 
