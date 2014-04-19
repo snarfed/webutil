@@ -11,13 +11,22 @@ import os
 import sys
 import unittest
 
-APP_ENGINE_SDK_PATH = os.path.expanduser('~/google_appengine')
+for app_engine_path in (os.getenv('GAE_SDK_ROOT', ''),
+                        '/usr/local/google_appengine',
+                        os.path.expanduser('~/google_appengine')):
+  if os.path.exists(app_engine_path):
+    break
+else:
+  print >> sys.stderr, """\
+Couldn't find the Google App Engine SDK. Please set the GAE_SDK_ROOT environment
+variable or install it in ~/google_appengine or /usr/local/google_appengine."""
+  sys.exit(1)
 
 # Monkey patch to fix template loader issue:
 #
 # File "/usr/local/google_appengine/lib/django-1.4/django/template/loader.py", line 101, in find_template_loader:
 # ImproperlyConfigured: Error importing template source loader django.template.loaders.filesystem.load_template_source: "'module' object has no attribute 'load_template_source'"
-sys.path.append(os.path.join(APP_ENGINE_SDK_PATH, 'lib', 'django-1.3'))
+sys.path.append(os.path.join(app_engine_path, 'lib', 'django-1.3'))
 from django.template.loaders import filesystem
 filesystem.load_template_source = filesystem._loader.load_template_source
 
@@ -31,8 +40,8 @@ def main():
 
   # add working directory since this is often symlinked in a different dir by
   # clients, in which case we want it to load and run test in that dir.
-  sys.path = ([os.getcwd(), APP_ENGINE_SDK_PATH] +
-              [os.path.join(APP_ENGINE_SDK_PATH, 'lib', lib) for lib in
+  sys.path = ([os.getcwd(), app_engine_path] +
+              [os.path.join(app_engine_path, 'lib', lib) for lib in
                'mox', 'webob-1.2.3', 'yaml-3.10', 'django-1.4',
                # webapp2 2.5.2 has a change that breaks get_response(). it
                # starts returning None for the response. not sure why. changes:
