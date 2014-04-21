@@ -105,6 +105,9 @@ class HandlerTest(mox.MoxTestBase):
     self.response = webapp2.Response()
     self.handler = webapp2.RequestHandler(self.request, self.response)
 
+    # set time zone to UTC so that tests don't depend on local time zone
+    os.environ['TZ'] = 'UTC'
+
   def tearDown(self):
     self.testbed.deactivate()
     super(HandlerTest, self).tearDown()
