@@ -248,7 +248,7 @@ def parse_iso8601(str):
   time zone aware.
 
   Args:
-    str: string ISO 8601 or RFC 3339, e.g. '2012-07-23T05:54:49+0000'
+    str: string ISO 8601 or RFC 3339, e.g. '2012-07-23T05:54:49+00:00'
 
   Returns: datetime
   """
