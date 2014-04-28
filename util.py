@@ -192,7 +192,8 @@ def linkify(text, pretty=False, **kwargs):
   return _LINKIFY_RE.sub(make_link, text)
 
 
-def pretty_link(url, glyphicon=None, a_class=None, new_tab=False, max_length=None):
+def pretty_link(url, keep_host=True, glyphicon=None, a_class=None,
+                new_tab=False, max_length=None):
   """Renders a pretty, short HTML link to a URL.
 
   In the the link text, Removes the leading http(s)://[www.] and ellipsizes at
@@ -205,6 +206,7 @@ def pretty_link(url, glyphicon=None, a_class=None, new_tab=False, max_length=Non
 
   Args:
     url: string
+    keep_host: if False, remove the host from the link text
     glyphicon: string glyphicon to render after the link text, if provided.
       Details: http://glyphicons.com/
     new_tab: boolean, include target="_blank" if True
@@ -214,6 +216,9 @@ def pretty_link(url, glyphicon=None, a_class=None, new_tab=False, max_length=Non
   parsed = urlparse.urlparse(url)
   text = url[len(parsed.scheme) + 3:]  # strip scheme and ://
   host_len = len(parsed.netloc)
+  if not keep_host:
+    text = text[host_len + 1:]
+    host_len = 0
   if text.startswith('www.'):
     text = text[4:]
     host_len -= 4
