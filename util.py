@@ -3,8 +3,10 @@
 
 __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
+import base64
 import datetime
 import logging
+import os
 import re
 import urllib
 import urlparse
@@ -374,3 +376,16 @@ def if_changed(cache, updates, key, value):
   updates[key] = value
   return value
 
+
+def generate_secret():
+  """Generates a URL-safe random secret string.
+
+  Uses App Engine's os.urandom(), which is designed to be cryptographically
+  secure: http://code.google.com/p/googleappengine/issues/detail?id=1055
+
+  Args:
+    bytes: integer, length of string to generate
+
+  Returns: random string
+  """
+  return base64.urlsafe_b64encode(os.urandom(16))

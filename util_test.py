@@ -328,3 +328,6 @@ class UtilTest(testutil.HandlerTest):
 
     self.assertIsNone(util.if_changed(cache, updates, 'x', None))
     self.assertEquals(None, updates['x'])
+
+  def test_generate_secret(self):
+    self.assertEquals(24, len(util.generate_secret()))
