@@ -136,6 +136,15 @@ class UtilTest(testutil.HandlerTest):
       set(['http://foo.com', 'http://bar.com']),
       util.extract_links('asdf http://foo.com qwert <a class="x" href="http://bar.com" >xyz</a> www.baz.com'))
 
+    # trailing slash
+    # TODO: make this work
+    # self.assertEquals(set(['http://foo.com/']),
+    #                   util.extract_links('x http://foo.com/'))
+
+    # query
+    self.assertEquals(set(['http://foo.com/bar?baz=baj']),
+                      util.extract_links('http://foo.com/bar?baz=baj y'))
+
   def test_linkify(self):
     self.assertEqual('', util.linkify(''))
     self.assertEqual('asdf qwert', util.linkify('asdf qwert'))
