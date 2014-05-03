@@ -15,45 +15,21 @@ import webapp2
 
 class UtilTest(testutil.HandlerTest):
 
-  def test_no_values(self):
-    self.assertEqual('', util.to_xml({}))
-
-  def test_flat(self):
-    self.assertEqual("""
-<a>3.14</a>\n<b>xyz</b>
-""", util.to_xml({'a': 3.14, 'b': 'xyz'}))
-
-  def test_none(self):
-    self.assertEqual("""
-<a></a>
-""", util.to_xml({'a': None}))
-
-  def test_empty_string(self):
-    self.assertEqual("""
-<a></a>
-"""
-, util.to_xml({'a': ''}))
-
-  def test_empty_dict(self):
-    self.assertEqual("""
-<a></a>
-"""
-, util.to_xml({'a': {}}))
-
-  def test_zero(self):
-    self.assertEqual("""
-<a>0</a>
-"""
-, util.to_xml({'a': 0}))
-
-  def test_list(self):
-    self.assertEqual("""
-<a>1</a>
-<a>2</a>
-""", util.to_xml({'a': [1, 2]}))
-
-  def test_nested(self):
-    self.assertEqual("""
+  def test_to_xml(self):
+    self.assert_equals('', util.to_xml({}))
+    self.assert_equals('\n<a>3.14</a>\n<b>xyz</b>\n',
+                       util.to_xml({'a': 3.14, 'b': 'xyz'}))
+    self.assert_equals('\n<a></a>\n',
+                       util.to_xml({'a': None}))
+    self.assert_equals('\n<a></a>\n',
+                       util.to_xml({'a': ''}))
+    self.assert_equals('\n<a></a>\n',
+                       util.to_xml({'a': {}}))
+    self.assert_equals('\n<a>0</a>\n',
+                       util.to_xml({'a': 0}))
+    self.assert_equals('\n<a>1</a>\n<a>2</a>\n',
+                       util.to_xml({'a': [1, 2]}))
+    self.assert_equals("""
 <a>
 <b>
 <c>x</c>
@@ -62,9 +38,7 @@ class UtilTest(testutil.HandlerTest):
 <e>2</e>
 <e>3</e>
 </a>
-""", util.to_xml({'a': {'b': {'c': 'x', 'd': 'y'},
-                        'e': (2, 3),
-                        }}))
+""", util.to_xml({'a': {'b': {'c': 'x', 'd': 'y'}, 'e': (2, 3), }}))
 
   def test_trim_nulls(self):
     # basic
@@ -130,18 +104,10 @@ class UtilTest(testutil.HandlerTest):
 
   def test_parse_acct_uri(self):
     self.assertEquals(('me', 'x.com'), util.parse_acct_uri('acct:me@x.com'))
-
-  def test_parse_acct_uri_allowed_domain(self):
     self.assertEquals(('me', 'x.com'),
                       util.parse_acct_uri('acct:me@x.com', ['x.com', 'y.com']))
-
-  def test_parse_acct_uri_scheme_not_acct_error(self):
     self.assertRaises(ValueError, util.parse_acct_uri, 'mailto:me@x.com')
-
-  def test_parse_acct_uri_bad_format_error(self):
     self.assertRaises(ValueError, util.parse_acct_uri, 'acct:foo')
-
-  def test_parse_acct_uri_wrong_domain_error(self):
     self.assertRaises(ValueError,
                       util.parse_acct_uri, 'acct:me@a.com', ['x.com'])
 
