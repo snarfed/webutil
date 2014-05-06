@@ -194,7 +194,7 @@ def linkify(text, pretty=False, **kwargs):
   return _LINKIFY_RE.sub(make_link, text)
 
 
-def pretty_link(url, keep_host=True, glyphicon=None, a_class=None,
+def pretty_link(url, text=None, keep_host=True, glyphicon=None, a_class=None,
                 new_tab=False, max_length=None):
   """Renders a pretty, short HTML link to a URL.
 
@@ -208,6 +208,7 @@ def pretty_link(url, keep_host=True, glyphicon=None, a_class=None,
 
   Args:
     url: string
+    text: string, optional
     keep_host: if False, remove the host from the link text
     glyphicon: string glyphicon to render after the link text, if provided.
       Details: http://glyphicons.com/
@@ -215,19 +216,22 @@ def pretty_link(url, keep_host=True, glyphicon=None, a_class=None,
     class: string, included in a tag if provided
     max_length: int, max link text length. ellipsized beyond this.
   """
-  parsed = urlparse.urlparse(url)
-  text = url[len(parsed.scheme) + 3:]  # strip scheme and ://
-  host_len = len(parsed.netloc)
-  if not keep_host:
-    text = text[host_len + 1:]
-    host_len = 0
-  if text.startswith('www.'):
-    text = text[4:]
-    host_len -= 4
-  if max_length is None:
-    max_length = host_len + 15
-  if len(text) > max_length:
+  if not text:
+    parsed = urlparse.urlparse(url)
+    text = url[len(parsed.scheme) + 3:]  # strip scheme and ://
+    host_len = len(parsed.netloc)
+    if not keep_host:
+      text = text[host_len + 1:]
+      host_len = 0
+    if text.startswith('www.'):
+      text = text[4:]
+      host_len -= 4
+    if max_length is None:
+      max_length = host_len + 15
+
+  if max_length and len(text) > max_length:
     text = text[:max_length] + '...'
+
   if glyphicon is not None:
     text += ' <span class="glyphicon glyphicon-%s"></span>' % glyphicon
   cls = 'class="%s" ' % a_class if a_class else ''

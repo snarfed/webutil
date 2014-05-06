@@ -186,6 +186,11 @@ class UtilTest(testutil.HandlerTest):
     self.assertEquals('<a href="http://foo/bar/baz">bar/ba...</a>',
                       pl('http://foo/bar/baz', keep_host=False, max_length=6))
 
+
+    self.assertEquals('<a href="http://foo">foo</a>', pl('http://foo', text=''))
+    self.assertEquals('<a href="http://foo">biff</a>',
+                      pl('http://foo', text='biff'))
+
     # default length is full domain plus 14 ch
     self.assertEquals(
       '<a href="http://foo/bar/baz/baj/XY">foo/bar/baz/baj/XY</a>',
