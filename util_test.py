@@ -57,6 +57,12 @@ class UtilTest(testutil.HandlerTest):
     self.assertEqual({}, util.trim_nulls({1: None, 2: [], 3: {}, 4: set(),
                                           5: frozenset()}))
 
+    # sets
+    self.assertEqual(set((1, 2)), util.trim_nulls(set((1, None, 2))))
+    self.assertEqual({'a': set(['b']), 'd': set(['e'])}, util.trim_nulls(
+        {'a': set(['b']), 'c': set([None]), 'd': set([None, 'e', None])}))
+    self.assertEqual(set(), util.trim_nulls(set((None,))))
+
     # dicts
     self.assertEqual({1: 2, 3: 4}, util.trim_nulls({1: 2, 3: 4}))
     self.assertEqual({3: 4, 2: 9}, util.trim_nulls({1: None, 3: 4, 5: [], 2: 9}))
