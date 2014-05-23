@@ -192,12 +192,11 @@ class UtilTest(testutil.HandlerTest):
     self.assertEquals('<a href="http://foo/bar/baz">bar/ba...</a>',
                       pl('http://foo/bar/baz', keep_host=False, max_length=6))
 
-
     self.assertEquals('<a href="http://foo">foo</a>', pl('http://foo', text=''))
     self.assertEquals('<a href="http://foo">biff</a>',
                       pl('http://foo', text='biff'))
 
-    # default length is full domain plus 14 ch
+    # default text max length is full domain plus 14 chars
     self.assertEquals(
       '<a href="http://foo/bar/baz/baj/XY">foo/bar/baz/baj/XY</a>',
       pl('http://foo/bar/baz/baj/XY'))
@@ -205,6 +204,11 @@ class UtilTest(testutil.HandlerTest):
       '<a href="http://foo/bar/baz/baj/asdf_qwert">foo/bar/baz/baj/as...</a>',
       pl('http://foo/bar/baz/baj/asdf_qwert'))
 
+    # default link max length is 30 chars
+    self.assertEquals('<a href="http://foo">123456789012345678901234567890...</a>',
+                      pl('http://foo', text='123456789012345678901234567890TOOMUCH'))
+    self.assertEquals('<a href="http://foo">bar...</a>',
+                      pl('http://foo', text='barbazbaj', max_length=3))
 
   # TODO: make this work
   # def test_linkify_broken(self):

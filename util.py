@@ -214,9 +214,13 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, a_class=None,
       Details: http://glyphicons.com/
     new_tab: boolean, include target="_blank" if True
     class: string, included in a tag if provided
-    max_length: int, max link text length. ellipsized beyond this.
+    max_length: int, max link text length in characters. ellipsized beyond this.
   """
-  if not text:
+  if text:
+    if max_length is None:
+      max_length = 30
+  else:
+    # use shortened version of URL as link text
     parsed = urlparse.urlparse(url)
     text = url[len(parsed.scheme) + 3:]  # strip scheme and ://
     host_len = len(parsed.netloc)
