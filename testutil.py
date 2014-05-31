@@ -4,6 +4,7 @@
 __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
 import base64
+import datetime
 import difflib
 import mox
 import pprint
@@ -33,6 +34,12 @@ def get_task_params(task):
   params = urlparse.parse_qs(base64.b64decode(task['body']))
   params = dict((key, val[0]) for key, val in params.items())
   return params
+
+
+def get_task_eta(task):
+  """Returns a task's ETA as a datetime."""
+  return datetime.datetime.fromtimestamp(
+    float(dict(task['headers'])['X-AppEngine-TaskETA']))
 
 
 class FakeCache(dict):
