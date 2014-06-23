@@ -157,8 +157,10 @@ def extract_links(text):
 
 _LINKIFY_RE = re.compile(ur"""
 (?<! href=["'])  # negative lookahead for beginning of HTML anchor tag
-\b((?:([\w-]+):(/{1,3})|www[.])(?:(?:(?:[^\s&()]|&amp;|&quo
-t;)*(?:[^!"#$%&'()*+,.:;<=>?@\[\]^`{|}~\s]))|(?:\((?:[^\s&()]|&amp;|&quot;)*\)))+)
+  \b((?:([\w-]+):(/{1,3})|www[.])  # scheme and optional leading www.
+  (?:(?:(?:[^\s()]|&amp;|&quot;)*
+  (?:[^!"#$%&'()*+,.:;<=>?@\[\]^`{|}~\s]))|
+  (?:\((?:[^\s&()]|&amp;|&quot;)*\)))+)
 (?![^<>]*>)  # negative lookahead for end of HTML anchor tag
 """, re.VERBOSE)
 

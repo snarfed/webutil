@@ -172,6 +172,9 @@ class UtilTest(testutil.HandlerTest):
       '<a href="http://www.bar.com">www.bar.com</a>',
       util.linkify('asdf <a href="http://foo.com">foo</a> qwert www.bar.com'))
 
+    self.assertEqual('<a href="http://foo?bar&baz">http://foo?bar&baz</a>',
+                     util.linkify('http://foo?bar&baz'))
+
   def test_pretty_link(self):
     pl = util.pretty_link
     self.assertEquals('<a href="http://foo">foo</a>', pl('http://foo'))
