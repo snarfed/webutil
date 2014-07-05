@@ -137,10 +137,14 @@ def update_scheme(url, handler):
   Useful for converting URLs to https if and only if the current request itself
   is being served over https.
   """
-  # Instagram can't serve images over SSL, so switch to their S3 URL, which can.
+  # Instagram can't serve images over SSL, so switch to their S3 or Akamai URLs,
+  # which can.
   # https://groups.google.com/d/msg/instagram-api-developers/fB4mwYXZF1c/q9n9gPO11JQJ
-  url = re.sub('^http://images\.(ak\.)instagram\.com',
+  # http://stackoverflow.com/questions/23755897#comment36547383_23755897
+  url = re.sub(r'^http://images\.(ak\.)instagram\.com',
                'http://distillery.s3.amazonaws.com', url)
+  url = re.sub(r'^http://photos-\w\.(ak\.)instagram\.com',
+               'http://igcdn-photos-e-a.akamaihd.net', url)
   return urlparse.urlunparse([handler.request.scheme] +
                              list(urlparse.urlparse(url)[1:]))
 

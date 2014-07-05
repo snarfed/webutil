@@ -97,6 +97,10 @@ class UtilTest(testutil.HandlerTest):
       'https://distillery.s3.amazonaws.com/profiles/xyz.jpg',
       util.update_scheme('http://images.ak.instagram.com/profiles/xyz.jpg',
                          self.handler))
+    self.assertEqual(
+      'https://igcdn-photos-e-a.akamaihd.net/hphotos-ak-xpf1/123_a.jpg',
+      util.update_scheme('http://photos-e.ak.instagram.com/hphotos-ak-xpf1/123_a.jpg',
+                         self.handler))
 
   def test_tag_uri(self):
     self.assertEquals('tag:x.com:foo', util.tag_uri('x.com', 'foo'))
