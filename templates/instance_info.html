@@ -7,6 +7,11 @@
 <body>
 <h2>Info for instance id {{ environ.INSTANCE_ID }}</h2>
 <ul>
+  <li>{{ threading.active_count }} thread(s) currently running</li>
+  <li>Recent concurrent timestamps:
+    <ul> {% for c in concurrents %}
+      <li>{{ c.when }} ({{ c.count }})</li>
+    {% endfor %} </ul>
   <li>CPU
     <ul>
       <li>{{ runtime.cpu_usage.rate1m }} Mc/s last 1m</li>
