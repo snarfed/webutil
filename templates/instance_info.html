@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>App Engine instance info</title>
+</head>
+
+<body>
+<h2>Info for instance id {{ environ.INSTANCE_ID }}</h2>
+<ul>
+  <li>CPU
+    <ul>
+      <li>{{ runtime.cpu_usage.rate1m }} Mc/s last 1m</li>
+      <li>{{ runtime.cpu_usage.rate10m }} Mc/s last 10m</li>
+      <li>{{ runtime.cpu_usage.total }} Mc total</li>
+    </ul>
+  </li>
+  <li>Memory
+    <ul>
+      <li>{{ runtime.memory_usage.current }} MB current</li>
+      <li>{{ runtime.memory_usage.average1m }} MB avg last 1m</li>
+      <li>{{ runtime.memory_usage.average10m }} MB avg last 10m</li>
+    </ul>
+  </li>
+</ul>
+</body>
+</html>
