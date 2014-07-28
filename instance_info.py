@@ -28,8 +28,10 @@ import webapp2
 
 Concurrent = collections.namedtuple('Concurrent', ('when', 'count'))
 
-# globals. stores Concurrents.
-concurrents = collections.deque(maxlen=20)
+# globals
+current_requests = set()  # stores string request IDs
+current_requests_lock = threading.Lock()
+concurrents = collections.deque(maxlen=20)  # stores Concurrents; thread safe
 
 
 class InfoHandler(handlers.TemplateHandler):
@@ -39,9 +41,9 @@ class InfoHandler(handlers.TemplateHandler):
 
   def template_vars(self):
     return {'concurrents': concurrents,
+            'current_requests': current_requests,
             'os': os,
             'runtime': runtime,
-            'threading': threading,
             }
 
 
@@ -51,12 +53,20 @@ def concurrent_requests_wsgi_middleware(app):
   Follows the WSGI standard. Details: http://www.python.org/dev/peps/pep-0333/
   """
   def wrapper(environ, start_response):
-    if threading.active_count() > 1:
-      # not thread safe!
-      global concurrents
-      concurrents.append(Concurrent(when=datetime.datetime.now(),
-                                    count=threading.active_count()))
-    return app(environ, start_response)
+    req_id = os.environ['REQUEST_LOG_ID']
+
+    global current_requests, current_requests_lock, concurrents
+    with current_requests_lock:
+      current_requests.add(req_id)
+      if len(current_requests) > 1:
+        concurrents.append(Concurrent(when=datetime.datetime.now(),
+                                      count=len(current_requests)))
+
+    ret = app(environ, start_response)
+
+    with current_requests_lock:
+      current_requests.remove(req_id)
+    return ret
 
   return wrapper
 

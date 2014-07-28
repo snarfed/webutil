@@ -7,7 +7,10 @@
 <body>
 <h2>Info for instance id {{ environ.INSTANCE_ID }}</h2>
 <ul>
-  <li>{{ threading.active_count }} thread(s) currently running</li>
+  <li>{{ current_requests|length }} requests currently running:
+    {% for r in current_requests %}
+      <span title="{{ r }}">{{ r|slice:':7' }}</span>
+    {% endfor %}
   <li>Recent concurrent timestamps:
     <ul> {% for c in concurrents %}
       <li>{{ c.when }} ({{ c.count }})</li>
