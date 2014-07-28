@@ -5,7 +5,7 @@
 </head>
 
 <body>
-<h2>Info for instance id {{ environ.INSTANCE_ID }}</h2>
+<h2>Info for instance id {{ os.environ.INSTANCE_ID }}</span></h2>
 <ul>
   <li>{{ current_requests|length }} requests currently running:
     {% for r in current_requests %}
