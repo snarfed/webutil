@@ -17,14 +17,6 @@ import webapp2
 
 from google.appengine.ext.webapp import template
 
-# Included in most static HTTP responses.
-BASE_HEADERS = {
-  'Cache-Control': 'max-age=300',
-  'X-XRDS-Location': 'https://%s/.well-known/host-meta.xrds' %
-    appengine_config.HOST,
-  'Access-Control-Allow-Origin': '*',
-  }
-
 
 def handle_exception(self, e, debug):
   """Use this as a webapp2.RequestHandler handle_exception() method.
@@ -75,10 +67,19 @@ class TemplateHandler(webapp2.RequestHandler):
     """Returns variables that should be coerced to sequences if necessary."""
     return set()
 
+  def headers(self):
+    """Returns dict of HTTP response headers. Subclasses may override."""
+    return {
+      'Cache-Control': 'max-age=300',
+      'X-XRDS-Location': 'https://%s/.well-known/host-meta.xrds' %
+        appengine_config.HOST,
+      'Access-Control-Allow-Origin': '*',
+      }
+
   def get(self):
     self.response.headers['Content-Type'] = self.content_type()
     # can't update() because wsgiref.headers.Headers doesn't have it.
-    for key, val in BASE_HEADERS.items():
+    for key, val in self.headers().items():
       self.response.headers[key] = val
 
     vars = {'host': appengine_config.HOST}
