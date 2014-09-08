@@ -3,7 +3,7 @@
 
 import os
 
-HTTP_TIMEOUT = 60  # seconds
+HTTP_TIMEOUT = 15  # seconds
 
 try:
   from google.appengine.api import app_identity
