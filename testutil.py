@@ -119,9 +119,14 @@ class HandlerTest(mox.MoxTestBase):
     self.testbed.deactivate()
     super(HandlerTest, self).tearDown()
 
-  def expect_urlopen(self, expected, response, status=200, data=None,
+  def expect_urlopen(self, expected, response=None, status=200, data=None,
                      headers=None, response_headers={}, **kwargs):
     """Stubs out urllib2.urlopen() and sets up an expected call.
+
+    If status isn't 2xx, makes the expected call raise a urllib2.HTTPError
+    instead of returning the response.
+
+    If response is unset, returns the expected call.
 
     Args:
       url: string, re.RegexObject, or webob.Request
@@ -161,8 +166,10 @@ class HandlerTest(mox.MoxTestBase):
         response = StringIO.StringIO(response)
       call.AndRaise(urllib2.HTTPError('url', status, 'message',
                                       response_headers, response))
-    else:
+    elif response is not None:
       call.AndReturn(self.UrlopenResult(status, response, headers=response_headers))
+    else:
+      return call
 
   def assert_entities_equal(self, a, b, ignore=frozenset(), keys_only=False,
                             in_order=False):
