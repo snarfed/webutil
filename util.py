@@ -156,6 +156,8 @@ _LINK_RE = re.compile(ur'\bhttps?://[^\s<>]+\b')
 def extract_links(text):
   """Returns a set of string URLs in the given text.
   """
+  if not text:
+    return set()
   return set(match.group() for match in _LINK_RE.finditer(text))
 
 

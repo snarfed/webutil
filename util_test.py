@@ -122,6 +122,7 @@ class UtilTest(testutil.HandlerTest):
                       util.parse_acct_uri, 'acct:me@a.com', ['x.com'])
 
   def test_extract_links(self):
+    self.assertEquals(set(), util.extract_links(None))
     self.assertEquals(set(), util.extract_links(''))
     self.assertEquals(set(), util.extract_links('asdf qwert'))
 
