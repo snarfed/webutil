@@ -3,6 +3,7 @@
 
 __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
+import collections
 import base64
 import datetime
 import logging
@@ -154,11 +155,15 @@ _LINK_RE = re.compile(ur'\bhttps?://[^\s<>]+\b')
 # http://stackoverflow.com/questions/720113#comment23297770_2102648
 
 def extract_links(text):
-  """Returns a set of string URLs in the given text.
+  """Returns a list of unique string URLs in the given text.
+
+  URLs in the returned list are in the order they first appear in the text.
   """
-  if not text:
-    return set()
-  return set(match.group() for match in _LINK_RE.finditer(text))
+  if not text:  # handle None
+    return []
+  return collections.OrderedDict(
+    [u, 0] for u in (match.group() for match in _LINK_RE.finditer(text))
+    ).keys()
 
 
 # This blows up on some URLs with underscores in query params. TODO: drop it

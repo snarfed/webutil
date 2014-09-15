@@ -122,9 +122,9 @@ class UtilTest(testutil.HandlerTest):
                       util.parse_acct_uri, 'acct:me@a.com', ['x.com'])
 
   def test_extract_links(self):
-    self.assertEquals(set(), util.extract_links(None))
-    self.assertEquals(set(), util.extract_links(''))
-    self.assertEquals(set(), util.extract_links('asdf qwert'))
+    self.assertEquals([], util.extract_links(None))
+    self.assertEquals([], util.extract_links(''))
+    self.assertEquals([], util.extract_links('asdf qwert'))
 
     for text in ('http://foo.com',
                  '  http://foo.com  ',
@@ -137,24 +137,28 @@ class UtilTest(testutil.HandlerTest):
                  "<a href='http://foo.com'>",
                  '<a href="xyz">http://foo.com</a>',
                  ):
-      self.assertEquals(set(['http://foo.com']), util.extract_links(text),
+      self.assertEquals(['http://foo.com'], util.extract_links(text),
                         'Failed on %r' % text)
 
     self.assertEquals(
-      set(['http://foo.com', 'https://www.bar.com']),
+      ['http://foo.com', 'https://www.bar.com'],
       util.extract_links('x http://foo.com y https://www.bar.com z'))
     self.assertEquals(
-      set(['http://foo.com', 'http://bar.com']),
+      ['http://foo.com', 'http://bar.com'],
       util.extract_links('asdf http://foo.com qwert <a class="x" href="http://bar.com" >xyz</a> www.baz.com'))
 
     # trailing slash
     # TODO: make this work
-    # self.assertEquals(set(['http://foo.com/']),
+    # self.assertEquals(['http://foo.com/'],
     #                   util.extract_links('x http://foo.com/'))
 
     # query
-    self.assertEquals(set(['http://foo.com/bar?baz=baj']),
+    self.assertEquals(['http://foo.com/bar?baz=baj'],
                       util.extract_links('http://foo.com/bar?baz=baj y'))
+
+    # preserve order
+    self.assertEquals(['http://%s' % c for c in 'a', 'b', 'c', 'd'],
+                      util.extract_links('http://a http://b http://c http://d'))
 
   def test_linkify(self):
     def test_both(expected, input):
