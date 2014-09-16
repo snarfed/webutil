@@ -68,6 +68,13 @@ class UtilTest(testutil.HandlerTest):
     self.assertEqual({3: 4, 2: 9}, util.trim_nulls({1: None, 3: 4, 5: [], 2: 9}))
     self.assertEqual({1: {3: 4}}, util.trim_nulls({1: {2: [], 3: 4}, 5: {6: None}}))
 
+  def test_uniquify(self):
+    self.assertEqual([], util.uniquify(None))
+    self.assertEqual([], util.uniquify([]))
+    self.assertEqual([3], util.uniquify((3,)))
+    self.assertEqual([3, 2, 4, 5, 9],
+                     util.uniquify([3, 3, 2, 3, 4, 3, 5, 9, 9, 9, 3]))
+
   def test_favicon_for_url(self):
     for url in ('http://a.org/b/c?d=e&f=g', 'https://a.org/b/c', 'http://a.org/'):
       self.assertEqual('http://a.org/favicon.ico', util.favicon_for_url(url))

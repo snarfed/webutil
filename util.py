@@ -50,6 +50,16 @@ def trim_nulls(value):
     return value
 
 
+def uniquify(input):
+  """Returns a list with duplicate items removed.
+
+  Like list(set(...)), but preserves order.
+  """
+  if not input:
+    return []
+  return collections.OrderedDict([x, 0] for x in input).keys()
+
+
 def tag_uri(domain, name, year=None):
   """Returns a tag URI string for the given domain and name.
 
@@ -161,9 +171,7 @@ def extract_links(text):
   """
   if not text:  # handle None
     return []
-  return collections.OrderedDict(
-    [u, 0] for u in (match.group() for match in _LINK_RE.finditer(text))
-    ).keys()
+  return uniquify(match.group() for match in _LINK_RE.finditer(text))
 
 
 # This blows up on some URLs with underscores in query params. TODO: drop it
