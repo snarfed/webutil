@@ -42,15 +42,6 @@ def get_task_eta(task):
     float(dict(task['headers'])['X-AppEngine-TaskETA']))
 
 
-class FakeCache(dict):
-  """Fake cache object. Useful for testing util.if_changed().
-  """
-  def get_multi(self, keys):
-    return {k: v for k, v in self.items() if k in keys}
-
-FakeCache.set_multi = FakeCache.update
-
-
 class HandlerTest(mox.MoxTestBase):
   """Base test class for webapp2 request handlers.
 

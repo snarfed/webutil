@@ -328,7 +328,7 @@ class UtilTest(testutil.HandlerTest):
       self.assertEqual(400, e.status_int)
 
   def test_if_changed(self):
-    cache = testutil.FakeCache()
+    cache = util.CacheDict()
     updates = {}
 
     for val in (0, '', []):  # should all be normalized to None

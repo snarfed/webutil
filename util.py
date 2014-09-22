@@ -19,6 +19,18 @@ class Struct(object):
     vars(self).update(**kwargs)
 
 
+class CacheDict(dict):
+  """A dict that also implements memcache's get_multi() and set_multi() methods.
+
+  Useful as a simple in memory replacement for App Engine's memcache API for
+  e.g. get_activities_response() in snarfed/activitystreams-unofficial.
+  """
+  def get_multi(self, keys):
+    return {k: v for k, v in self.items() if k in keys}
+
+CacheDict.set_multi = CacheDict.update
+
+
 def to_xml(value):
   """Renders a dict (usually from JSON) as an XML snippet."""
   if isinstance(value, dict):
