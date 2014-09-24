@@ -349,3 +349,16 @@ class UtilTest(testutil.HandlerTest):
 
   def test_generate_secret(self):
     self.assertEquals(24, len(util.generate_secret()))
+
+  def test_cache_dict(self):
+    data = {1: 2, 3: 4}
+    cd = util.CacheDict(data)
+    self.assert_equals(data, cd)
+    self.assert_equals({}, cd.get_multi([]))
+    self.assert_equals({}, cd.get_multi({9}))
+    self.assert_equals({1: 2}, cd.get_multi({1, 9}))
+    self.assert_equals(data, cd.get_multi({1, 3}))
+
+    # get_multi should handle a generator args ok
+    self.assert_equals(data, cd.get_multi(k for k in [1, 3]))
+    self.assert_equals(data, cd.get_multi(xrange(4)))

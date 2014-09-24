@@ -26,6 +26,7 @@ class CacheDict(dict):
   e.g. get_activities_response() in snarfed/activitystreams-unofficial.
   """
   def get_multi(self, keys):
+    keys = set(keys)
     return {k: v for k, v in self.items() if k in keys}
 
 CacheDict.set_multi = CacheDict.update
