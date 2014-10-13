@@ -208,13 +208,13 @@ class HandlerTest(mox.MoxTestBase):
     """
     return [e.key() for e in entities]
 
-  def assert_equals(self, expected, actual, msg=None):
+  def assert_equals(self, expected, actual, msg=None, in_order=False):
     """Pinpoints individual element differences in lists and dicts.
 
-    Ignores order in lists.
+    If in_order is False, ignores order in lists and tuples.
     """
     try:
-      self._assert_equals(expected, actual)
+      self._assert_equals(expected, actual, in_order=in_order)
     except AssertionError, e:
       if not isinstance(expected, basestring):
         expected = pprint.pformat(expected)
@@ -227,7 +227,7 @@ Expected value:
 Actual value:
 %s""" % ('%s: ' % msg if msg else '', ''.join(e.args), expected, actual))
 
-  def _assert_equals(self, expected, actual):
+  def _assert_equals(self, expected, actual, in_order=False):
     """Recursive helper for assert_equals().
     """
     key = None
@@ -238,15 +238,16 @@ Actual value:
           self.fail("%r doesn't match %s" % (expected, actual))
       elif isinstance(expected, dict) and isinstance(actual, dict):
         for key in set(expected.keys()) | set(actual.keys()):
-          self._assert_equals(expected.get(key), actual.get(key))
+          self._assert_equals(expected.get(key), actual.get(key), in_order=in_order)
       elif isinstance(expected, (list, tuple)) and isinstance(actual, (list, tuple)):
-        expected = sorted(list(expected))
-        actual = sorted(list(actual))
+        if not in_order:
+          expected = sorted(list(expected))
+          actual = sorted(list(actual))
         self.assertEqual(len(expected), len(actual),
                          'Different lengths:\n expected %s\n actual %s' %
                          (len(expected), len(actual)))
         for key, (e, a) in enumerate(zip(expected, actual)):
-          self._assert_equals(e, a)
+          self._assert_equals(e, a, in_order=in_order)
       elif (isinstance(expected, basestring) and isinstance(actual, basestring) and
             '\n' in expected):
         self.assert_multiline_equals(expected, actual)
