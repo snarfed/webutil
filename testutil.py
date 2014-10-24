@@ -110,7 +110,7 @@ class HandlerTest(mox.MoxTestBase):
     self.testbed.deactivate()
     super(HandlerTest, self).tearDown()
 
-  def expect_urlopen(self, expected, response=None, status=200, data=None,
+  def expect_urlopen(self, url, response=None, status=200, data=None,
                      headers=None, response_headers={}, **kwargs):
     """Stubs out urllib2.urlopen() and sets up an expected call.
 
@@ -130,16 +130,13 @@ class HandlerTest(mox.MoxTestBase):
     """
     def check_request(req):
       try:
-        if isinstance(expected, re._pattern_type):
+        expected = url if isinstance(url, re._pattern_type) else re.escape(url)
+        if isinstance(req, basestring):
           self.assertRegexpMatches(req, expected)
           assert not data, data
           assert not headers, headers
-        elif isinstance(req, basestring):
-          self.assertEqual(expected, req)
-          assert not data, data
-          assert not headers, headers
         else:
-          self.assertEqual(expected, req.get_full_url())
+          self.assertRegexpMatches(req.get_full_url(), expected)
           self.assertEqual(data, req.get_data())
           if isinstance(headers, mox.Comparator):
             self.assertTrue(headers.equals(req.header_items()))
