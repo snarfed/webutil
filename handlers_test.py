@@ -4,9 +4,7 @@
 
 __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
-import mox
 import testutil
-import unittest
 import urllib2
 import webapp2
 

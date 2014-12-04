@@ -10,14 +10,11 @@ import mox
 import pprint
 import re
 import os
-import re
 import rfc822
 import StringIO
-import sys
 import traceback
 import urllib2
 import urlparse
-import wsgiref
 
 from appengine_config import HTTP_TIMEOUT
 import webapp2
@@ -143,7 +140,7 @@ class HandlerTest(mox.MoxTestBase):
           elif headers is not None:
             missing = set(headers.items()) - set(req.header_items())
             assert not missing, 'Missing request headers: %s' % missing
-      except AssertionError, e:
+      except AssertionError:
         traceback.print_exc()
         return False
       return True

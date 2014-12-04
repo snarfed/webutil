@@ -82,7 +82,3 @@ def concurrent_requests_wsgi_middleware(app):
 application = webapp2.WSGIApplication([
     ('/_info', InfoHandler),
     ], debug=appengine_config.DEBUG)
-
-
-if __name__ == '__main__':
-  main()

@@ -10,7 +10,6 @@ __author__ = 'Ryan Barrett <webutil@ryanb.org>'
 import logging
 import os
 import urllib2
-import urlparse
 
 import appengine_config
 import webapp2

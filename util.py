@@ -122,7 +122,7 @@ def parse_acct_uri(uri, hosts=None):
   try:
     username, host = parsed.path.split('@')
     assert username, host
-  except ValueError, AssertionError:
+  except (ValueError, AssertionError):
     raise ValueError('Bad acct URI: %s' % uri)
 
   if hosts is not None and host not in hosts:
