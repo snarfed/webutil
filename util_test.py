@@ -109,6 +109,16 @@ class UtilTest(testutil.HandlerTest):
       util.update_scheme('http://photos-e.ak.instagram.com/hphotos-ak-xpf1/123_a.jpg',
                          self.handler))
 
+  def test_schemeless(self):
+    for expected, url in (
+        ('', util.schemeless('')),
+        ('/path', util.schemeless('/path')),
+        ('//foo', util.schemeless('//foo')),
+        ('//foo', util.schemeless('http://foo')),
+        ('//foo.bar/baz', util.schemeless('http://foo.bar/baz')),
+        ('//foo.bar/baz', util.schemeless('https://foo.bar/baz'))):
+      self.assertEqual(expected, util.schemeless(url))
+
   def test_tag_uri(self):
     self.assertEquals('tag:x.com:foo', util.tag_uri('x.com', 'foo'))
     self.assertEquals('tag:x.com,2013:foo',

@@ -169,8 +169,19 @@ def update_scheme(url, handler):
                'http://distillery.s3.amazonaws.com', url)
   url = re.sub(r'^http://photos-\w\.(ak\.)instagram\.com',
                'http://igcdn-photos-e-a.akamaihd.net', url)
-  return urlparse.urlunparse([handler.request.scheme] +
-                             list(urlparse.urlparse(url)[1:]))
+  return urlparse.urlunparse((handler.request.scheme,) +
+                             urlparse.urlparse(url)[1:])
+
+
+def schemeless(url):
+  """Strips the scheme (e.g. 'https') from a URL.
+
+  Args:
+    url: string
+
+  Returns: string URL
+  """
+  return urlparse.urlunparse(('',) + urlparse.urlparse(url)[1:])
 
 
 _LINK_RE = re.compile(ur'\bhttps?://[^\s<>]+\b')
