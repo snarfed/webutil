@@ -198,25 +198,19 @@ def extract_links(text):
   return uniquify(match.group() for match in _LINK_RE.finditer(text))
 
 
-# This blows up on some URLs with underscores in query params. TODO: drop it
-_LINKIFY_RE = re.compile(ur"""
-(?<! href=["'])  # negative lookahead for beginning of HTML anchor tag
-  \b((?:([\w-]+):(/{1,3})|www[.])  # scheme and optional leading www.
-  (?:(?:(?:[^\s()]|&amp;|&quot;)*
-  (?:[^!"#$%&'()*+,.:;<=>?@\[\]^`{|}~\s]))|
-  (?:\((?:[^\s&()]|&amp;|&quot;)*\)))+)
-(?![^<>]*>)  # negative lookahead for end of HTML anchor tag
-""", re.VERBOSE)
-
 # Generously donated by kylewm:
 # https://github.com/snarfed/bridgy/issues/209#issuecomment-47583528
 #
-# TODO: make this handle non-ASCII chars and links without scheme, then use it
-# all the time.
-_LINKIFY_RE_SIMPLE = re.compile(
-  ur'\b(?<!=[\'"])https?://([a-zA-Z0-9/\.\-_:%?@$#&=+]+)')
+# I used to use a more complicated regexp based on
+# https://github.com/silas/huck/blob/master/huck/utils.py#L59 , but i kept
+# finding new input strings that would make it hang the regexp engine.
+_LINKIFY_RE = re.compile(ur"""
+  \b(?<!=[\'"])
+  (https?://|www\.)
+  ((\w|[/\.\-_:%?@$#&=+])+)
+  """, re.VERBOSE | re.UNICODE)
 
-def linkify(text, pretty=False, simple=False, **kwargs):
+def linkify(text, pretty=False, **kwargs):
   """Adds HTML links to URLs in the given plain text.
 
   For example: linkify("Hello http://tornadoweb.org!") would return
@@ -225,36 +219,22 @@ def linkify(text, pretty=False, simple=False, **kwargs):
   Ignores URLs that are inside HTML links, ie anchor tags that look like
   <a href="..."> .
 
-  Based on https://github.com/silas/huck/blob/master/huck/utils.py#L59
-
   Args:
     text: string, input
     pretty: if True, uses pretty_link() for link text
-    simple: if True, uses a simpler, cheaper regex
 
   Returns: string, linkified input
   """
-  # Huck: "I originally used the regex from
-  # http://daringfireball.net/2010/07/improved_regex_for_matching_urls
-  # but it gets all exponential on certain patterns (such as too many trailing
-  # dots), causing the regex matcher to never return. This regex should avoid
-  # those problems."
   def make_link(m):
-    if simple:
-      url = href = m.group(0)
-    else:
-      url = m.group(1)
-      proto = m.group(2)
-      href = m.group(1)
-      if not proto:
-        href = 'http://' + href
-
+    url = href = m.group(0)
+    if not href.startswith('http'):
+      href = 'http://' + href
     if pretty:
       return pretty_link(href, **kwargs)
     else:
       return u'<a href="%s">%s</a>' % (href, url)
 
-  return (_LINKIFY_RE_SIMPLE if simple else _LINKIFY_RE).sub(make_link, text)
+  return _LINKIFY_RE.sub(make_link, text)
 
 
 def pretty_link(url, text=None, keep_host=True, glyphicon=None, a_class=None,

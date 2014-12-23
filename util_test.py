@@ -178,37 +178,30 @@ class UtilTest(testutil.HandlerTest):
                       util.extract_links('http://a http://b http://c http://d'))
 
   def test_linkify(self):
-    def test_both(expected, input):
-      for simple in False, True:
-        self.assertEqual(expected, util.linkify(input, simple=simple))
+    for unchanged in (
+        '',
+        'asdf qwert',
+        'X <a class="x" href="http://foo.com" >xyz</a> Y',
+        '<a href="http://foo.com"  class="x">xyz</a> Y',
+        "X <a href='http//foo.com' />",
+        'asdf <a href="http://foo.com">foo</a> qwert '):
+      self.assertEqual(unchanged, util.linkify(unchanged))
 
-    test_both('asdf <a href="http://foo.com">http://foo.com</a> qwert '
-              '<a class="x" href="http://foo.com" >xyz</a>',
-              'asdf http://foo.com qwert <a class="x" href="http://foo.com" >xyz</a>')
-    test_both('asdf <a href="http://t.co/asdf">http://t.co/asdf</a> qwert',
-              'asdf http://t.co/asdf qwert')
-
-    for unchanged in ('',
-                      'asdf qwert',
-                      'X <a class="x" href="http://foo.com" >xyz</a> Y',
-                      '<a href="http://foo.com"  class="x">xyz</a> Y',
-                      "X <a href='http//foo.com' />",
-                      'asdf <a href="http://foo.com">foo</a> qwert '):
-      test_both(unchanged, unchanged)
-
-    test_both('<a href="http://foo?bar&baz">http://foo?bar&baz</a>',
-                     'http://foo?bar&baz')
-
-    # only the non-simple regex handles unicode chars and URLs without schemes
     for expected, input in (
-      ('<a href="http://www.foo.com">www.foo.com</a>', 'www.foo.com'),
-      ('a <a href="http://www.foo.com">www.foo.com</a> b', 'a www.foo.com b'),
-      ('asdf <a href="http://foo.com">foo</a> qwert '
-       '<a href="http://www.bar.com">www.bar.com</a>',
-       'asdf <a href="http://foo.com">foo</a> qwert www.bar.com'),
-      (u'<a href="http://a÷b">http://a÷b</a>',  # unicode char
-       u'http://a÷b')):
-      self.assertEqual(expected, util.linkify(input))
+        ('asdf <a href="http://foo.com">http://foo.com</a> qwert <a class="x" href="http://foo.com" >xyz</a>',
+         'asdf http://foo.com qwert <a class="x" href="http://foo.com" >xyz</a>'),
+        ('asdf <a href="http://t.co/asdf">http://t.co/asdf</a> qwert',
+         'asdf http://t.co/asdf qwert'),
+        ('<a href="http://foo?bar&baz">http://foo?bar&baz</a>',
+         'http://foo?bar&baz'),
+        ('<a href="http://www.foo.com">www.foo.com</a>', 'www.foo.com'),
+        ('a <a href="http://www.foo.com">www.foo.com</a> b', 'a www.foo.com b'),
+        ('asdf <a href="http://foo.com">foo</a> qwert '
+         '<a href="http://www.bar.com">www.bar.com</a>',
+         'asdf <a href="http://foo.com">foo</a> qwert www.bar.com'),
+        (u'<a href="http://aÇb">http://aÇb</a>',  # unicode char
+         u'http://aÇb')):
+        self.assertEqual(expected, util.linkify(input))
 
   def test_pretty_link(self):
     pl = util.pretty_link
