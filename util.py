@@ -198,16 +198,18 @@ def extract_links(text):
   return uniquify(match.group() for match in _LINK_RE.finditer(text))
 
 
-# Generously donated by kylewm:
+# Based on kylewm's from redwind:
 # https://github.com/snarfed/bridgy/issues/209#issuecomment-47583528
+# https://github.com/kylewm/redwind/blob/863989d48b97a85a1c1a92c6d79753d2fbb70775/redwind/util.py#L39
 #
 # I used to use a more complicated regexp based on
 # https://github.com/silas/huck/blob/master/huck/utils.py#L59 , but i kept
 # finding new input strings that would make it hang the regexp engine.
-_LINKIFY_RE = re.compile(ur"""
-  \b(?<!=[\'"])
-  (https?://|www\.)
-  ((\w|[/\.\-_:%?@$#&=+])+)
+_LINKIFY_RE = re.compile(r"""
+  \b(?<!=[\'"])                     # ignore html attribute values
+  (\w{3,9}:/{1,3}|www\.)            # scheme or leading www.
+  [\w\-_.]+(:\d{2,6})?              # host and optional port
+  ([/?][\w/.\-_~.;:%?@$#&()=+]*)?   # path and query
   """, re.VERBOSE | re.UNICODE)
 
 def linkify(text, pretty=False, **kwargs):
@@ -227,7 +229,7 @@ def linkify(text, pretty=False, **kwargs):
   """
   def make_link(m):
     url = href = m.group(0)
-    if not href.startswith('http'):
+    if href.startswith('www.'):
       href = 'http://' + href
     if pretty:
       return pretty_link(href, **kwargs)

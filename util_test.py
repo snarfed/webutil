@@ -180,6 +180,7 @@ class UtilTest(testutil.HandlerTest):
   def test_linkify(self):
     for unchanged in (
         '',
+        'x.com',
         'asdf qwert',
         'X <a class="x" href="http://foo.com" >xyz</a> Y',
         '<a href="http://foo.com"  class="x">xyz</a> Y',
@@ -188,6 +189,12 @@ class UtilTest(testutil.HandlerTest):
       self.assertEqual(unchanged, util.linkify(unchanged))
 
     for expected, input in (
+        ('<a href="http://foo.com">http://foo.com</a>', 'http://foo.com'),
+        ('<a href="http://foo.com/">http://foo.com/</a>', 'http://foo.com/'),
+        ('<a href="http://foo.com/y">http://foo.com/y</a>', 'http://foo.com/y'),
+        ('<a href="http://www.foo">www.foo</a>', 'www.foo'),
+        ('<a href="http://www.foo:80">www.foo:80</a>', 'www.foo:80'),
+        ('<a href="http://www.foo:80/x">www.foo:80/x</a>', 'www.foo:80/x'),
         ('asdf <a href="http://foo.com">http://foo.com</a> qwert <a class="x" href="http://foo.com" >xyz</a>',
          'asdf http://foo.com qwert <a class="x" href="http://foo.com" >xyz</a>'),
         ('asdf <a href="http://t.co/asdf">http://t.co/asdf</a> qwert',
@@ -200,7 +207,10 @@ class UtilTest(testutil.HandlerTest):
          '<a href="http://www.bar.com">www.bar.com</a>',
          'asdf <a href="http://foo.com">foo</a> qwert www.bar.com'),
         (u'<a href="http://aÇb">http://aÇb</a>',  # unicode char
-         u'http://aÇb')):
+         u'http://aÇb'),
+        # https://github.com/snarfed/bridgy/issues/325#issuecomment-67923098
+        ('<a href="https://github.com/pfefferle/wordpress-indieweb-press-this">https://github.com/pfefferle/wordpress-indieweb-press-this</a> >',
+         'https://github.com/pfefferle/wordpress-indieweb-press-this >')):
         self.assertEqual(expected, util.linkify(input))
 
   def test_pretty_link(self):
