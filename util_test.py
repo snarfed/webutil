@@ -375,3 +375,9 @@ class UtilTest(testutil.HandlerTest):
     # get_multi should handle a generator args ok
     self.assert_equals(data, cd.get_multi(k for k in [1, 3]))
     self.assert_equals(data, cd.get_multi(xrange(4)))
+
+  def test_is_int(self):
+    for arg in 0, 1, -1, '0', '11', 1.0, 12345:
+      self.assertTrue(util.is_int(arg), `arg`)
+    for arg in 0.1, 3.14, '3.0', '3xyz':
+      self.assertFalse(util.is_int(arg), `arg`)

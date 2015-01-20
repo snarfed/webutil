@@ -7,6 +7,7 @@ import collections
 import base64
 import datetime
 import logging
+import numbers
 import os
 import re
 import urllib
@@ -442,3 +443,12 @@ def generate_secret():
   Returns: random string
   """
   return base64.urlsafe_b64encode(os.urandom(16))
+
+
+def is_int(arg):
+  """Returns True if arg can be converted to an integer, False otherwise."""
+  try:
+    as_int = int(arg)
+    return as_int == arg if isinstance(arg, numbers.Number) else True
+  except ValueError:
+    return False
