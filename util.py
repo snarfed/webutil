@@ -450,5 +450,5 @@ def is_int(arg):
   try:
     as_int = int(arg)
     return as_int == arg if isinstance(arg, numbers.Number) else True
-  except ValueError:
+  except (ValueError, TypeError):
     return False

@@ -379,5 +379,5 @@ class UtilTest(testutil.HandlerTest):
   def test_is_int(self):
     for arg in 0, 1, -1, '0', '11', 1.0, 12345:
       self.assertTrue(util.is_int(arg), `arg`)
-    for arg in 0.1, 3.14, '3.0', '3xyz':
+    for arg in 0.1, 3.14, '3.0', '3xyz', None, self:
       self.assertFalse(util.is_int(arg), `arg`)
