@@ -9,6 +9,7 @@ import urlparse
 from webob import exc
 
 import testutil
+import urllib2
 import util
 import webapp2
 
@@ -323,6 +324,21 @@ class UtilTest(testutil.HandlerTest):
       ('http://a.com?x=R+%C3%87&x=R+%C3%87', 'http://a.com?x=R+%C3%87', {'x': u'R Ç'}),
       ):
       self.assertEqual(expected, util.add_query_params(url, params))
+
+    for expected, req, params in (
+      (urllib2.Request('http://a.com?x=y'), urllib2.Request('http://a.com'),
+       [('x', 'y')]),
+      (urllib2.Request('http://a.com?x=y&u=v'), urllib2.Request('http://a.com?x=y'),
+       [('u', 'v')]),
+      (urllib2.Request('http://a.com?x=y', data='my data', headers={'X': 'Y'}),
+       urllib2.Request('http://a.com', data='my data', headers={'X': 'Y'}),
+       [('x', 'y')]),
+      ):
+      actual = util.add_query_params(req, params)
+      self.assertIsInstance(actual, urllib2.Request)
+      self.assertEqual(expected.get_full_url(), actual.get_full_url())
+      self.assertEqual(expected.get_data(), actual.get_data())
+      self.assertEqual(expected.headers, actual.headers)
 
     query_string = ''
     for i in range(2):

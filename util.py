@@ -11,6 +11,7 @@ import numbers
 import os
 import re
 import urllib
+import urllib2
 import urlparse
 
 
@@ -373,11 +374,16 @@ def add_query_params(url, params):
   """Adds new query parameters to a URL. Encodes as UTF-8 and URL-safe.
 
   Args:
-    url: string URL. May already have query parameters.
+    url: string URL or urllib2.Request. May already have query parameters.
     params: dict or list of (string key, string value) tuples. Keys may repeat.
 
   Returns: string URL
   """
+  is_request = isinstance(url, urllib2.Request)
+  if is_request:
+    req = url
+    url = req.get_full_url()
+
   if isinstance(params, dict):
     params = params.items()
 
@@ -386,7 +392,12 @@ def add_query_params(url, params):
   # query params are in index 4
   params = set((k, unicode(v).encode('utf-8')) for k, v in params)
   parsed[4] += ('&' if parsed[4] else '') + urllib.urlencode(list(params))
-  return urlparse.urlunparse(parsed)
+  updated = urlparse.urlunparse(parsed)
+
+  if is_request:
+    return urllib2.Request(updated, data=req.get_data(), headers=req.headers)
+  else:
+    return updated
 
 
 def get_required_param(handler, name):

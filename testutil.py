@@ -114,10 +114,12 @@ class HandlerTest(mox.MoxTestBase):
     If status isn't 2xx, makes the expected call raise a urllib2.HTTPError
     instead of returning the response.
 
+    If data is set, url *must* be a urllib2.Request.
+
     If response is unset, returns the expected call.
 
     Args:
-      url: string, re.RegexObject, or webob.Request
+      url: string, re.RegexObject or urllib2.Request or webob.Request
       response: string
       status: int, HTTP response code
       data: optional string POST body
@@ -215,11 +217,11 @@ class HandlerTest(mox.MoxTestBase):
       if not isinstance(actual, basestring):
         actual = pprint.pformat(actual)
       raise AssertionError("""\
-%s%s
+%s: %s
 Expected value:
 %s
 Actual value:
-%s""" % ('%s: ' % msg if msg else '', ''.join(e.args), expected, actual))
+%s""" % (msg, ''.join(e.args), expected, actual))
 
   def _assert_equals(self, expected, actual, in_order=False):
     """Recursive helper for assert_equals().
