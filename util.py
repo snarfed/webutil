@@ -148,8 +148,9 @@ def domain_from_link(url):
     parsed = urlparse.urlparse('http://' + url)
 
   domain = parsed.netloc
-  if domain.startswith('www.'):
-    domain = domain[4:]
+  for subdomain in ('www.', 'mobile.', 'm.'):
+    if domain.startswith(subdomain):
+      domain = domain[len(subdomain):]
   if domain and HOSTNAME_RE.match(domain):
     return domain
 
@@ -190,6 +191,7 @@ _LINK_RE = re.compile(ur'\bhttps?://[^\s<>]+\b')
 # more complicated alternative:
 # http://stackoverflow.com/questions/720113#comment23297770_2102648
 
+
 def extract_links(text):
   """Returns a list of unique string URLs in the given text.
 
@@ -214,6 +216,7 @@ _LINKIFY_RE = re.compile(r"""
   ([/?][\w/.\-_~.;:%?@$#&()=+]*)?   # path and query
   """, re.VERBOSE | re.UNICODE)
 
+
 def linkify(text, pretty=False, **kwargs):
   """Adds HTML links to URLs in the given plain text.
 
@@ -229,14 +232,24 @@ def linkify(text, pretty=False, **kwargs):
 
   Returns: string, linkified input
   """
+  def split_trailing_punc(text):
+    # split trailing punctuation off the end of a url
+    ii = len(text) - 1
+    while (ii >= 0 and text[ii] in '.!?,;:)'
+           # allow 1 () pair
+           and (text[ii] != ')' or '(' not in text)):
+        ii -= 1
+    return text[:ii + 1], text[ii + 1:]
+
   def make_link(m):
-    url = href = m.group(0)
+    head, tail = split_trailing_punc(m.group(0))
+    url = href = head
     if href.startswith('www.'):
       href = 'http://' + href
     if pretty:
-      return pretty_link(href, **kwargs)
+      return pretty_link(href, **kwargs) + tail
     else:
-      return u'<a href="%s">%s</a>' % (href, url)
+      return u'<a href="%s">%s</a>%s' % (href, url, tail)
 
   return _LINKIFY_RE.sub(make_link, text)
 

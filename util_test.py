@@ -211,7 +211,12 @@ class UtilTest(testutil.HandlerTest):
          u'http://aÇb'),
         # https://github.com/snarfed/bridgy/issues/325#issuecomment-67923098
         ('<a href="https://github.com/pfefferle/wordpress-indieweb-press-this">https://github.com/pfefferle/wordpress-indieweb-press-this</a> >',
-         'https://github.com/pfefferle/wordpress-indieweb-press-this >')):
+         'https://github.com/pfefferle/wordpress-indieweb-press-this >'),
+        ('interesting how twitter auto-links it <a href="http://example.com/a_link_(with_parens)">http://example.com/a_link_(with_parens)</a> vs. (<a href="http://example.com/a_link_without">http://example.com/a_link_without</a>)',
+         'interesting how twitter auto-links it http://example.com/a_link_(with_parens) vs. (http://example.com/a_link_without)'),
+        ('links separated by punctuation <a href="http://foo.com">http://foo.com</a>, <a href="http://bar.com/">http://bar.com/</a>; <a href="http://baz.com/?s=query">http://baz.com/?s=query</a>; did it work?',
+         'links separated by punctuation http://foo.com, http://bar.com/; http://baz.com/?s=query; did it work?'),
+    ):
         self.assertEqual(expected, util.linkify(input))
 
   def test_pretty_link(self):
