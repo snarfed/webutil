@@ -84,7 +84,9 @@ class UtilTest(testutil.HandlerTest):
     self.assertEqual('localhost', util.domain_from_link('http://localhost/foo'))
     self.assertEqual('a.b.c.d', util.domain_from_link('http://a.b.c.d/foo'))
     for good_link in ('asdf.com', 'www.asdf.com', 'https://asdf.com/',
-                      'asdf.com/foo?bar#baz'):
+                      'asdf.com/foo?bar#baz', 'm.asdf.com',
+                      'mobile.asdf.com/foo?bar#baz',
+                      'https://m.asdf.com/foo?bar#baz'):
       actual = util.domain_from_link(good_link)
       self.assertEqual('asdf.com', actual, '%s returned %s' % (good_link, actual))
 
