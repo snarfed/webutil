@@ -183,12 +183,15 @@ class UtilTest(testutil.HandlerTest):
   def test_linkify(self):
     for unchanged in (
         '',
-        'x.com',
+        'x.c',
+        'x.computer',
         'asdf qwert',
         'X <a class="x" href="http://foo.com" >xyz</a> Y',
         '<a href="http://foo.com"  class="x">xyz</a> Y',
-        "X <a href='http//foo.com' />",
-        'asdf <a href="http://foo.com">foo</a> qwert '):
+        "X <a href='http://foo.com' />",
+        'asdf <a href="http://foo.com">foo</a> qwert ',
+        # only a-z0-9 allowed in domain names
+        u'http://aÇb.com'):
       self.assertEqual(unchanged, util.linkify(unchanged))
 
     for expected, input in (
@@ -202,15 +205,13 @@ class UtilTest(testutil.HandlerTest):
          'asdf http://foo.com qwert <a class="x" href="http://foo.com" >xyz</a>'),
         ('asdf <a href="http://t.co/asdf">http://t.co/asdf</a> qwert',
          'asdf http://t.co/asdf qwert'),
-        ('<a href="http://foo?bar&baz">http://foo?bar&baz</a>',
-         'http://foo?bar&baz'),
+        ('<a href="http://foo.co/?bar&baz">http://foo.co/?bar&baz</a>',
+         'http://foo.co/?bar&baz'),
         ('<a href="http://www.foo.com">www.foo.com</a>', 'www.foo.com'),
         ('a <a href="http://www.foo.com">www.foo.com</a> b', 'a www.foo.com b'),
         ('asdf <a href="http://foo.com">foo</a> qwert '
          '<a href="http://www.bar.com">www.bar.com</a>',
          'asdf <a href="http://foo.com">foo</a> qwert www.bar.com'),
-        (u'<a href="http://aÇb">http://aÇb</a>',  # unicode char
-         u'http://aÇb'),
         # https://github.com/snarfed/bridgy/issues/325#issuecomment-67923098
         ('<a href="https://github.com/pfefferle/wordpress-indieweb-press-this">https://github.com/pfefferle/wordpress-indieweb-press-this</a> >',
          'https://github.com/pfefferle/wordpress-indieweb-press-this >'),
@@ -268,9 +269,9 @@ class UtilTest(testutil.HandlerTest):
     lp = lambda url: util.linkify(url, pretty=True, max_length=6)
     self.assertEqual('', lp(''))
     self.assertEqual('asdf qwert', lp('asdf qwert'))
-    self.assertEquals('x <a href="http://foo">foo</a> y', lp('x http://foo y'))
-    self.assertEquals('x <a href="http://www.foo/baz/baj">foo/ba...</a> y',
-                      lp('x http://www.foo/baz/baj y'))
+    self.assertEquals('x <a href="http://foo.co">foo.co</a> y', lp('x http://foo.co y'))
+    self.assertEquals('x <a href="http://www.foo.ly/baz/baj">foo.ly...</a> y',
+                      lp('x http://www.foo.ly/baz/baj y'))
 
   def test_parse_iso8601(self):
     for str, offset in (

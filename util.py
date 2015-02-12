@@ -210,14 +210,65 @@ def extract_links(text):
 # https://github.com/silas/huck/blob/master/huck/utils.py#L59 , but i kept
 # finding new input strings that would make it hang the regexp engine.
 _LINKIFY_RE = re.compile(r"""
-  \b(?<!=[\'"])                     # ignore html attribute values
-  (\w{3,9}:/{1,3}|www\.)            # scheme or leading www.
-  [\w\-_.]+(:\d{2,6})?              # host and optional port
-  ([/?][\w/.\-_~.;:%?@$#&()=+]*)?   # path and query
+  \b(?:[a-z]{3,9}:/{1,3})?                   # optional scheme
+  (?:[a-z0-9\-]+\.)+[a-z]{2,4}(?::\d{2,6})?  # host and optional port
+  (?:(?:/[\w/.\-_~.;:%?@$#&()=+]*)|\b)       # path and query
   """, re.VERBOSE | re.UNICODE)
 
 
-def linkify(text, pretty=False, **kwargs):
+def tokenize_links(text, skip_bare_cc_tlds=False):
+  """Split text into link and non-link text, returning two lists
+  roughly equivalent to the output of re.findall and re.split (with
+  some post-processing)
+
+  Args:
+    text: string to linkify
+    skip_bare_cc_tlds: boolean, whether to skip links of the form
+      [domain].[2-letter TLD] with no schema and no path
+
+  Returns: a tuple containing two lists of strings, a list of links
+  and list of non-link text
+  """
+  links = _LINKIFY_RE.findall(text)
+  splits = _LINKIFY_RE.split(text)
+
+  for ii in xrange(len(links)):
+    # trim trailing punctuation from links
+    link = links[ii]
+    jj = len(link) - 1
+    while (jj >= 0 and link[jj] in '.!?,;:)'
+           # allow 1 () pair
+           and (link[jj] != ')' or '(' not in link)):
+      jj -= 1
+      links[ii] = link[:jj + 1]
+      splits[ii + 1] = link[jj + 1:] + splits[ii + 1]
+
+    link = links[ii]
+
+    # avoid double linking by looking at preceeding 2 chars
+    if (splits[ii].strip().endswith('="')
+        or splits[ii].strip().endswith("='")
+        or splits[ii + 1].strip().startswith('</a')
+        # skip domains with 2-letter TLDs and no schema or path
+        or (skip_bare_cc_tlds and re.match('[a-z0-9\-]+\.[a-z]{2}$', link))):
+      # collapse link into before text
+      splits[ii] = splits[ii] + links[ii]
+      links[ii] = None
+      continue
+
+  # clean up the output by collapsing removed links
+  ii = len(links) - 1
+  while ii >= 0:
+    if links[ii] is None:
+      splits[ii] = splits[ii] + splits[ii + 1]
+      del links[ii]
+      del splits[ii + 1]
+    ii -= 1
+
+  return links, splits
+
+
+def linkify(text, pretty=False, skip_bare_cc_tlds=False, **kwargs):
   """Adds HTML links to URLs in the given plain text.
 
   For example: linkify("Hello http://tornadoweb.org!") would return
@@ -232,26 +283,23 @@ def linkify(text, pretty=False, **kwargs):
 
   Returns: string, linkified input
   """
-  def split_trailing_punc(text):
-    # split trailing punctuation off the end of a url
-    ii = len(text) - 1
-    while (ii >= 0 and text[ii] in '.!?,;:)'
-           # allow 1 () pair
-           and (text[ii] != ')' or '(' not in text)):
-        ii -= 1
-    return text[:ii + 1], text[ii + 1:]
 
-  def make_link(m):
-    head, tail = split_trailing_punc(m.group(0))
-    url = href = head
-    if href.startswith('www.'):
+  links, splits = tokenize_links(text, skip_bare_cc_tlds)
+  result = []
+
+  for ii in xrange(len(links)):
+    result.append(splits[ii])
+
+    url = href = links[ii]
+    if not href.startswith('http://') and not href.startswith('https://'):
       href = 'http://' + href
-    if pretty:
-      return pretty_link(href, **kwargs) + tail
-    else:
-      return u'<a href="%s">%s</a>%s' % (href, url, tail)
 
-  return _LINKIFY_RE.sub(make_link, text)
+    if pretty:
+      result.append(pretty_link(href, **kwargs))
+    else:
+      result.append(u'<a href="%s">%s</a>' % (href, url))
+  result.append(splits[-1])
+  return ''.join(result)
 
 
 def pretty_link(url, text=None, keep_host=True, glyphicon=None, a_class=None,
