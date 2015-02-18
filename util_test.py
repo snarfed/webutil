@@ -122,6 +122,15 @@ class UtilTest(testutil.HandlerTest):
         ('//foo.bar/baz', util.schemeless('https://foo.bar/baz'))):
       self.assertEqual(expected, util.schemeless(url))
 
+  def test_dedupe_urls(self):
+    self.assertEquals([], util.dedupe_urls([]))
+    self.assertEquals(['http://foo'], util.dedupe_urls(['http://foo']))
+    self.assertEquals(['https://foo/'],
+                       util.dedupe_urls(['http://foo', 'http://foo',
+                                         'https://foo/', 'http://foo/']))
+    self.assertEquals(['http://foo/bar', 'http://foo/bar/'],
+                       util.dedupe_urls(['http://foo/bar', 'http://foo/bar/']))
+
   def test_tag_uri(self):
     self.assertEquals('tag:x.com:foo', util.tag_uri('x.com', 'foo'))
     self.assertEquals('tag:x.com,2013:foo',

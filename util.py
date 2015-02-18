@@ -468,6 +468,37 @@ def get_required_param(handler, name):
   return val
 
 
+def dedupe_urls(urls):
+  """De-dupes URLs, ignoring scheme (http vs https) and trailing root slash.
+
+  Preserves order. Prefers https and trailing root slash in the returned URLs.
+
+  As examples, http://foo/ and https://foo are considered duplicates, but
+  http://foo/bar and http://foo/bar/ aren't.
+
+  Args:
+    urls: sequence of string URLs
+
+  Returns:
+    sequence of string URLs
+  """
+  unique = set(urls)
+
+  def has_better(url):
+    # returns True if a dupe exists with a better scheme or root slash path
+    p = urlparse.urlparse(url)
+    if p.scheme == 'http':
+      if urlparse.urlunparse(('https',) + p[1:]) in unique:
+        return True
+      if not p.path and urlparse.urlunparse(('https', p.netloc, '/') + p[3:]) in unique:
+        return True
+    elif not p.path and urlparse.urlunparse(p[:2] + ('/',) + p[3:]) in unique:
+      return True
+
+  best = {u for u in unique if not has_better(u)}
+  return [u for u in urls if u in best]
+
+
 def if_changed(cache, updates, key, value):
   """Returns a value if it's different from the cached value, otherwise None.
 
