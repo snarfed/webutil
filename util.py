@@ -495,14 +495,7 @@ def dedupe_urls(urls):
     elif not p.path and urlparse.urlunparse(p[:2] + ('/',) + p[3:]) in unique:
       return True
 
-  seen = set()
-  deduped = []
-  for u in urls:
-    if u not in seen and not has_better(u):
-      deduped.append(u)
-      seen.add(u)
-
-  return deduped
+  return [u for u in uniquify(urls) if not has_better(u)]
 
 
 def if_changed(cache, updates, key, value):
