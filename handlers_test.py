@@ -35,6 +35,43 @@ class HandlersTest(testutil.HandlerTest):
     self.assertEquals(408, resp.status_int)
     self.assertEquals('HTTP Error 408: foo bar', resp.body)
 
+  def test_redirect(self):
+    class Handler(webapp2.RequestHandler):
+      from_to = handlers.redirect('from.com', 'to.org')
+
+      @from_to
+      def get(self):
+        self.response.set_status(204)
+
+      @from_to
+      def post(self, first, second):
+        self.response.set_status(205)
+
+    app = webapp2.WSGIApplication([('/(.*)/(.*)', Handler),
+                                   ('.*', Handler)])
+
+    # should redirect
+    for url in '/', '/a/b/c', '/d?x=y':
+      for scheme in 'http', 'https':
+        resp = app.get_response(url, base_url=scheme + '://from.com')
+        self.assertEquals(301, resp.status_int)
+        self.assertEquals('%s://to.org%s' % (scheme, url), resp.headers['Location'])
+
+    # should redirect and include *args
+    resp = app.get_response('/x/y', method='POST', base_url='http://from.com')
+    self.assertEquals(301, resp.status_int)
+    self.assertEquals('http://to.org/x/y', resp.headers['Location'])
+
+    for base_url in 'http://abc.net', 'https://to.org':
+      # shouldn't redirect
+      resp = app.get_response('/', base_url=base_url)
+      self.assertEquals(204, resp.status_int)
+      self.assertNotIn('Location', resp.headers)
+
+      # shouldn't redirect, should include *args
+      resp = app.get_response('/x/y', method='POST', base_url='http://')
+      self.assertEquals(205, resp.status_int)
+      self.assertNotIn('Location', resp.headers)
 
   def test_template_handler_get(self):
     self.mox.StubOutWithMock(template, 'render')

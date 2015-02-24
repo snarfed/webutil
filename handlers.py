@@ -10,6 +10,7 @@ __author__ = 'Ryan Barrett <webutil@ryanb.org>'
 import logging
 import os
 import urllib2
+import urlparse
 
 import appengine_config
 import webapp2
@@ -41,6 +42,29 @@ def handle_exception(self, e, debug):
     self.response.write(str(e))
   else:
     raise
+
+
+def redirect(from_domain, to_domain):
+  """Decorator for RequestHandler methods that 301 redirects to a new domain.
+
+  Preserves scheme, path, and query.
+
+  Args:
+    from_domain, to_domain: strings
+  """
+  def decorator(method):
+    def wrapper(self, *args, **kwargs):
+      parts = list(urlparse.urlparse(self.request.url))
+      # not using self.request.host because it includes port
+      if parts[1] == from_domain:  # netloc
+        parts[1] = to_domain
+        return self.redirect(urlparse.urlunparse(parts), permanent=True)
+      else:
+        return method(self, *args)
+
+    return wrapper
+
+  return decorator
 
 
 class TemplateHandler(webapp2.RequestHandler):
