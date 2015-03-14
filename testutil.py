@@ -129,22 +129,27 @@ class HandlerTest(mox.MoxTestBase):
     """
     def check_request(req):
       try:
-        expected = url if isinstance(url, re._pattern_type) else re.escape(url)
+        req_url = req if isinstance(req, basestring) else req.get_full_url()
+        if isinstance(url, re._pattern_type):
+          self.assertRegexpMatches(req_url, url)
+        else:
+          self.assertEqual(url, req_url)
+
         if isinstance(req, basestring):
-          self.assertRegexpMatches(req, expected)
           assert not data, data
           assert not headers, headers
         else:
-          self.assertRegexpMatches(req.get_full_url(), expected)
           self.assertEqual(data, req.get_data())
           if isinstance(headers, mox.Comparator):
             self.assertTrue(headers.equals(req.header_items()))
           elif headers is not None:
             missing = set(headers.items()) - set(req.header_items())
             assert not missing, 'Missing request headers: %s' % missing
+
       except AssertionError:
         traceback.print_exc()
         return False
+
       return True
 
     call = urllib2.urlopen(mox.Func(check_request), timeout=HTTP_TIMEOUT, **kwargs)
