@@ -30,6 +30,17 @@ sys.path.append(os.path.join(app_engine_path, 'lib', 'django-1.3'))
 from django.template.loaders import filesystem
 filesystem.load_template_source = filesystem._loader.load_template_source
 
+# add working directory since this is often symlinked in a different dir by
+# clients, in which case we want it to load and run test in that dir.
+sys.path = ([os.getcwd(), app_engine_path] +
+            [os.path.join(app_engine_path, 'lib', lib) for lib in
+             'mox', 'webob-1.2.3', 'yaml-3.10', 'django-1.4',
+             # webapp2 2.5.2 has a change that breaks get_response(). it
+             # starts returning None for the response. not sure why. changes:
+             # http://code.google.com/p/webapp-improved/source/list
+             'webapp2-2.5.1'] +
+            sys.path)
+
 
 def main():
   if '--debug' in sys.argv:
@@ -37,17 +48,6 @@ def main():
     logging.getLogger().setLevel(logging.DEBUG)
   else:
     logging.disable(logging.CRITICAL + 1)
-
-  # add working directory since this is often symlinked in a different dir by
-  # clients, in which case we want it to load and run test in that dir.
-  sys.path = ([os.getcwd(), app_engine_path] +
-              [os.path.join(app_engine_path, 'lib', lib) for lib in
-               'mox', 'webob-1.2.3', 'yaml-3.10', 'django-1.4',
-               # webapp2 2.5.2 has a change that breaks get_response(). it
-               # starts returning None for the response. not sure why. changes:
-               # http://code.google.com/p/webapp-improved/source/list
-               'webapp2-2.5.1'] +
-              sys.path)
 
   for filename in glob.glob('*_test.py'):
     name = os.path.splitext(filename)[0]
