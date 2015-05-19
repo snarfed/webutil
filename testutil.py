@@ -160,8 +160,8 @@ class HandlerTest(mox.MoxTestBase):
                                       response_headers, response))
     elif response is not None:
       call.AndReturn(self.UrlopenResult(status, response, headers=response_headers))
-    else:
-      return call
+
+    return call
 
   def assert_entities_equal(self, a, b, ignore=frozenset(), keys_only=False,
                             in_order=False):
