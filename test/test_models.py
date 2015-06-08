@@ -3,11 +3,11 @@
 
 __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
-import testutil
-from models import StringIdModel, KeyNameModel, SingleEGModel
-
 from google.appengine.ext import db
 from google.appengine.ext import ndb
+
+from webutil.models import StringIdModel, KeyNameModel, SingleEGModel
+from webutil import testutil
 
 
 class StringIdModelTest(testutil.HandlerTest):

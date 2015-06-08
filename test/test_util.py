@@ -5,13 +5,14 @@
 __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
 import datetime
+import urllib2
 import urlparse
+
+import webapp2
 from webob import exc
 
-import testutil
-import urllib2
-import util
-import webapp2
+from webutil import testutil
+from webutil import util
 
 
 class UtilTest(testutil.HandlerTest):

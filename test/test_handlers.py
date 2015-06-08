@@ -4,13 +4,13 @@
 
 __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
-import testutil
 import urllib2
-import webapp2
-
-import handlers
 
 from google.appengine.ext.webapp import template
+import webapp2
+
+from webutil import handlers
+from webutil import testutil
 
 
 class FakeTemplateHandler(handlers.TemplateHandler):
@@ -75,7 +75,7 @@ class HandlersTest(testutil.HandlerTest):
 
   def test_template_handler_get(self):
     self.mox.StubOutWithMock(template, 'render')
-    template.render('my_template_file', {'host': None, 'foo': 'bar'})\
+    template.render('my_template_file', {'host': 'localhost', 'foo': 'bar'})\
         .AndReturn('')
     self.mox.ReplayAll()
 
@@ -87,7 +87,7 @@ class HandlersTest(testutil.HandlerTest):
         return ['foo']
 
     self.mox.StubOutWithMock(template, 'render')
-    template.render('my_template_file', {'host': None, 'foo': ('bar',)})\
+    template.render('my_template_file', {'host': 'localhost', 'foo': ('bar',)})\
         .AndReturn('')
     self.mox.ReplayAll()
 
