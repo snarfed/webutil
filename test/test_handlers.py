@@ -9,8 +9,8 @@ import urllib2
 from google.appengine.ext.webapp import template
 import webapp2
 
-from webutil import handlers
-from webutil import testutil
+from oauth_dropins.webutil import handlers
+from oauth_dropins.webutil import testutil
 
 
 class FakeTemplateHandler(handlers.TemplateHandler):
