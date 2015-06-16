@@ -11,8 +11,8 @@ import urlparse
 import webapp2
 from webob import exc
 
-from webutil import testutil
-from webutil import util
+import testutil
+import util
 
 
 class UtilTest(testutil.HandlerTest):
