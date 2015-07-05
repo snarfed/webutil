@@ -14,6 +14,29 @@ import urllib
 import urllib2
 import urlparse
 
+# These are used in interpret_http_exception(). They use dependencies that we
+# may or may not have, so degrade gracefully if they're not available.
+try:
+  import apiclient
+  import apiclient.errors
+except ImportError:
+  apiclient = None
+
+try:
+  from oauth2client.client import AccessTokenRefreshError
+except ImportError:
+  AccessTokenRefreshError = None
+
+try:
+  import requests
+except ImportError:
+  requests = None
+
+try:
+  from webob import exc
+except ImportError:
+  exc = None
+
 
 class Struct(object):
   """A generic class that initializes its attributes from constructor kwargs."""
@@ -554,3 +577,64 @@ def is_int(arg):
     return as_int == arg if isinstance(arg, numbers.Number) else True
   except (ValueError, TypeError):
     return False
+
+
+def interpret_http_exception(exception):
+  """Extracts the status code and response from different HTTP exception types.
+
+  Args:
+    exc: one of:
+      apiclient.errors.HttpError
+      exc.WSGIHTTPException
+      oauth2client.client.AccessTokenRefreshError
+      requests.HTTPError
+      urllib2.HTTPError
+      urllib2.URLError
+
+  Returns: (string status code or None, string response body or None)
+  """
+  e = exception
+  code = body = None
+
+  if exc and isinstance(e, exc.WSGIHTTPException):
+    code = e.code
+    body = e.plain_body({})
+
+  elif isinstance(e, urllib2.HTTPError):
+    code = e.code
+    try:
+      body = e.read() or getattr(e, 'body')
+      if body:
+        # store a copy inside the exception because e.fp.seek(0) to reset isn't
+        # always available.
+        e.body = body
+    except AttributeError, ae:
+      if not body:
+        body = e.reason
+
+  elif isinstance(e, urllib2.URLError):
+    body = e.reason
+
+  elif requests and isinstance(e, requests.HTTPError):
+    code = e.response.status_code
+    body = e.response.text
+
+  elif apiclient and isinstance(e, apiclient.errors.HttpError):
+    code = e.resp.status
+    body = e.content
+
+  elif (AccessTokenRefreshError and isinstance(e, AccessTokenRefreshError) and
+        str(e) == 'invalid_grant'):
+    code = '401'
+
+  # instagram-specific error_types that should disable the source.
+  if body and ('OAuthAccessTokenException' in body or      # revoked access
+               'APIRequiresAuthenticationError' in body):  # account deleted
+    code = '401'
+
+  if code:
+    code = str(code)
+  if code or body:
+    logging.warning('Error %s, response body: %s', code, body)
+
+  return code, body

@@ -1,4 +1,3 @@
-#!/usr/bin/python
 """Unit tests for handlers.py.
 """
 
@@ -6,6 +5,7 @@ __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
 import urllib2
 
+import oauth_dropins.test
 from google.appengine.ext.webapp import template
 import webapp2
 
@@ -22,6 +22,7 @@ class FakeTemplateHandler(handlers.TemplateHandler):
 
   def content_type(self):
     return 'text/baz'
+
 
 class HandlersTest(testutil.HandlerTest):
 
