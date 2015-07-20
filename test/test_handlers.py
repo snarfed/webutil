@@ -5,7 +5,6 @@ __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
 import urllib2
 
-import oauth_dropins.test
 from google.appengine.ext.webapp import template
 import webapp2
 

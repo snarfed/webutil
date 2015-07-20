@@ -1,4 +1,4 @@
-Common utilities and handler code for Python App Engine webapps, particularly my
-*-unofficial collection of OStatus bridge apps.
+Common utilities and handler code for Python webapps. Mostly App Engine
+specific, but the util module doesn't depend on App Engine.
 
-webutil is in the public domain.
+This library is in the public domain.
