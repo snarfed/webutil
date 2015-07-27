@@ -155,7 +155,8 @@ class HandlerTest(mox.MoxTestBase):
     call = urllib2.urlopen(mox.Func(check_request), timeout=HTTP_TIMEOUT, **kwargs)
     if status / 100 != 2:
       if response:
-        response = StringIO.StringIO(response)
+        response = urllib2.addinfourl(StringIO.StringIO(response),
+                                      response_headers, url, status)
       call.AndRaise(urllib2.HTTPError('url', status, 'message',
                                       response_headers, response))
     elif response is not None:
