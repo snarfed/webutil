@@ -624,7 +624,7 @@ def interpret_http_exception(exception):
     body = e.content
 
   elif (AccessTokenRefreshError and isinstance(e, AccessTokenRefreshError) and
-        str(e) == 'invalid_grant'):
+        str(e).startswith('invalid_grant')):
     code = '401'
 
   # instagram-specific error_types that should disable the source.

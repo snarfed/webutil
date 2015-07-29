@@ -443,6 +443,8 @@ class UtilTest(testutil.HandlerTest):
 
     self.assertEquals((None, None), ihc(AccessTokenRefreshError('invalid_foo')))
     self.assertEquals(('401', None), ihc(AccessTokenRefreshError('invalid_grant')))
+    self.assertEquals(('401', None), ihc(AccessTokenRefreshError(
+      'invalid_grant: Token has been revoked.')))
 
     # this is the type of response we get back from instagram.
     # because it means the source should be disabled, we convert the status code 400 to 401
