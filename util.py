@@ -633,7 +633,8 @@ def interpret_http_exception(exception):
       'APIRequiresAuthenticationError' in body or  # instagram: account deleted
       # facebook: misc.
       # https://developers.facebook.com/docs/graph-api/using-graph-api/v2.0#errorcodes
-      'OAuthException' in body):
+      'OAuthException' in body or
+      ('FacebookApiException' in body and 'Permissions error' in body)):
     code = '401'
 
   if code:

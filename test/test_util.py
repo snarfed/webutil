@@ -459,7 +459,6 @@ class UtilTest(testutil.HandlerTest):
     self.assertEquals(('401', ig_token_error), ihc(urllib2.HTTPError(
       'url', 400, 'BAD REQUEST', {}, StringIO.StringIO(ig_token_error))))
 
-
     # https://github.com/snarfed/bridgy/issues/436
     fb_unconfirmed_error = json.dumps({
       'error': {
@@ -471,3 +470,14 @@ class UtilTest(testutil.HandlerTest):
     })
     self.assertEquals(('401', fb_unconfirmed_error), ihc(urllib2.HTTPError(
       'url', 400, 'BAD REQUEST', {}, StringIO.StringIO(fb_unconfirmed_error))))
+
+    # https://github.com/snarfed/bridgy/issues/437
+    fb_permissions_error = json.dumps({
+      'error': {
+        'message': 'Permissions error',
+        'type': 'FacebookApiException',
+        'code': 200
+      }
+    })
+    self.assertEquals(('401', fb_permissions_error), ihc(urllib2.HTTPError(
+      'url', 500, 'BAD REQUEST', {}, StringIO.StringIO(fb_permissions_error))))
