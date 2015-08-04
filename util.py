@@ -627,9 +627,13 @@ def interpret_http_exception(exception):
         str(e).startswith('invalid_grant')):
     code = '401'
 
-  # instagram-specific error_types that should disable the source.
-  if body and ('OAuthAccessTokenException' in body or      # revoked access
-               'APIRequiresAuthenticationError' in body):  # account deleted
+  # silo-specific error_types that should disable the source.
+  if body and (
+      'OAuthAccessTokenException' in body or       # instagram: revoked access
+      'APIRequiresAuthenticationError' in body or  # instagram: account deleted
+      # facebook: misc.
+      # https://developers.facebook.com/docs/graph-api/using-graph-api/v2.0#errorcodes
+      'OAuthException' in body):
     code = '401'
 
   if code:

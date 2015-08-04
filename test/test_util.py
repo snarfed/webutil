@@ -446,8 +446,8 @@ class UtilTest(testutil.HandlerTest):
     self.assertEquals(('401', None), ihc(AccessTokenRefreshError(
       'invalid_grant: Token has been revoked.')))
 
-    # this is the type of response we get back from instagram.
-    # because it means the source should be disabled, we convert the status code 400 to 401
+    # this is the type of response we get back from instagram. because it means
+    # the source should be disabled, we convert the status code 400 to 401
     ig_token_error = json.dumps({
       "meta": {
         "error_type": "OAuthAccessTokenException",
@@ -458,3 +458,16 @@ class UtilTest(testutil.HandlerTest):
 
     self.assertEquals(('401', ig_token_error), ihc(urllib2.HTTPError(
       'url', 400, 'BAD REQUEST', {}, StringIO.StringIO(ig_token_error))))
+
+
+    # https://github.com/snarfed/bridgy/issues/436
+    fb_unconfirmed_error = json.dumps({
+      'error': {
+        'message': 'Error validating access token: Sessions for the user X are not allowed because the user is not a confirmed user.',
+        'type': 'OAuthException',
+        'code': 190,
+        'error_subcode': 464,
+      }
+    })
+    self.assertEquals(('401', fb_unconfirmed_error), ihc(urllib2.HTTPError(
+      'url', 400, 'BAD REQUEST', {}, StringIO.StringIO(fb_unconfirmed_error))))
