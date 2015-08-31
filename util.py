@@ -6,6 +6,7 @@ __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 import collections
 import base64
 import datetime
+import json
 import logging
 import numbers
 import os
@@ -583,7 +584,7 @@ def interpret_http_exception(exception):
   """Extracts the status code and response from different HTTP exception types.
 
   Args:
-    exc: one of:
+    exception: one of:
       apiclient.errors.HttpError
       exc.WSGIHTTPException
       oauth2client.client.AccessTokenRefreshError
@@ -629,22 +630,36 @@ def interpret_http_exception(exception):
 
   if code:
     code = str(code)
+  orig_code = code
   if code or body:
     logging.warning('Error %s, response body: %s', code, body)
 
   # silo-specific error_types that should disable the source.
-  orig_code = code
-  if body and (
-      'OAuthAccessTokenException' in body or       # instagram: revoked access
-      'APIRequiresAuthenticationError' in body or  # instagram: account deleted
-      # facebook: misc.
-      # https://developers.facebook.com/docs/graph-api/using-graph-api/v2.0#errorcodes
-      'OAuthException' in body or
-      ('FacebookApiException' in body and 'Permissions error' in body)):
+  #
+  # instagram
+  if body and ('OAuthAccessTokenException' in body or      # revoked access
+               'APIRequiresAuthenticationError' in body):  # account deleted
     code = '401'
 
-  if code == '401' and body and 'is_transient' in body:
-    code = '402'
+  # facebook
+  # https://developers.facebook.com/docs/graph-api/using-graph-api/#errors
+  # https://developers.facebook.com/docs/reference/api/errors/
+  try:
+    error = json.loads(body).get('error', {})
+  except BaseException:
+    error = {}
+
+  type = error.get('type')
+  message = error.get('message')
+  err_code = int(error.get('code', 0))
+  err_subcode = int(error.get('error_subcode', 0))
+  if (type == 'OAuthException' or
+      (type == 'FacebookApiException' and 'Permissions error' in message) or
+      (err_code in (102, 190) and err_subcode in (458, 460, 463))):
+    code = '401'
+
+  if code == '401' and error.get('is_transient'):
+    code = orig_code if orig_code != '401' else '402'
 
   if orig_code != code:
     logging.info('Converting code %s to %s', orig_code, code)

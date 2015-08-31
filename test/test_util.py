@@ -493,3 +493,30 @@ class UtilTest(testutil.HandlerTest):
     })
     self.assertEquals(('402', fb_transient_error), ihc(urllib2.HTTPError(
       'url', 401, 'BAD REQUEST', {}, StringIO.StringIO(fb_transient_error))))
+
+    fb_revoked_error = json.dumps({
+      'error': {
+        'code': 190,
+        'error_subcode': 458,
+      }
+    })
+    self.assertEquals(('401', fb_revoked_error), ihc(urllib2.HTTPError(
+      'url', 400, 'BAD REQUEST', {}, StringIO.StringIO(fb_revoked_error))))
+
+    fb_expired_error = json.dumps({
+      'error': {
+        'code': 102,
+        'error_subcode': 463,
+      }
+    })
+    self.assertEquals(('401', fb_expired_error), ihc(urllib2.HTTPError(
+      'url', 400, 'BAD REQUEST', {}, StringIO.StringIO(fb_expired_error))))
+
+    fb_changed_password_error = json.dumps({
+      'error': {
+        'code': 102,
+        'error_subcode': 460,
+      }
+    })
+    self.assertEquals(('401', fb_changed_password_error), ihc(urllib2.HTTPError(
+      'url', 400, 'BAD REQUEST', {}, StringIO.StringIO(fb_changed_password_error))))
