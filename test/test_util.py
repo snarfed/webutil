@@ -481,3 +481,15 @@ class UtilTest(testutil.HandlerTest):
     })
     self.assertEquals(('401', fb_permissions_error), ihc(urllib2.HTTPError(
       'url', 500, 'BAD REQUEST', {}, StringIO.StringIO(fb_permissions_error))))
+
+    # https://github.com/snarfed/bridgy/issues/450
+    fb_transient_error = json.dumps({
+      'error': {
+        'message': 'An unexpected error has occurred. Please retry your request later.',
+        'type': 'OAuthException',
+        'is_transient': True,
+        'code': 2,
+      }
+    })
+    self.assertEquals(('402', fb_transient_error), ihc(urllib2.HTTPError(
+      'url', 401, 'BAD REQUEST', {}, StringIO.StringIO(fb_transient_error))))

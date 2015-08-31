@@ -627,7 +627,13 @@ def interpret_http_exception(exception):
         str(e).startswith('invalid_grant')):
     code = '401'
 
+  if code:
+    code = str(code)
+  if code or body:
+    logging.warning('Error %s, response body: %s', code, body)
+
   # silo-specific error_types that should disable the source.
+  orig_code = code
   if body and (
       'OAuthAccessTokenException' in body or       # instagram: revoked access
       'APIRequiresAuthenticationError' in body or  # instagram: account deleted
@@ -637,9 +643,10 @@ def interpret_http_exception(exception):
       ('FacebookApiException' in body and 'Permissions error' in body)):
     code = '401'
 
-  if code:
-    code = str(code)
-  if code or body:
-    logging.warning('Error %s, response body: %s', code, body)
+  if code == '401' and body and 'is_transient' in body:
+    code = '402'
+
+  if orig_code != code:
+    logging.info('Converting code %s to %s', orig_code, code)
 
   return code, body
