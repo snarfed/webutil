@@ -646,13 +646,17 @@ def interpret_http_exception(exception):
   # https://developers.facebook.com/docs/reference/api/errors/
   try:
     error = json.loads(body).get('error', {})
+    if not isinstance(error, dict):
+      error = {'message': `error`}
   except BaseException:
     error = {}
 
   type = error.get('type')
   message = error.get('message')
-  err_code = int(error.get('code', 0))
-  err_subcode = int(error.get('error_subcode', 0))
+  if not isinstance(message, basestring):
+    message = `message`
+  err_code = error.get('code')
+  err_subcode = error.get('error_subcode')
   if (type == 'OAuthException' or
       (type == 'FacebookApiException' and 'Permissions error' in message) or
       (err_code in (102, 190) and err_subcode in (458, 460, 463))):

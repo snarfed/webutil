@@ -520,3 +520,10 @@ class UtilTest(testutil.HandlerTest):
     })
     self.assertEquals(('401', fb_changed_password_error), ihc(urllib2.HTTPError(
       'url', 400, 'BAD REQUEST', {}, StringIO.StringIO(fb_changed_password_error))))
+
+    # make sure we handle non-facebook JSON bodies ok
+    wordpress_rest_error = json.dumps(
+      {'error': 'unauthorized', 'message': 'Comments on this post are closed'})
+    self.assertEquals(('402', wordpress_rest_error), ihc(urllib2.HTTPError(
+      'url', 402, 'BAD REQUEST', {}, StringIO.StringIO(wordpress_rest_error))))
+
