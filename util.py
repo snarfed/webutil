@@ -237,7 +237,7 @@ _LINKIFY_RE = re.compile(r"""
   \b(?:[a-z]{3,9}:/{1,3})?                   # optional scheme
   (?:[a-z0-9\-]+\.)+[a-z]{2,4}(?::\d{2,6})?  # host and optional port
   (?:(?:/[\w/.\-_~.;:%?@$#&()=+]*)|\b)       # path and query
-  """, re.VERBOSE | re.UNICODE)
+  """, re.VERBOSE | re.UNICODE | re.IGNORECASE)
 
 
 def tokenize_links(text, skip_bare_cc_tlds=False):
