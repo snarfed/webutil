@@ -55,6 +55,9 @@ class CacheDict(dict):
     keys = set(keys)
     return {k: v for k, v in self.items() if k in keys}
 
+  def set(self, key, val, **kwargs):
+    self[key] = val
+
 CacheDict.set_multi = CacheDict.update
 
 
@@ -209,6 +212,27 @@ def schemeless(url):
   Returns: string URL
   """
   return urlparse.urlunparse(('',) + urlparse.urlparse(url)[1:])
+
+
+def clean_url(url):
+  """Removes transient query params (e.g. utm_*) from a URL.
+
+  The utm_* (Urchin Tracking Metrics?) params come from Google Analytics.
+  https://support.google.com/analytics/answer/1033867
+
+  Args:
+    url: string
+
+  Returns: string, the cleaned url
+  """
+  utm_params = set(('utm_campaign', 'utm_content', 'utm_medium', 'utm_source',
+                    'utm_term'))
+  parts = list(urlparse.urlparse(url))
+  query = urllib.unquote_plus(parts[4].encode('utf-8'))
+  params = [(name, value) for name, value in urlparse.parse_qsl(query)
+            if name not in utm_params]
+  parts[4] = urllib.urlencode(params)
+  return urlparse.urlunparse(parts)
 
 
 _LINK_RE = re.compile(ur'\bhttps?://[^\s<>]+\b')

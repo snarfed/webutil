@@ -129,6 +129,15 @@ class UtilTest(testutil.HandlerTest):
         ('//foo.bar/baz', util.schemeless('https://foo.bar/baz'))):
       self.assertEqual(expected, util.schemeless(url))
 
+  def test_clean_url(self):
+    for unchanged in 'http://foo', 'http://foo#bar', 'http://foo?x=y&z=w':
+      self.assertEquals(unchanged, util.clean_url(unchanged))
+
+    self.assertEquals('http://foo',
+                      util.clean_url('http://foo?utm_source=x&utm_campaign=y'))
+    self.assertEquals('http://foo?a=b&c=d',
+                      util.clean_url('http://foo?a=b&utm_source=x&c=d'))
+
   def test_dedupe_urls(self):
     self.assertEquals([], util.dedupe_urls([]))
     self.assertEquals(['http://foo'], util.dedupe_urls(['http://foo']))
