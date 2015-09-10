@@ -58,7 +58,8 @@ class CacheDict(dict):
   def set(self, key, val, **kwargs):
     self[key] = val
 
-CacheDict.set_multi = CacheDict.update
+  def set_multi(self, updates, **kwargs):
+    super(CacheDict, self).update(updates)
 
 
 def to_xml(value):
