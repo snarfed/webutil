@@ -223,11 +223,16 @@ def clean_url(url):
   Args:
     url: string
 
-  Returns: string, the cleaned url
+  Returns: string, the cleaned url, or None if it can't be parsed
   """
   utm_params = set(('utm_campaign', 'utm_content', 'utm_medium', 'utm_source',
                     'utm_term'))
-  parts = list(urlparse.urlparse(url))
+  try:
+    parts = list(urlparse.urlparse(url))
+  except (AttributeError, TypeError, ValueError), e:
+    logging.info('%s: %s', e, url)
+    return None
+
   query = urllib.unquote_plus(parts[4].encode('utf-8'))
   params = [(name, value) for name, value in urlparse.parse_qsl(query)
             if name not in utm_params]

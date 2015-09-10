@@ -130,8 +130,11 @@ class UtilTest(testutil.HandlerTest):
       self.assertEqual(expected, util.schemeless(url))
 
   def test_clean_url(self):
-    for unchanged in 'http://foo', 'http://foo#bar', 'http://foo?x=y&z=w':
+    for unchanged in '', 'http://foo', 'http://foo#bar', 'http://foo?x=y&z=w':
       self.assertEquals(unchanged, util.clean_url(unchanged))
+
+    for bad in None, 'http://foo]', 3.14, ['http://foo']:
+      self.assertIsNone(util.clean_url(bad))
 
     self.assertEquals('http://foo',
                       util.clean_url('http://foo?utm_source=x&utm_campaign=y'))
