@@ -53,9 +53,10 @@ class HandlerTest(mox.MoxTestBase):
   class UrlopenResult(object):
     """A fake urllib2.urlopen() result object. Also works for urlfetch.fetch().
     """
-    def __init__(self, status_code, content, headers={}):
+    def __init__(self, status_code, content, url=None, headers={}):
       self.status_code = status_code
       self.content = content
+      self.url = url
       self.headers = headers
 
     def read(self):
@@ -63,6 +64,9 @@ class HandlerTest(mox.MoxTestBase):
 
     def getcode(self):
       return self.status_code
+
+    def geturl(self):
+      return self.url
 
     def info(self):
       return rfc822.Message(StringIO.StringIO(
@@ -160,7 +164,8 @@ class HandlerTest(mox.MoxTestBase):
       call.AndRaise(urllib2.HTTPError('url', status, 'message',
                                       response_headers, response))
     elif response is not None:
-      call.AndReturn(self.UrlopenResult(status, response, headers=response_headers))
+      call.AndReturn(self.UrlopenResult(status, response, url=url,
+                                        headers=response_headers))
 
     return call
 
