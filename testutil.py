@@ -208,7 +208,7 @@ class HandlerTest(mox.MoxTestBase):
         return {k: v for k, v in all.items() if k not in ignore}
 
       if not keys_only:
-        self.assert_equals(props(x), props(y))
+        self.assert_equals(props(x), props(y), flat_key(x))
 
   def entity_keys(self, entities):
     """Returns a list of keys for a list of entities.
