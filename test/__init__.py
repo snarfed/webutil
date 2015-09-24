@@ -10,12 +10,11 @@ dev_appserver.fix_sys_path()
 import os, sys
 sys.path.append(os.path.join(dev_appserver._DIR_PATH, 'lib', 'mox'))
 
-# Show logging when running individual test modules, methods, etc; suppress it
-# when running all tests.
+# Piggyback on unittest's -v and -q flags to show/hide logging.
 import logging
-if 'discover' in sys.argv:
+if 'discover' in sys.argv or '-q' in sys.argv or '--quiet' in sys.argv:
   logging.disable(logging.CRITICAL + 1)
-else:
+elif '-v' in sys.argv:
   logging.getLogger().setLevel(logging.DEBUG)
 
 # Monkey patch to fix template loader issue:
