@@ -172,15 +172,16 @@ HOSTNAME_RE = re.compile(HOSTNAME_RE_STR + '$')
 
 def domain_from_link(url):
   parsed = urlparse.urlparse(url)
-  if not parsed.netloc:
+  if not parsed.hostname and '//' not in url:
     parsed = urlparse.urlparse('http://' + url)
 
-  domain = parsed.netloc
-  for subdomain in ('www.', 'mobile.', 'm.'):
-    if domain.startswith(subdomain):
-      domain = domain[len(subdomain):]
-  if domain and HOSTNAME_RE.match(domain):
-    return domain
+  domain = parsed.hostname
+  if domain:
+    for subdomain in ('www.', 'mobile.', 'm.'):
+      if domain.startswith(subdomain):
+        domain = domain[len(subdomain):]
+    if domain and HOSTNAME_RE.match(domain):
+      return domain
 
   logging.error('domain_from_link: Invalid domain in %r', url)
   return None
