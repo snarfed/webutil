@@ -387,7 +387,9 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, a_class=None,
     parsed = urlparse.urlparse(url)
     text = url[len(parsed.scheme) + 3:]  # strip scheme and ://
     host_len = len(parsed.netloc)
-    if not keep_host:
+    if (keep_host and not parsed.params and not parsed.query and not parsed.fragment):
+      text = text.strip('/')  # drop trailing slash
+    elif not keep_host:
       text = text[host_len + 1:]
       host_len = 0
     if text.startswith('www.'):
