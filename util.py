@@ -216,6 +216,17 @@ def schemeless(url):
   return urlparse.urlunparse(('',) + urlparse.urlparse(url)[1:])
 
 
+def fragmentless(url):
+  """Strips the fragment (e.g. '#foo') from a URL.
+
+  Args:
+    url: string
+
+  Returns: string URL
+  """
+  return urlparse.urlunparse(urlparse.urlparse(url)[:5] + ('',))
+
+
 def clean_url(url):
   """Removes transient query params (e.g. utm_*) from a URL.
 

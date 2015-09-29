@@ -121,13 +121,24 @@ class UtilTest(testutil.HandlerTest):
 
   def test_schemeless(self):
     for expected, url in (
-        ('', util.schemeless('')),
-        ('/path', util.schemeless('/path')),
-        ('//foo', util.schemeless('//foo')),
-        ('//foo', util.schemeless('http://foo')),
-        ('//foo.bar/baz', util.schemeless('http://foo.bar/baz')),
-        ('//foo.bar/baz', util.schemeless('https://foo.bar/baz'))):
+        ('', ''),
+        ('/path', '/path'),
+        ('//foo', '//foo'),
+        ('//foo', 'http://foo'),
+        ('//foo.bar/baz', 'http://foo.bar/baz'),
+        ('//foo.bar/baz', 'https://foo.bar/baz'),
+      ):
       self.assertEqual(expected, util.schemeless(url))
+
+  def test_fragmentless(self):
+    for expected, url in (
+        ('', ''),
+        ('/path', '/path'),
+        ('http://foo', 'http://foo'),
+        ('http://foo', 'http://foo#bar'),
+        ('http://foo/bar?baz', 'http://foo/bar?baz#baj'),
+      ):
+      self.assertEqual(expected, util.fragmentless(url))
 
   def test_clean_url(self):
     for unchanged in '', 'http://foo', 'http://foo#bar', 'http://foo?x=y&z=w':
