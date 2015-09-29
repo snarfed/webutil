@@ -692,7 +692,6 @@ def interpret_http_exception(exception):
 
   # facebook
   # https://developers.facebook.com/docs/graph-api/using-graph-api/#errors
-  # https://developers.facebook.com/docs/reference/api/errors/
   try:
     error = json.loads(body).get('error', {})
     if not isinstance(error, dict):
