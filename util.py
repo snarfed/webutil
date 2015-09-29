@@ -205,15 +205,20 @@ def update_scheme(url, handler):
                              urlparse.urlparse(url)[1:])
 
 
-def schemeless(url):
-  """Strips the scheme (e.g. 'https') from a URL.
+def schemeless(url, slashes=True):
+  """Strips the scheme (e.g. 'https:') from a URL.
 
   Args:
     url: string
+    leading_slashes: if False, also strips leading slashes and trailing slash,
+      e.g. 'http://example.com/' becomes 'example.com'
 
   Returns: string URL
   """
-  return urlparse.urlunparse(('',) + urlparse.urlparse(url)[1:])
+  url = urlparse.urlunparse(('',) + urlparse.urlparse(url)[1:])
+  if not slashes:
+    url = url.strip('/')
+  return url
 
 
 def fragmentless(url):

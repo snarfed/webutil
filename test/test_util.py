@@ -130,6 +130,9 @@ class UtilTest(testutil.HandlerTest):
       ):
       self.assertEqual(expected, util.schemeless(url))
 
+    self.assertEqual('foo', util.schemeless('http://foo/', slashes=False))
+    self.assertEqual('foo/bar', util.schemeless('http://foo/bar/', slashes=False))
+
   def test_fragmentless(self):
     for expected, url in (
         ('', ''),
