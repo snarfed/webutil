@@ -269,8 +269,8 @@ class UtilTest(testutil.HandlerTest):
     pl = util.pretty_link
     self.assertEquals('<a href="http://foo">foo</a>', pl('http://foo'))
     self.assertEquals('<a href="http://foo/">foo</a>', pl('http://foo/'))
-    self.assertEquals('<a class="my cls" href="http://foo">foo</a>',
-                      pl('http://foo', a_class='my cls'))
+    self.assertEquals('<a attr="val" href="http://foo">foo</a>',
+                      pl('http://foo', attrs={'attr': 'val'}))
     self.assertEquals('<a target="_blank" href="http://foo">foo</a>',
                       pl('http://foo', new_tab=True))
     self.assertEquals('<a href="http://www.foo">foo</a>', pl('http://www.foo'))

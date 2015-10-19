@@ -373,7 +373,7 @@ def linkify(text, pretty=False, skip_bare_cc_tlds=False, **kwargs):
   return ''.join(result)
 
 
-def pretty_link(url, text=None, keep_host=True, glyphicon=None, a_class=None,
+def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
                 new_tab=False, max_length=None):
   """Renders a pretty, short HTML link to a URL.
 
@@ -391,8 +391,8 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, a_class=None,
     keep_host: if False, remove the host from the link text
     glyphicon: string glyphicon to render after the link text, if provided.
       Details: http://glyphicons.com/
+    attrs: dict of attributes => values to include in the a tag. optional
     new_tab: boolean, include target="_blank" if True
-    class: string, included in a tag if provided
     max_length: int, max link text length in characters. ellipsized beyond this.
   """
   if text:
@@ -419,9 +419,10 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, a_class=None,
 
   if glyphicon is not None:
     text += ' <span class="glyphicon glyphicon-%s"></span>' % glyphicon
-  cls = 'class="%s" ' % a_class if a_class else ''
+  attr_str = (''.join('%s="%s" ' % (attr, val) for attr, val in attrs.items())
+              if attrs else '')
   target = 'target="_blank" ' if new_tab else ''
-  return ('<a %s%shref="%s">%s</a>' % (cls, target, url, text))
+  return ('<a %s%shref="%s">%s</a>' % (attr_str, target, url, text))
 
 
 class SimpleTzinfo(datetime.tzinfo):
