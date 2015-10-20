@@ -26,14 +26,24 @@ class FakeTemplateHandler(handlers.TemplateHandler):
 class HandlersTest(testutil.HandlerTest):
 
   def test_handle_exception(self):
-    class FakeHandler(webapp2.RequestHandler):
+    # HTTP exception
+    class HttpException(webapp2.RequestHandler):
       handle_exception = handlers.handle_exception
       def get(self):
         raise urllib2.HTTPError('/', 408, 'foo bar', None, None)
 
-    resp = webapp2.WSGIApplication([('/', FakeHandler)]).get_response('/')
+    resp = webapp2.WSGIApplication([('/', HttpException)]).get_response('/')
     self.assertEquals(408, resp.status_int)
     self.assertEquals('HTTP Error 408: foo bar', resp.body)
+
+    # other exception
+    class Assertion(webapp2.RequestHandler):
+      handle_exception = handlers.handle_exception
+      def get(self):
+        assert False
+
+    resp = webapp2.WSGIApplication([('/', Assertion)]).get_response('/')
+    self.assertEquals(500, resp.status_int)
 
   def test_redirect(self):
     class Handler(webapp2.RequestHandler):

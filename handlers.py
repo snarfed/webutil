@@ -13,15 +13,17 @@ import urllib2
 import urlparse
 
 import appengine_config
+from google.appengine.ext.webapp import template
 import webapp2
 
-from google.appengine.ext.webapp import template
+import util
 
 
 def handle_exception(self, e, debug):
-  """Use this as a webapp2.RequestHandler handle_exception() method.
+  """A webapp2 exception handler that propagates HTTP exceptions into the response.
 
-  To use, put this line inside your handler class definition:
+  Use this as a webapp2.RequestHandler handle_exception() method by adding this
+  line to your handler class definition:
 
     handle_exception = handlers.handle_exception
 
@@ -36,10 +38,11 @@ def handle_exception(self, e, debug):
   http://eemyop.blogspot.com/2013/05/digging-around-in-webapp2-finding-out.html
   http://code.google.com/p/webapp-improved/source/detail?r=d962ac4625ce3c43a3e59fd7fc07daf8d7b7c46a
   """
-  if isinstance(e, urllib2.HTTPError):
+  code, body = util.interpret_http_exception(e)
+  if code:
     logging.exception(e)
-    self.response.set_status(e.code)
-    self.response.write(str(e))
+    self.response.set_status(int(e.code))
+    self.response.write('HTTP Error %s: %s' % (code, body))
   else:
     raise
 
