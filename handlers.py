@@ -53,13 +53,17 @@ def redirect(from_domain, to_domain):
   Preserves scheme, path, and query.
 
   Args:
-    from_domain, to_domain: strings
+    from_domain: string or sequence of strings
+    to_domain: strings
   """
+  if isinstance(from_domain, basestring):
+    from_domain = [from_domain]
+
   def decorator(method):
     def wrapper(self, *args, **kwargs):
       parts = list(urlparse.urlparse(self.request.url))
       # not using self.request.host because it includes port
-      if parts[1] == from_domain:  # netloc
+      if parts[1] in from_domain:  # netloc
         parts[1] = to_domain
         return self.redirect(urlparse.urlunparse(parts), permanent=True)
       else:

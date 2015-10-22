@@ -47,13 +47,12 @@ class HandlersTest(testutil.HandlerTest):
 
   def test_redirect(self):
     class Handler(webapp2.RequestHandler):
-      from_to = handlers.redirect('from.com', 'to.org')
 
-      @from_to
+      @handlers.redirect('from.com', 'to.org')
       def get(self):
         self.response.set_status(204)
 
-      @from_to
+      @handlers.redirect(('from.com', 'from.net'), 'to.org')
       def post(self, first, second):
         self.response.set_status(205)
 
@@ -68,9 +67,10 @@ class HandlersTest(testutil.HandlerTest):
         self.assertEquals('%s://to.org%s' % (scheme, url), resp.headers['Location'])
 
     # should redirect and include *args
-    resp = app.get_response('/x/y', method='POST', base_url='http://from.com')
-    self.assertEquals(301, resp.status_int)
-    self.assertEquals('http://to.org/x/y', resp.headers['Location'])
+    for url in 'http://from.com', 'http://from.net':
+      resp = app.get_response('/x/y', method='POST', base_url=url)
+      self.assertEquals(301, resp.status_int)
+      self.assertEquals('http://to.org/x/y', resp.headers['Location'])
 
     for base_url in 'http://abc.net', 'https://to.org':
       # shouldn't redirect
