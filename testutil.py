@@ -156,7 +156,10 @@ class HandlerTest(mox.MoxTestBase):
 
       return True
 
-    call = urllib2.urlopen(mox.Func(check_request), timeout=HTTP_TIMEOUT, **kwargs)
+    if 'timeout' not in kwargs:
+      kwargs['timeout'] = HTTP_TIMEOUT
+
+    call = urllib2.urlopen(mox.Func(check_request), **kwargs)
     if status / 100 != 2:
       if response:
         response = urllib2.addinfourl(StringIO.StringIO(response),
