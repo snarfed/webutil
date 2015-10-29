@@ -352,6 +352,12 @@ class UtilTest(testutil.HandlerTest):
       ):
       self.assertEqual(expected, util.maybe_timestamp_to_rfc3339(input))
 
+  def test_to_utc_timestamp(self):
+    self.assertIsNone(util.to_utc_timestamp(None))
+    self.assertEqual(0, util.to_utc_timestamp(datetime.datetime(1970, 1, 1)))
+    self.assertEqual(1446103883.456789, util.to_utc_timestamp(
+      datetime.datetime(2015, 10, 29, 7, 31, 23, 456789)))
+
   def test_ellipsize(self):
     self.assertEqual('', util.ellipsize(''))
     self.assertEqual('asdf', util.ellipsize('asdf'))

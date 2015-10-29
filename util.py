@@ -3,6 +3,7 @@
 
 __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
+import calendar
 import collections
 import base64
 import datetime
@@ -493,6 +494,16 @@ def maybe_timestamp_to_rfc3339(input):
   except (ValueError, TypeError):
     return input
 
+
+def to_utc_timestamp(input):
+  """Converts a datetime to a float POSIX timestamp (seconds since epoch)."""
+  if not input:
+    return None
+
+  timetuple = list(input.timetuple())
+  # timetuple() usually strips microsecond
+  timetuple[5] = float(int(timetuple[5])) + float(input.microsecond) / 1000000
+  return calendar.timegm(timetuple)
 
 def ellipsize(str, words=14, chars=140):
   """Truncates and ellipsizes str if it's longer than words or chars.
