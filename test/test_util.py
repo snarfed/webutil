@@ -474,6 +474,12 @@ class UtilTest(testutil.HandlerTest):
     self.assertEquals(('429', 'my body'), ihc(
         requests.HTTPError(response=util.Struct(status_code='429', text='my body'))))
 
+    # fake gdata.client.RequestError since gdata isn't a dependency
+    class RequestError(util.Struct):
+      pass
+    ex = RequestError(status=429, body='my body')
+    self.assertEquals(('429', 'my body'), ihc(ex))
+
     self.assertEquals((None, None), ihc(AccessTokenRefreshError('invalid_foo')))
     self.assertEquals(('401', None), ihc(AccessTokenRefreshError('invalid_grant')))
     self.assertEquals(('401', None), ihc(AccessTokenRefreshError(

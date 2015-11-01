@@ -648,6 +648,7 @@ def interpret_http_exception(exception):
     exception: one of:
       apiclient.errors.HttpError
       exc.WSGIHTTPException
+      gdata.client.RequestError
       oauth2client.client.AccessTokenRefreshError
       requests.HTTPError
       urllib2.HTTPError
@@ -688,6 +689,11 @@ def interpret_http_exception(exception):
   elif (AccessTokenRefreshError and isinstance(e, AccessTokenRefreshError) and
         str(e).startswith('invalid_grant')):
     code = '401'
+
+  # hack to interpret gdata.client.RequestError since gdata isn't a dependency
+  elif e.__class__.__name__ == 'RequestError':
+    code = getattr(e, 'status')
+    body = getattr(e, 'body')
 
   if code:
     code = str(code)
