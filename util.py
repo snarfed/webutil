@@ -7,17 +7,20 @@ import calendar
 import collections
 import base64
 import datetime
+import httplib
 import json
 import logging
 import numbers
 import os
 import re
+import socket
 import urllib
 import urllib2
 import urlparse
 
-# These are used in interpret_http_exception(). They use dependencies that we
-# may or may not have, so degrade gracefully if they're not available.
+# These are used in interpret_http_exception() and is_connection_failure(). They
+# use dependencies that we may or may not have, so degrade gracefully if they're
+# not available.
 try:
   import apiclient
   import apiclient.errors
@@ -38,6 +41,11 @@ try:
   from webob import exc
 except ImportError:
   exc = None
+
+try:
+  from google.appengine.api import urlfetch_errors
+except ImportError:
+  urlfetch_errors = None
 
 
 class Struct(object):
@@ -735,3 +743,28 @@ def interpret_http_exception(exception):
     logging.info('Converting code %s to %s', orig_code, code)
 
   return code, body
+
+
+def is_connection_failure(exception):
+  """Returns True if the given exception is a network connection failure.
+
+  ...False otherwise.
+  """
+  if (isinstance(exception, (
+      httplib.ImproperConnectionState,
+      httplib.NotConnected,
+      requests.ConnectionError,
+      requests.Timeout,
+      socket.error,  # base class for all socket exceptions, including socket.timeout
+      urlfetch_errors.DownloadError,  # base class, e.g. for DeadlineExceededError
+      urlfetch_errors.InternalTransientError,
+      )) or
+      (isinstance(exception, urllib2.URLError) and
+       isinstance(exception.reason, socket.error)) or
+      (isinstance(exception, httplib.HTTPException) and
+       'Deadline exceeded' in exception.message)
+     ):
+    logging.info('Connection failure: ', exc_info=True)
+    return True
+
+  return False

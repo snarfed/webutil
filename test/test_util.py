@@ -5,7 +5,9 @@
 __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
 import datetime
+import httplib
 import json
+import socket
 import StringIO
 import urllib2
 import urlparse
@@ -576,3 +578,15 @@ class UtilTest(testutil.HandlerTest):
       {'error': 'unauthorized', 'message': 'Comments on this post are closed'})
     self.assertEquals(('402', wordpress_rest_error), ihc(urllib2.HTTPError(
       'url', 402, 'BAD REQUEST', {}, StringIO.StringIO(wordpress_rest_error))))
+
+  def test_is_connection_failure(self):
+    for e in (socket.timeout(), socket.error(), requests.ConnectionError(),
+              httplib.NotConnected(), urllib2.URLError(socket.gaierror('foo bar')),
+              ):
+      assert util.is_connection_failure(e), e
+
+    for e in (None, 3, 'asdf', IOError(), httplib.HTTPException('unknown'),
+              urllib2.URLError('asdf'),
+              urllib2.HTTPError('url', 403, 'msg', {}, None),
+              ):
+      assert not util.is_connection_failure(e), e
