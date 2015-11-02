@@ -44,6 +44,7 @@ except ImportError:
 
 try:
   from google.appengine.api import urlfetch_errors
+  from google.appengine.runtime import apiproxy_errors
 except ImportError:
   urlfetch_errors = None
 
@@ -751,6 +752,8 @@ def is_connection_failure(exception):
   ...False otherwise.
   """
   if (isinstance(exception, (
+      apiproxy_errors.CancelledError,
+      apiproxy_errors.DeadlineExceededError,
       httplib.ImproperConnectionState,
       httplib.NotConnected,
       requests.ConnectionError,
