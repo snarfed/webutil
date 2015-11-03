@@ -6,6 +6,7 @@ __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 import base64
 import datetime
 import difflib
+import logging
 import mox
 import pprint
 import re
@@ -16,7 +17,7 @@ import traceback
 import urllib2
 import urlparse
 
-from appengine_config import HTTP_TIMEOUT
+import appengine_config
 import webapp2
 
 from google.appengine.datastore import datastore_stub_util
@@ -75,6 +76,8 @@ class HandlerTest(mox.MoxTestBase):
 
   def setUp(self):
     super(HandlerTest, self).setUp()
+
+    logging.getLogger().removeHandler(appengine_config.ereporter_logging_handler)
 
     os.environ['APPLICATION_ID'] = 'app_id'
     self.current_user_id = '123'
@@ -157,7 +160,7 @@ class HandlerTest(mox.MoxTestBase):
       return True
 
     if 'timeout' not in kwargs:
-      kwargs['timeout'] = HTTP_TIMEOUT
+      kwargs['timeout'] = appengine_config.HTTP_TIMEOUT
 
     call = urllib2.urlopen(mox.Func(check_request), **kwargs)
     if status / 100 != 2:
