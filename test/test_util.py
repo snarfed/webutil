@@ -168,9 +168,9 @@ class UtilTest(testutil.HandlerTest):
                        util.dedupe_urls(['http://foo/bar', 'http://foo/bar/']))
 
   def test_tag_uri(self):
-    self.assertEquals('tag:x.com:foo', util.tag_uri('x.com', 'foo'))
-    self.assertEquals('tag:x.com,2013:foo',
-                      util.tag_uri('x.com', 'foo', year=2013))
+    self.assertEquals('tag:x.com,2013:foo', util.tag_uri('x.com', 'foo'))
+    self.assertEquals('tag:x.com,2014:foo',
+                      util.tag_uri('x.com', 'foo', year=2014))
 
   def test_parse_tag_uri(self):
     self.assertEquals(('x.com', 'foo'), util.parse_tag_uri('tag:x.com,2013:foo'))

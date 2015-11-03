@@ -113,18 +113,14 @@ def uniquify(input):
   return collections.OrderedDict([x, 0] for x in input).keys()
 
 
-def tag_uri(domain, name, year=None):
+def tag_uri(domain, name, year='2013'):
   """Returns a tag URI string for the given domain and name.
 
-  Example return value: 'tag:twitter.com,2012:snarfed_org/172417043893731329'
+  Example return value: 'tag:twitter.com,2013:snarfed_org/172417043893731329'
 
   Background on tag URIs: http://taguri.org/
   """
-  if year is not None:
-    year = ',%s' % year
-  else:
-    year = ''
-  return 'tag:%s%s:%s' % (domain, year, name)
+  return 'tag:%s,%s:%s' % (domain, year, name)
 
 
 _TAG_URI_RE = re.compile('tag:([^,]+)(?:,\d+)?:(.+)$')
