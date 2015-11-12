@@ -732,8 +732,15 @@ def interpret_http_exception(exception):
     message = `message`
   err_code = error.get('code')
   err_subcode = error.get('error_subcode')
-  if ((type == 'OAuthException' and ' API is deprecated ' not in message and
-       err_code != 100) or
+  if ((type == 'OAuthException' and
+       # have to use message, not error code, since some error codes are for
+       # both auth and non-auth errors, e.g. we've gotten code 100 for both
+       # "This authorization code has expired." and "Too many IDs. ..."
+       ('token provided is invalid.' in message or
+        'authorization code has expired.' in message or
+        'the user is not a confirmed user.' in message or
+        'Permissions error' == message
+       )) or
       (type == 'FacebookApiException' and 'Permissions error' in message) or
       (err_code in (102, 190) and err_subcode in (458, 460, 463))):
     code = '401'

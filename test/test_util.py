@@ -482,106 +482,94 @@ class UtilTest(testutil.HandlerTest):
     ex = RequestError(status=429, body='my body')
     self.assertEquals(('429', 'my body'), ihc(ex))
 
+    # Google+
     self.assertEquals((None, None), ihc(AccessTokenRefreshError('invalid_foo')))
     self.assertEquals(('401', None), ihc(AccessTokenRefreshError('invalid_grant')))
     self.assertEquals(('401', None), ihc(AccessTokenRefreshError(
       'invalid_grant: Token has been revoked.')))
 
-    # this is the type of response we get back from instagram. because it means
-    # the source should be disabled, we convert the status code 400 to 401
-    ig_token_error = json.dumps({
-      "meta": {
-        "error_type": "OAuthAccessTokenException",
-        "code": 400,
-        "error_message": "The access_token provided is invalid."
-      }
-    })
-
-    self.assertEquals(('401', ig_token_error), ihc(urllib2.HTTPError(
-      'url', 400, 'BAD REQUEST', {}, StringIO.StringIO(ig_token_error))))
-
-    # https://github.com/snarfed/bridgy/issues/436
-    fb_unconfirmed_error = json.dumps({
-      'error': {
+    # auth failures as HTTPErrors that should become 401s
+    for body in (
+      # instagram, expired or revoked
+      {'meta': {
+        'error_type': 'OAuthAccessTokenException',
+        'code': 400,
+        'error_message': 'The access_token provided is invalid.'
+      }},
+      # facebook, https://github.com/snarfed/bridgy/issues/59#issuecomment-34549314
+      {'error' : {
+        'type' : 'OAuthException',
+        'code' : 100,
+        'message' : 'This authorization code has expired.'
+      }},
+      # facebook, https://github.com/snarfed/bridgy/issues/436
+      {'error': {
         'message': 'Error validating access token: Sessions for the user X are not allowed because the user is not a confirmed user.',
         'type': 'OAuthException',
         'code': 190,
         'error_subcode': 464,
-      }
-    })
-    self.assertEquals(('401', fb_unconfirmed_error), ihc(urllib2.HTTPError(
-      'url', 400, 'BAD REQUEST', {}, StringIO.StringIO(fb_unconfirmed_error))))
-
-    # https://github.com/snarfed/bridgy/issues/437
-    fb_permissions_error = json.dumps({
-      'error': {
+      }},
+      # facebook, https://github.com/snarfed/bridgy/issues/437
+      {'error': {
         'message': 'Permissions error',
         'type': 'FacebookApiException',
-        'code': 200
-      }
-    })
-    self.assertEquals(('401', fb_permissions_error), ihc(urllib2.HTTPError(
-      'url', 500, 'BAD REQUEST', {}, StringIO.StringIO(fb_permissions_error))))
+        'code': 200,
+      }},
+      # facebook, revoked
+      {'error': {
+        'code': 190,
+        'error_subcode': 458,
+      }},
+      # facebook, expired
+      {'error': {
+        'code': 102,
+        'error_subcode': 463,
+      }},
+      # facebook, changed password
+      {'error': {
+        'code': 102,
+        'error_subcode': 460,
+      }},
+      ):
+      for code in 400, 500:
+        got_code, got_body = ihc(urllib2.HTTPError(
+          'url', code, 'BAD REQUEST', {}, StringIO.StringIO(json.dumps(body))))
+        self.assertEquals('401', got_code, (got_code, body))
+        self.assert_equals(body, json.loads(got_body), body)
 
-    # https://github.com/snarfed/bridgy/issues/450
-    fb_transient_error = json.dumps({
-      'error': {
+    # HTTPErrors that *shouldn't* become 401s
+    for body in (
+      # facebook is_transient, https://github.com/snarfed/bridgy/issues/450
+      {'error': {
         'message': 'An unexpected error has occurred. Please retry your request later.',
         'type': 'OAuthException',
         'is_transient': True,
         'code': 2,
-      }
-    })
-    self.assertEquals(('402', fb_transient_error), ihc(urllib2.HTTPError(
-      'url', 401, 'BAD REQUEST', {}, StringIO.StringIO(fb_transient_error))))
-
-    fb_revoked_error = json.dumps({
-      'error': {
-        'code': 190,
-        'error_subcode': 458,
-      }
-    })
-    self.assertEquals(('401', fb_revoked_error), ihc(urllib2.HTTPError(
-      'url', 400, 'BAD REQUEST', {}, StringIO.StringIO(fb_revoked_error))))
-
-    fb_expired_error = json.dumps({
-      'error': {
-        'code': 102,
-        'error_subcode': 463,
-      }
-    })
-    self.assertEquals(('401', fb_expired_error), ihc(urllib2.HTTPError(
-      'url', 400, 'BAD REQUEST', {}, StringIO.StringIO(fb_expired_error))))
-
-    fb_changed_password_error = json.dumps({
-      'error': {
-        'code': 102,
-        'error_subcode': 460,
-      }
-    })
-    self.assertEquals(('401', fb_changed_password_error), ihc(urllib2.HTTPError(
-      'url', 400, 'BAD REQUEST', {}, StringIO.StringIO(fb_changed_password_error))))
-
-    # https://github.com/snarfed/bridgy/issues/480
-    fb_api_deprecated_error = json.dumps({
-      'error': {
+      }},
+      # is_transient should override messages that imply auth failure
+      {'error': {
+        'message': 'The token provided is invalid.',
+        'type': 'OAuthException',
+        'is_transient': True,
+      }},
+      # facebook deprecated API, https://github.com/snarfed/bridgy/issues/480
+      {'error': {
         'message' : '(#12) notes API is deprecated for versions v2.0 and higher',
         'code' : 12,
         'type' : 'OAuthException',
-      }
-    })
-    self.assertEquals(('400', fb_api_deprecated_error), ihc(urllib2.HTTPError(
-      'url', 400, 'BAD REQUEST', {}, StringIO.StringIO(fb_api_deprecated_error))))
-
-    too_many_ids_error = json.dumps({
-      'error': {
+      }},
+      # facebook too many IDs
+      {'error': {
         'message' : '(#100) Too many IDs. Maximum: 50. Provided: 54.',
         'code' : 100,
         'type' : 'OAuthException',
-      }
-    })
-    self.assertEquals(('400', too_many_ids_error), ihc(urllib2.HTTPError(
-      'url', 400, 'BAD REQUEST', {}, StringIO.StringIO(too_many_ids_error))))
+      }},
+      ):
+      for code in 400, 500:
+        got_code, got_body = ihc(urllib2.HTTPError(
+          'url', code, 'BAD REQUEST', {}, StringIO.StringIO(json.dumps(body))))
+        self.assertEquals(str(code), got_code, (code, got_code, body))
+        self.assert_equals(body, json.loads(got_body), body)
 
     # make sure we handle non-facebook JSON bodies ok
     wordpress_rest_error = json.dumps(
