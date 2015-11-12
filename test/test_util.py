@@ -573,6 +573,16 @@ class UtilTest(testutil.HandlerTest):
     self.assertEquals(('400', fb_api_deprecated_error), ihc(urllib2.HTTPError(
       'url', 400, 'BAD REQUEST', {}, StringIO.StringIO(fb_api_deprecated_error))))
 
+    too_many_ids_error = json.dumps({
+      'error': {
+        'message' : '(#100) Too many IDs. Maximum: 50. Provided: 54.',
+        'code' : 100,
+        'type' : 'OAuthException',
+      }
+    })
+    self.assertEquals(('400', too_many_ids_error), ihc(urllib2.HTTPError(
+      'url', 400, 'BAD REQUEST', {}, StringIO.StringIO(too_many_ids_error))))
+
     # make sure we handle non-facebook JSON bodies ok
     wordpress_rest_error = json.dumps(
       {'error': 'unauthorized', 'message': 'Comments on this post are closed'})

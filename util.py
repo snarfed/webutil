@@ -732,7 +732,8 @@ def interpret_http_exception(exception):
     message = `message`
   err_code = error.get('code')
   err_subcode = error.get('error_subcode')
-  if ((type == 'OAuthException' and ' API is deprecated ' not in message) or
+  if ((type == 'OAuthException' and ' API is deprecated ' not in message and
+       err_code != 100) or
       (type == 'FacebookApiException' and 'Permissions error' in message) or
       (err_code in (102, 190) and err_subcode in (458, 460, 463))):
     code = '401'
