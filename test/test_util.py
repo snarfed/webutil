@@ -577,6 +577,17 @@ class UtilTest(testutil.HandlerTest):
     self.assertEquals(('402', wordpress_rest_error), ihc(urllib2.HTTPError(
       'url', 402, 'BAD REQUEST', {}, StringIO.StringIO(wordpress_rest_error))))
 
+  def test_ignore_http_4xx_error(self):
+    x = 0
+    with util.ignore_http_4xx_error():
+      x = 1
+      raise exc.HTTPNotFound()
+      x = 2
+
+    with self.assertRaises(exc.HTTPInternalServerError):
+      with util.ignore_http_4xx_error():
+        raise exc.HTTPInternalServerError()
+
   def test_is_connection_failure(self):
     for e in (socket.timeout(), socket.error(), requests.ConnectionError(),
               httplib.NotConnected(), urllib2.URLError(socket.gaierror('foo bar')),

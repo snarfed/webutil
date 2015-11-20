@@ -5,6 +5,7 @@ __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
 import calendar
 import collections
+import contextlib
 import base64
 import datetime
 import httplib
@@ -752,6 +753,16 @@ def interpret_http_exception(exception):
     logging.info('Converting code %s to %s', orig_code, code)
 
   return code, body
+
+
+@contextlib.contextmanager
+def ignore_http_4xx_error():
+  try:
+    yield
+  except BaseException, e:
+    code, _ = interpret_http_exception(e)
+    if int(code) / 100 != 4:
+      raise
 
 
 def is_connection_failure(exception):
