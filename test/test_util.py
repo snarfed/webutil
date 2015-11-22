@@ -584,9 +584,10 @@ class UtilTest(testutil.HandlerTest):
       raise exc.HTTPNotFound()
       x = 2
 
-    with self.assertRaises(exc.HTTPInternalServerError):
-      with util.ignore_http_4xx_error():
-        raise exc.HTTPInternalServerError()
+    for exc_cls in AssertionError, exc.HTTPInternalServerError:
+      with self.assertRaises(exc_cls):
+        with util.ignore_http_4xx_error():
+          raise exc_cls()
 
   def test_is_connection_failure(self):
     for e in (socket.timeout(), socket.error(), requests.ConnectionError(),

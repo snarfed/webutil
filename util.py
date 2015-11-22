@@ -761,7 +761,7 @@ def ignore_http_4xx_error():
     yield
   except BaseException, e:
     code, _ = interpret_http_exception(e)
-    if int(code) / 100 != 4:
+    if not (code and int(code) / 100 == 4):
       raise
 
 
