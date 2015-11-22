@@ -9,6 +9,7 @@ import contextlib
 import base64
 import datetime
 import httplib
+import inspect
 import json
 import logging
 import numbers
@@ -97,9 +98,14 @@ def trim_nulls(value):
   if isinstance(value, dict):
     trimmed = {k: trim_nulls(v) for k, v in value.items()}
     return {k: v for k, v in trimmed.items() if v not in NULLS}
-  elif isinstance(value, (tuple, list, set, frozenset)):
+  elif (isinstance(value, (tuple, list, set, frozenset, collections.Iterator)) or
+        inspect.isgenerator(value)):
     trimmed = [trim_nulls(v) for v in value]
-    return type(value)([v for v in trimmed if v if v not in NULLS])
+    ret = (v for v in trimmed if v if v not in NULLS)
+    if isinstance(value, collections.Iterator) or inspect.isgenerator(value):
+      return ret
+    else:
+      return type(value)(list(ret))
   else:
     return value
 
