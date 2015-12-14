@@ -163,13 +163,17 @@ class UtilTest(testutil.HandlerTest):
 
   def test_dedupe_urls(self):
     self.assertEquals([], util.dedupe_urls([]))
-    self.assertEquals(['http://foo'], util.dedupe_urls(['http://foo']))
-    self.assertEquals(['http://foo'], util.dedupe_urls(['http://foo', 'http://foo']))
+    self.assertEquals(['http://foo/'], util.dedupe_urls(['http://foo']))
+    self.assertEquals(['http://foo/'], util.dedupe_urls(['http://foo', 'http://foo']))
+    self.assertEquals(['http://foo/'], util.dedupe_urls(['http://foo', 'http://foo/']))
+    self.assertEquals(['https://foo/'], util.dedupe_urls([
+      'https://foo', 'http://foo', 'https://foo/', 'http://foo/']))
     self.assertEquals(['https://foo/'],
-                       util.dedupe_urls(['http://foo', 'http://foo',
-                                         'https://foo/', 'http://foo/']))
+                      util.dedupe_urls(['http://foo', 'https://foo/']))
     self.assertEquals(['http://foo/bar', 'http://foo/bar/'],
-                       util.dedupe_urls(['http://foo/bar', 'http://foo/bar/']))
+                      util.dedupe_urls(['http://foo/bar', 'http://foo/bar/']))
+    self.assertEquals(['http://foo/'],
+                      util.dedupe_urls(['http://foo', 'http://FOO/', 'http://FoO/']))
 
   def test_tag_uri(self):
     self.assertEquals('tag:x.com:foo', util.tag_uri('x.com', 'foo'))

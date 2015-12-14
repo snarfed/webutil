@@ -570,12 +570,23 @@ def get_required_param(handler, name):
 
 
 def dedupe_urls(urls):
-  """De-dupes URLs, ignoring scheme (http vs https) and trailing root slash.
+  """Normalizes and de-dupes http(s) URLs.
 
-  Preserves order. Prefers https and trailing root slash in the returned URLs.
+  Converts domain to lower case, adds trailing slash when path is empty, and
+  ignores scheme (http vs https), preferring https. Preserves order.
 
-  As examples, http://foo/ and https://foo are considered duplicates, but
+  Domains are case insensitive, even modern domains with Unicode/punycode
+  characters:
+
+  http://unicode.org/faq/idn.html#6
+  https://tools.ietf.org/html/rfc4343#section-5
+
+  As examples, http://foo/ and https://FOO are considered duplicates, but
   http://foo/bar and http://foo/bar/ aren't.
+
+  Background: https://en.wikipedia.org/wiki/URL_normalization
+
+  TODO: port to https://pypi.python.org/pypi/urlnorm
 
   Args:
     urls: sequence of string URLs
@@ -583,20 +594,26 @@ def dedupe_urls(urls):
   Returns:
     sequence of string URLs
   """
-  unique = set(urls)
+  result = []
 
-  def has_better(url):
-    # returns True if a dupe exists with a better scheme or root slash path
-    p = urlparse.urlparse(url)
-    if p.scheme == 'http':
-      if urlparse.urlunparse(('https',) + p[1:]) in unique:
-        return True
-      if not p.path and urlparse.urlunparse(('https', p.netloc, '/') + p[3:]) in unique:
-        return True
-    elif not p.path and urlparse.urlunparse(p[:2] + ('/',) + p[3:]) in unique:
-      return True
+  for url in urls:
+    p = urlparse.urlsplit(url)
+    # normalize domain (hostname attr is lower case) and path
+    norm = [p.scheme, p.hostname, p.path or '/', p.query, p.fragment]
 
-  return [u for u in uniquify(urls) if not has_better(u)]
+    if p.scheme == 'http' and urlparse.urlunsplit(['https'] + norm[1:]) in result:
+      continue
+    elif p.scheme == 'https':
+      try:
+        result.remove(urlparse.urlunsplit(['http'] + norm[1:]))
+      except ValueError:
+        pass
+
+    url = urlparse.urlunsplit(norm)
+    if url not in result:
+      result.append(url)
+
+  return result
 
 
 def if_changed(cache, updates, key, value):
