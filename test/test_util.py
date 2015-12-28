@@ -108,6 +108,22 @@ class UtilTest(testutil.HandlerTest):
     for bad_link in '', '  ', 'a&b.com', 'http://', 'file:///':
       self.assertEquals(None, util.domain_from_link(bad_link))
 
+  def test_domain_or_parent_in(self):
+    for expected, inputs in (
+        (False, [
+          ('', []), ('', ['']), ('x', []), ('x', ['']), ('x.y', []),
+          ('x.y', ['']), ('', ['x', 'y']), ('', ['x.y']), ('x', ['y']),
+          ('xy', ['y', 'x']), ('x', ['yx']), ('v.w.x', ['v.w', 'x.w']),
+          ('x', ['', 'y', 'xy', 'yx', 'xx', 'xxx']),
+        ]),
+        (True, [
+          ('x', ['x']), ('x', ['x', 'y']), ('x', ['y', 'x']),
+          ('w.x', ['x']), ('u.v.w.x', ['y', 'v.w.x']),
+        ])):
+      for input, domains in inputs:
+        self.assertEquals(expected, util.domain_or_parent_in(input, domains),
+                          `input, domains, expected`)
+
   def test_update_scheme(self):
     for orig in 'http', 'https':
       for new in 'http', 'https':

@@ -188,6 +188,15 @@ HOSTNAME_RE_STR = r'%s(\.%s)*\.?' % ((r'(?!-)[A-Za-z\d-]{1,63}(?<!-)',) * 2)
 HOSTNAME_RE = re.compile(HOSTNAME_RE_STR + '$')
 
 def domain_from_link(url):
+  """Extracts and returns the meaningful domain from a URL.
+
+  Strips www., mobile., and m. from the beginning of the domain.
+
+  Args:
+    url: string
+
+  Returns: string
+  """
   parsed = urlparse.urlparse(url)
   if not parsed.hostname and '//' not in url:
     parsed = urlparse.urlparse('http://' + url)
@@ -203,6 +212,36 @@ def domain_from_link(url):
   logging.error('domain_from_link: Invalid domain in %r', url)
   return None
 
+
+def domain_or_parent_in(input, domains):
+  """Returns True if an input domain or its parent is in a set of domains.
+
+  Examples:
+    foo, [] => False
+    foo, [foo] => True
+    foo.bar.com, [bar.com] => True
+    foo.bar.com, [.bar.com] => True
+    foo.bar.com, [fux.bar.com] => False
+    bar.com, [fux.bar.com] => False
+
+  Args:
+    input: string domain
+    domains: sequence of string domains
+
+  Returns: boolean
+  """
+  if not input or not domains:
+    return False
+  elif input in domains:
+    return True
+
+  for domain in domains:
+    if not domain.startswith('.'):
+      domain = '.' + domain
+    if input.endswith(domain):
+      return True
+
+  return False
 
 def update_scheme(url, handler):
   """Returns a modified string url with the current request's scheme.
