@@ -89,6 +89,28 @@ class UtilTest(testutil.HandlerTest):
     self.assertEqual([3, 2, 4, 5, 9],
                      util.uniquify([3, 3, 2, 3, 4, 3, 5, 9, 9, 9, 3]))
 
+  def test_get_list(self):
+    for dict, expected in (
+        ({}, []),
+        ({9: 9}, []),
+        ({0: []}, []),
+        ({0: ()}, []),
+        ({0: [3]}, [3]),
+        ({0: (3, 4)}, [3, 4]),
+        ({0: 2}, [2]),
+      ):
+      self.assertEqual(expected, util.get_list(dict, 0))
+
+  def test_get_first(self):
+    for dict, expected in (
+        ({}, None),
+        ({9: 9}, None),
+        ({0: []}, None),
+        ({0: [3]}, 3),
+        ({0: (3, 4, 5)}, 3),
+      ):
+      self.assertEqual(expected, util.get_first(dict, 0))
+
   def test_favicon_for_url(self):
     for url in ('http://a.org/b/c?d=e&f=g', 'https://a.org/b/c', 'http://a.org/'):
       self.assertEqual('http://a.org/favicon.ico', util.favicon_for_url(url))

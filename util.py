@@ -120,6 +120,29 @@ def uniquify(input):
   return collections.OrderedDict([x, 0] for x in input).keys()
 
 
+def get_list(dict, key):
+  """Returns a value from a dict as a list.
+
+  If the value is a list or tuple, it's converted to a list. If it's something
+  else, it's returned as a single-element list. If the key doesn't exist,
+  returns [].
+  """
+  val = dict.get(key, [])
+  return list(val) if isinstance(val, (list, tuple)) else [val]
+
+
+def get_first(dict, key):
+  """Returns the first element of a dict value.
+
+  If the value is a list or tuple, returns the first value. If it's something
+  else, returns the value itself. If the key doesn't exist, returns None.
+  """
+  val = dict.get(key)
+  if not val:
+    return None
+  return val[0] if isinstance(val, (list, tuple)) else val
+
+
 def tag_uri(domain, name, year=None):
   """Returns a tag URI string for the given domain and name.
 
