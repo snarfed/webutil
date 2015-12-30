@@ -131,7 +131,7 @@ def get_list(dict, key):
   return list(val) if isinstance(val, (list, tuple)) else [val]
 
 
-def get_first(dict, key):
+def get_first(dict, key, default=None):
   """Returns the first element of a dict value.
 
   If the value is a list or tuple, returns the first value. If it's something
@@ -139,7 +139,7 @@ def get_first(dict, key):
   """
   val = dict.get(key)
   if not val:
-    return None
+    return default
   return val[0] if isinstance(val, (list, tuple)) else val
 
 
