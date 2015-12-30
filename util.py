@@ -128,7 +128,7 @@ def get_list(dict, key):
   returns [].
   """
   val = dict.get(key, [])
-  return list(val) if isinstance(val, (list, tuple)) else [val]
+  return list(val) if isinstance(val, (list, tuple, set)) else [val]
 
 
 def get_first(dict, key, default=None):
