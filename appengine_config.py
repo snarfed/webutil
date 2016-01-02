@@ -71,7 +71,7 @@ class BlacklistingHandler(ereporter.ExceptionRecordingHandler):
     'JointException: taskqueue.DatastoreError',
     'RequestError: Server responded with: 503',  # gdata.client.RequestError
     'Timeout',
-    'TransactionFailedError: The transaction could not be committed.',
+    'TransactionFailedError',
     'TransientError',
     'TweepError: HTTPSConnectionPool',
     )
