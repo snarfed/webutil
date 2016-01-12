@@ -825,6 +825,7 @@ def interpret_http_exception(exception):
        ('token provided is invalid.' in message or
         'authorization code has expired.' in message or
         'the user is not a confirmed user.' in message or
+        'user must be an administrator of the page' in message or
         'Permissions error' == message
        )) or
       (type == 'FacebookApiException' and 'Permissions error' in message) or

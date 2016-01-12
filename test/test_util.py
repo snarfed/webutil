@@ -579,6 +579,13 @@ class UtilTest(testutil.HandlerTest):
         'code': 102,
         'error_subcode': 460,
       }},
+      # facebook, user removed from page admins
+      # https://github.com/snarfed/bridgy/issues/596
+      {'error': {
+        'code': 190,
+        'type': 'OAuthException',
+        'message': 'The user must be an administrator of the page in order to impersonate it.'
+      }},
       ):
       for code in 400, 500:
         got_code, got_body = ihc(urllib2.HTTPError(
