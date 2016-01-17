@@ -279,12 +279,28 @@ Actual value:
     Ignores leading and trailing whitespace on each line, and squeezes repeated
     blank lines down to just one.
     """
-    def normalize(val):
+    exp_lines = self._normalize_lines(expected)
+    act_lines = self._normalize_lines(actual)
+    if exp_lines != act_lines:
+      self.fail(''.join(difflib.Differ().compare(exp_lines, act_lines)))
+
+  def assert_multiline_in(self, expected, actual):
+    """Checks that a multi-line string is in another and reports a diff output.
+
+    Ignores leading and trailing whitespace on each line, and squeezes repeated
+    blank lines down to just one.
+    """
+    exp = ''.join(self._normalize_lines(expected)).strip()
+    act = ''.join(self._normalize_lines(actual))
+    self.assertIn(exp, act, """\
+%s
+
+not found in:
+
+%s""" % (exp, act))
+
+  @staticmethod
+  def _normalize_lines(val):
       lines = [l.strip() + '\n' for l in val.splitlines(True)]
       return [l for i, l in enumerate(lines)
               if i <= 1 or not (lines[i - 1] == l == '\n')]
-
-    exp_lines = normalize(expected)
-    act_lines = normalize(actual)
-    if exp_lines != act_lines:
-      self.fail(''.join(difflib.Differ().compare(exp_lines, act_lines)))
