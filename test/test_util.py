@@ -513,6 +513,12 @@ class UtilTest(testutil.HandlerTest):
     for arg in '3xyz', None, self:
       self.assertFalse(util.is_float(arg), `arg`)
 
+  def test_is_base64(self):
+    for arg in '', 'asdf', '1234', '+/aglzfmJyaWQtZ3lyDgsSB1R3aXR0ZXIiAXQM==':
+      self.assertTrue(util.is_base64(arg), `arg`)
+    for arg in 0, 12.2, ')(,.",\'",[--', None, self:
+      self.assertFalse(util.is_base64(arg), `arg`)
+
   def test_interpret_http_exception(self):
     ihc = util.interpret_http_exception
 

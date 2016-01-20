@@ -745,6 +745,15 @@ def is_float(arg):
     return False
 
 
+def is_base64(arg):
+  """Returns True if arg is a base64 encoded string, False otherwise."""
+  try:
+    decoded = base64.urlsafe_b64decode(arg)
+    return True
+  except (AttributeError, ValueError, TypeError):
+    return False
+
+
 def interpret_http_exception(exception):
   """Extracts the status code and response from different HTTP exception types.
 
