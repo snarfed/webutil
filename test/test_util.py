@@ -514,9 +514,9 @@ class UtilTest(testutil.HandlerTest):
       self.assertFalse(util.is_float(arg), `arg`)
 
   def test_is_base64(self):
-    for arg in '', 'asdf', '1234', '+/aglzfmJyaWQtZ3lyDgsSB1R3aXR0ZXIiAXQM==':
+    for arg in '', 'asdf', '1', '1===', '_-aglzfmJyaWQtZ3lyDgsSB1R3aXR0ZXIiAXQM':
       self.assertTrue(util.is_base64(arg), `arg`)
-    for arg in 0, 12.2, ')(,.",\'",[--', None, self:
+    for arg in 0, 12.2, ')(,.",\'",[---', None, self:
       self.assertFalse(util.is_base64(arg), `arg`)
 
   def test_interpret_http_exception(self):
