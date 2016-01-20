@@ -736,6 +736,15 @@ def is_int(arg):
     return False
 
 
+def is_float(arg):
+  """Returns True if arg can be converted to a float, False otherwise."""
+  try:
+    as_float = float(arg)
+    return as_float == arg if isinstance(arg, numbers.Number) else True
+  except (ValueError, TypeError):
+    return False
+
+
 def interpret_http_exception(exception):
   """Extracts the status code and response from different HTTP exception types.
 

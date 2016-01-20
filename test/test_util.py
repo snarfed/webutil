@@ -507,6 +507,12 @@ class UtilTest(testutil.HandlerTest):
     for arg in 0.1, 3.14, '3.0', '3xyz', None, self:
       self.assertFalse(util.is_int(arg), `arg`)
 
+  def test_is_float(self):
+    for arg in 0, 1, -1, '0', '11', 1.0, 12345, 0.1, 3.14, '3.0':
+      self.assertTrue(util.is_float(arg), `arg`)
+    for arg in '3xyz', None, self:
+      self.assertFalse(util.is_float(arg), `arg`)
+
   def test_interpret_http_exception(self):
     ihc = util.interpret_http_exception
 
