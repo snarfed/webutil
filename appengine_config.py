@@ -75,6 +75,7 @@ class BlacklistingHandler(ereporter.ExceptionRecordingHandler):
     'TransientError',
     'TweepError: HTTPSConnectionPool',
     "TweepError: Token request failed with code 401, response was 'This feature is temporarily unavailable'.",
+    'TweepError: Token request failed with code 5',
     )
 
   def emit(self, record):
