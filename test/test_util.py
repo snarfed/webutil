@@ -99,6 +99,7 @@ class UtilTest(testutil.HandlerTest):
         ({0: (3, 4)}, [3, 4]),
         ({0: set((3, 4))}, [3, 4]),
         ({0: 2}, [2]),
+        ({0: None}, []),
       ):
       self.assertEqual(expected, util.get_list(dict, 0))
 
@@ -106,6 +107,7 @@ class UtilTest(testutil.HandlerTest):
     for dict, expected in (
         ({}, None),
         ({9: 9}, None),
+        ({0: None}, None),
         ({0: []}, None),
         ({0: [3]}, 3),
         ({0: (3, 4, 5)}, 3),
