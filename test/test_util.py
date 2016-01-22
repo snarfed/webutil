@@ -670,3 +670,28 @@ class UtilTest(testutil.HandlerTest):
               urllib2.HTTPError('url', 403, 'msg', {}, None),
               ):
       assert not util.is_connection_failure(e), e
+
+  def test_file_limiter(self):
+    buf = StringIO.StringIO('abcdefghijk')
+
+    lim = util.FileLimiter(buf, 1)
+    self.assertEquals('a', lim.read())
+    self.assertEquals('', lim.read())
+
+    lim = util.FileLimiter(buf, 1)
+    self.assertEquals('b', lim.read(2))
+    self.assertEquals('', lim.read(2))
+
+    lim = util.FileLimiter(buf, 1)
+    self.assertEquals('c', lim.read(1))
+    self.assertEquals('', lim.read(1))
+
+    lim = util.FileLimiter(buf, 5)
+    self.assertEquals('d', lim.read(1))
+    self.assertEquals('efgh', lim.read(6))
+    self.assertEquals('', lim.read(6))
+
+    lim = util.FileLimiter(buf, 5)
+    self.assertEquals('ij', lim.read(2))
+    self.assertEquals('k', lim.read())
+    self.assertEquals('', lim.read())

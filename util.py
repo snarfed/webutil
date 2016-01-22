@@ -892,3 +892,27 @@ def is_connection_failure(exception):
     return True
 
   return False
+
+
+class FileLimiter(object):
+  """A file object wrapper that reads up to a limit and then reports EOF.
+
+  From http://stackoverflow.com/a/29838711/186123 . Thanks SO!
+  """
+  def __init__(self, file_obj, read_limit):
+    self.read_limit = read_limit
+    self.amount_seen = 0
+    self.file_obj = file_obj
+
+    # So that requests doesn't try to chunk an upload but will instead stream it
+    self.len = read_limit
+
+  def read(self, amount=-1):
+    if self.amount_seen >= self.read_limit:
+      return b''
+    remaining = self.read_limit - self.amount_seen
+    data = self.file_obj.read(remaining_amount if amount < 0
+                              else min(amount, remaining))
+    self.amount_seen += len(data)
+    return data
+
