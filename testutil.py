@@ -56,12 +56,12 @@ class HandlerTest(mox.MoxTestBase):
     """
     def __init__(self, status_code, content, url=None, headers={}):
       self.status_code = status_code
-      self.content = content
+      self.content = StringIO.StringIO(content)
       self.url = url
       self.headers = headers
 
-    def read(self):
-      return self.content
+    def read(self, length=-1):
+      return self.content.read(length)
 
     def getcode(self):
       return self.status_code
