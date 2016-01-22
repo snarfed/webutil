@@ -903,6 +903,7 @@ class FileLimiter(object):
     self.read_limit = read_limit
     self.amount_seen = 0
     self.file_obj = file_obj
+    self.ateof = False
 
     # So that requests doesn't try to chunk an upload but will instead stream it
     self.len = read_limit
@@ -910,9 +911,13 @@ class FileLimiter(object):
   def read(self, amount=-1):
     if self.amount_seen >= self.read_limit:
       return b''
+
     remaining = self.read_limit - self.amount_seen
-    data = self.file_obj.read(remaining_amount if amount < 0
-                              else min(amount, remaining))
+    to_read = remaining if amount < 0 else min(amount, remaining)
+    data = self.file_obj.read(to_read)
+
     self.amount_seen += len(data)
+    if (len(data) < to_read) or (to_read and not data):
+      self.ateof = True
     return data
 

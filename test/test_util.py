@@ -677,6 +677,7 @@ class UtilTest(testutil.HandlerTest):
     lim = util.FileLimiter(buf, 1)
     self.assertEquals('a', lim.read())
     self.assertEquals('', lim.read())
+    self.assertFalse(lim.ateof)
 
     lim = util.FileLimiter(buf, 1)
     self.assertEquals('b', lim.read(2))
@@ -690,8 +691,10 @@ class UtilTest(testutil.HandlerTest):
     self.assertEquals('d', lim.read(1))
     self.assertEquals('efgh', lim.read(6))
     self.assertEquals('', lim.read(6))
+    self.assertFalse(lim.ateof)
 
     lim = util.FileLimiter(buf, 5)
     self.assertEquals('ij', lim.read(2))
     self.assertEquals('k', lim.read())
     self.assertEquals('', lim.read())
+    self.assertTrue(lim.ateof)
