@@ -698,3 +698,12 @@ class UtilTest(testutil.HandlerTest):
     self.assertEquals('k', lim.read())
     self.assertEquals('', lim.read())
     self.assertTrue(lim.ateof)
+
+  def test_base_url(self):
+    for expected, url in (
+        ('http://site/', 'http://site/'),
+        ('http://site/path/', 'http://site/path/'),
+        ('http://site/path/', 'http://site/path/leaf'),
+        ('http://site/path/', 'http://site/path/leaf?query#frag'),
+      ):
+      self.assertEquals(expected, util.base_url(url))

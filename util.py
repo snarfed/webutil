@@ -339,6 +339,17 @@ def clean_url(url):
   return urlparse.urlunparse(parts)
 
 
+def base_url(url):
+  """Returns the base of a given URL
+
+  For example, returns 'http://site/posts/' for 'http://site/posts/123'.
+
+  Args:
+    url: string
+  """
+  return urlparse.urljoin(url, ' ')[:-1] if url else None
+
+
 _LINK_RE = re.compile(ur'\bhttps?://[^\s<>]+\b')
 # more complicated alternative:
 # http://stackoverflow.com/questions/720113#comment23297770_2102648
