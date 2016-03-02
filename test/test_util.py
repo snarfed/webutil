@@ -546,10 +546,14 @@ class UtilTest(testutil.HandlerTest):
     self.assertEquals(('429', 'my body'), ihc(ex))
 
     # Google+
-    self.assertEquals((None, None), ihc(AccessTokenRefreshError('invalid_foo')))
-    self.assertEquals(('401', None), ihc(AccessTokenRefreshError('invalid_grant')))
-    self.assertEquals(('401', None), ihc(AccessTokenRefreshError(
-      'invalid_grant: Token has been revoked.')))
+    self.assertEquals((None, 'invalid_foo'),
+                      ihc(AccessTokenRefreshError('invalid_foo')))
+    self.assertEquals(('401', 'invalid_grant'),
+                      ihc(AccessTokenRefreshError('invalid_grant')))
+    msg = 'invalid_grant: Token has been revoked.'
+    self.assertEquals(('401', msg), ihc(AccessTokenRefreshError(msg)))
+    self.assertEquals(('500', 'internal_failure'),
+                      ihc(AccessTokenRefreshError('internal_failure')))
 
     # auth failures as HTTPErrors that should become 401s
     for body in (

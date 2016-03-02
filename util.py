@@ -808,9 +808,12 @@ def interpret_http_exception(exception):
     code = e.resp.status
     body = e.content
 
-  elif (AccessTokenRefreshError and isinstance(e, AccessTokenRefreshError) and
-        str(e).startswith('invalid_grant')):
-    code = '401'
+  elif AccessTokenRefreshError and isinstance(e, AccessTokenRefreshError):
+    body = str(e)
+    if body.startswith('invalid_grant'):
+      code = '401'
+    elif body.startswith('internal_failure'):
+      code = '500'
 
   # hack to interpret gdata.client.RequestError since gdata isn't a dependency
   elif e.__class__.__name__ == 'RequestError':
