@@ -41,7 +41,7 @@ def handle_exception(self, e, debug):
   code, body = util.interpret_http_exception(e)
   if code:
     logging.exception(e)
-    self.response.set_status(int(e.code))
+    self.response.set_status(int(code))
     self.response.write('HTTP Error %s: %s' % (code, body))
   else:
     raise
