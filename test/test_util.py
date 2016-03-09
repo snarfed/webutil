@@ -604,6 +604,12 @@ class UtilTest(testutil.HandlerTest):
         'type': 'OAuthException',
         'message': 'The user must be an administrator of the page in order to impersonate it.'
       }},
+      # twitter
+      # https://dev.twitter.com/overview/api/response-codes
+      {'errors': [{
+        'code': 326,
+        'message': 'To protect our users from spam and other malicious activity, this account is temporarily locked. ...',
+      }]},
       ):
       for code in 400, 500:
         got_code, got_body = ihc(urllib2.HTTPError(

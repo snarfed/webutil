@@ -835,12 +835,21 @@ def interpret_http_exception(exception):
 
   # facebook
   # https://developers.facebook.com/docs/graph-api/using-graph-api/#errors
+  body_json = None
   try:
-    error = json.loads(body).get('error', {})
+    body_json = json.loads(body)
+    error = body_json.get('error', {})
     if not isinstance(error, dict):
       error = {'message': `error`}
   except BaseException:
     error = {}
+
+  # twitter
+  # https://dev.twitter.com/overview/api/response-codes
+  if body_json and not error:
+    errors = body_json.get('errors')
+    if errors and isinstance(errors, list):
+      error = errors[0]
 
   type = error.get('type')
   message = error.get('message')
@@ -859,7 +868,9 @@ def interpret_http_exception(exception):
         'Permissions error' == message
        )) or
       (type == 'FacebookApiException' and 'Permissions error' in message) or
-      (err_code in (102, 190) and err_subcode in (458, 460, 463))):
+      (err_code in (102, 190) and err_subcode in (458, 460, 463)) or
+      (err_code == 326 and 'this account is temporarily locked' in message)
+    ):
     code = '401'
 
   if code == '401' and error.get('is_transient'):
