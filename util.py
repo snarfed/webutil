@@ -946,3 +946,27 @@ class FileLimiter(object):
       self.ateof = True
     return data
 
+
+def urlopen(url, *args, **kwargs):
+  """Wraps urllib2.urlopen and logs the HTTP method and URL."""
+  data = kwargs.get('data')
+  if isinstance(url, urllib2.Request):
+    url = url.url
+    data = url.data
+
+  logging.info('urllib2.urlopen %s %s', 'POST' if data else 'GET', url)
+  return urllib2.urlopen(url, *args, **kwargs)
+
+
+def requests_fn(fn):
+  """Wraps requests.* and logs the HTTP method and URL."""
+  def call(url, *args, **kwargs):
+    logging.info('requests.%s %s', fn, url)
+    # use getattr so that stubbing out with mox still works
+    return getattr(requests, fn)(url, *args, **kwargs)
+
+  return call
+
+requests_get = requests_fn('get')
+requests_head = requests_fn('head')
+requests_post = requests_fn('post')
