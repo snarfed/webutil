@@ -45,10 +45,13 @@ except ImportError:
   exc = None
 
 try:
+  from appengine_config import HTTP_TIMEOUT
   from google.appengine.api import urlfetch_errors
   from google.appengine.runtime import apiproxy_errors
 except ImportError:
+  HTTP_TIMEOUT = 15
   urlfetch_errors = None
+  apiproxy_errors = None
 
 
 class Struct(object):
@@ -947,21 +950,27 @@ class FileLimiter(object):
     return data
 
 
-def urlopen(url, *args, **kwargs):
+def urlopen(url_or_req, *args, **kwargs):
   """Wraps urllib2.urlopen and logs the HTTP method and URL."""
   data = kwargs.get('data')
-  if isinstance(url, urllib2.Request):
-    url = url.url
-    data = url.data
 
-  logging.info('urllib2.urlopen %s %s', 'POST' if data else 'GET', url)
-  return urllib2.urlopen(url, *args, **kwargs)
+  if isinstance(url_or_req, urllib2.Request):
+    if data is None:
+      data = url_or_req.get_data()
+    url = url_or_req.get_full_url()
+  else:
+    url = url_or_req
+
+  logging.info('urlopen %s %s %s', 'POST' if data else 'GET', url, _prune(kwargs))
+  kwargs.setdefault('timeout', HTTP_TIMEOUT)
+  return urllib2.urlopen(url_or_req, *args, **kwargs)
 
 
 def requests_fn(fn):
   """Wraps requests.* and logs the HTTP method and URL."""
   def call(url, *args, **kwargs):
-    logging.info('requests.%s %s', fn, url)
+    logging.info('requests.%s %s %s', fn, url, _prune(kwargs))
+    kwargs.setdefault('timeout', HTTP_TIMEOUT)
     # use getattr so that stubbing out with mox still works
     return getattr(requests, fn)(url, *args, **kwargs)
 
@@ -970,3 +979,8 @@ def requests_fn(fn):
 requests_get = requests_fn('get')
 requests_head = requests_fn('head')
 requests_post = requests_fn('post')
+
+
+def _prune(kwargs):
+  return {k: v for k, v in kwargs.items()
+          if k not in ('headers', 'timeout', 'stream')}
