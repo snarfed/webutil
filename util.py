@@ -983,4 +983,4 @@ requests_post = requests_fn('post')
 
 def _prune(kwargs):
   return {k: v for k, v in kwargs.items()
-          if k not in ('headers', 'timeout', 'stream')}
+          if k not in ('allow_redirects', 'headers', 'stream', 'timeout')}
