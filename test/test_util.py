@@ -411,6 +411,18 @@ class UtilTest(testutil.HandlerTest):
     self.assertEqual(1446103883.456789, util.to_utc_timestamp(
       datetime.datetime(2015, 10, 29, 7, 31, 23, 456789)))
 
+  def test_as_utc(self):
+    dt = datetime.datetime(2000, 1, 1)  # naive
+    self.assertEqual(dt, util.as_utc(dt))
+
+    tzinfo = util.SimpleTzinfo()
+    tzinfo.offset = -390
+    dt = datetime.datetime(2000, 1, 1, tzinfo=tzinfo)  # aware
+
+    got = util.as_utc(dt)
+    self.assertEqual(datetime.datetime(2000, 1, 1, 6, 30, tzinfo=util.UTC), got)
+    self.assertEqual(got, got)
+
   def test_ellipsize(self):
     self.assertEqual('', util.ellipsize(''))
     self.assertEqual('asdf', util.ellipsize('asdf'))

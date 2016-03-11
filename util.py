@@ -532,6 +532,9 @@ class SimpleTzinfo(datetime.tzinfo):
   def dst(self, dt):
     return datetime.timedelta(0)
 
+UTC = SimpleTzinfo()
+UTC.offset = 0
+
 
 def parse_iso8601(str):
   """Parses an ISO 8601 or RFC 3339 date/time string and returns a datetime.
@@ -598,6 +601,21 @@ def to_utc_timestamp(input):
   # timetuple() usually strips microsecond
   timetuple[5] = float(int(timetuple[5])) + float(input.microsecond) / 1000000
   return calendar.timegm(timetuple)
+
+
+def as_utc(input):
+  """Converts a timezone-aware datetime to a naive UTC datetime.
+
+  If input is timezone-naive, it's returned as is.
+
+  Doesn't support DST!
+  """
+  if input.tzinfo:
+    utc = input - input.tzinfo.utcoffset(False)
+    return utc.replace(tzinfo=None)
+  else:
+    return input
+
 
 def ellipsize(str, words=14, chars=140):
   """Truncates and ellipsizes str if it's longer than words or chars.
