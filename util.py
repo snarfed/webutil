@@ -533,7 +533,6 @@ class SimpleTzinfo(datetime.tzinfo):
     return datetime.timedelta(0)
 
 UTC = SimpleTzinfo()
-UTC.offset = 0
 
 
 def parse_iso8601(str):

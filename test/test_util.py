@@ -416,11 +416,11 @@ class UtilTest(testutil.HandlerTest):
     self.assertEqual(dt, util.as_utc(dt))
 
     tzinfo = util.SimpleTzinfo()
-    tzinfo.offset = -390
+    tzinfo.offset = datetime.timedelta(minutes=-390)
     dt = datetime.datetime(2000, 1, 1, tzinfo=tzinfo)  # aware
 
     got = util.as_utc(dt)
-    self.assertEqual(datetime.datetime(2000, 1, 1, 6, 30, tzinfo=util.UTC), got)
+    self.assertEqual(datetime.datetime(2000, 1, 1, 6, 30), got)
     self.assertEqual(got, got)
 
   def test_ellipsize(self):
