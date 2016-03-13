@@ -729,3 +729,44 @@ class UtilTest(testutil.HandlerTest):
         ('http://site/path/', 'http://site/path/leaf?query#frag'),
       ):
       self.assertEquals(expected, util.base_url(url))
+
+  def test_follow_redirects(self):
+    for i in range(2):
+      self.expect_requests_head('http://will/redirect',
+                                redirected_url='http://final/url')
+    self.mox.ReplayAll()
+
+    cache = util.CacheDict()
+    self.assert_equals(
+      'http://final/url',
+      util.follow_redirects('http://will/redirect', cache=cache).url)
+
+    self.assertEquals('http://final/url', cache['R http://will/redirect'].url)
+
+    # another call without cache should refetch
+    self.assert_equals(
+      'http://final/url',
+      util.follow_redirects('http://will/redirect').url)
+
+    # another call with cache shouldn't refetch
+    self.assert_equals(
+      'http://final/url',
+      util.follow_redirects('http://will/redirect', cache=cache).url)
+
+  def test_follow_redirects_with_refresh_header(self):
+    headers = {'x': 'y'}
+    self.expect_requests_head('http://will/redirect', headers=headers,
+                              response_headers={'refresh': '0; url=http://refresh'})
+    self.expect_requests_head('http://refresh', headers=headers,
+                              redirected_url='http://final')
+
+    self.mox.ReplayAll()
+    cache = util.CacheDict()
+    self.assert_equals('http://final',
+                       util.follow_redirects('http://will/redirect', cache=cache,
+                                             headers=headers).url)
+
+  def test_follow_redirects_defaults_scheme_to_http(self):
+    self.expect_requests_head('http://foo/bar', redirected_url='http://final')
+    self.mox.ReplayAll()
+    self.assert_equals('http://final', util.follow_redirects('foo/bar').url)

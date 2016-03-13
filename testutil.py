@@ -18,6 +18,7 @@ import urllib2
 import urlparse
 
 import appengine_config
+import requests
 import webapp2
 
 from google.appengine.datastore import datastore_stub_util
@@ -40,79 +41,120 @@ def get_task_eta(task):
     float(dict(task['headers'])['X-AppEngine-TaskETA']))
 
 
-class HandlerTest(mox.MoxTestBase):
-  """Base test class for webapp2 request handlers.
-
-  Uses App Engine's testbed to set up API stubs:
-  http://code.google.com/appengine/docs/python/tools/localunittesting.html
-
-  Attributes:
-    application: WSGIApplication
-    handler: webapp2.RequestHandler
+class UrlopenResult(object):
+  """A fake urllib2.urlopen() result object. Also works for urlfetch.fetch().
   """
+  def __init__(self, status_code, content, url=None, headers={}):
+    self.status_code = status_code
+    self.content = StringIO.StringIO(content)
+    self.url = url
+    self.headers = headers
 
-  class UrlopenResult(object):
-    """A fake urllib2.urlopen() result object. Also works for urlfetch.fetch().
-    """
-    def __init__(self, status_code, content, url=None, headers={}):
-      self.status_code = status_code
-      self.content = StringIO.StringIO(content)
-      self.url = url
-      self.headers = headers
+  def read(self, length=-1):
+    return self.content.read(length)
 
-    def read(self, length=-1):
-      return self.content.read(length)
+  def getcode(self):
+    return self.status_code
 
-    def getcode(self):
-      return self.status_code
+  def geturl(self):
+    return self.url
 
-    def geturl(self):
-      return self.url
+  def info(self):
+    return rfc822.Message(StringIO.StringIO(
+        '\n'.join('%s: %s' % item for item in self.headers.items())))
 
-    def info(self):
-      return rfc822.Message(StringIO.StringIO(
-          '\n'.join('%s: %s' % item for item in self.headers.items())))
 
+class TestCase(mox.MoxTestBase):
+  """Test case class with lots of extra helpers."""
 
   def setUp(self):
-    super(HandlerTest, self).setUp()
-
-    logging.getLogger().removeHandler(appengine_config.ereporter_logging_handler)
-
-    os.environ['APPLICATION_ID'] = 'app_id'
-    self.current_user_id = '123'
-    self.current_user_email = 'foo@bar.com'
-
-    self.testbed = testbed.Testbed()
-    self.testbed.setup_env(user_id=self.current_user_id,
-                           user_email=self.current_user_email)
-    self.testbed.activate()
-
-    hrd_policy = datastore_stub_util.PseudoRandomHRConsistencyPolicy(probability=.5)
-    self.testbed.init_datastore_v3_stub(consistency_policy=hrd_policy)
-    self.testbed.init_taskqueue_stub(root_path='.')
-    self.testbed.init_user_stub()
-    self.testbed.init_mail_stub()
-    self.testbed.init_memcache_stub()
-    self.testbed.init_logservice_stub()
+    super(TestCase, self).setUp()
+    for method in 'get', 'post':
+      self.mox.StubOutWithMock(requests, method, use_mock_anything=True)
+    self.stub_requests_head()
 
     self.mox.StubOutWithMock(urllib2, 'urlopen')
-
-    # unofficial API, whee! this is so we can call
-    # TaskQueueServiceStub.GetTasks() in tests. see
-    # google/appengine/api/taskqueue/taskqueue_stub.py
-    self.taskqueue_stub = self.testbed.get_stub('taskqueue')
-
-    self.request = webapp2.Request.blank('/')
-    self.response = webapp2.Response()
-    self.handler = webapp2.RequestHandler(self.request, self.response)
 
     # set time zone to UTC so that tests don't depend on local time zone
     os.environ['TZ'] = 'UTC'
 
-  def tearDown(self):
-    self.testbed.deactivate()
-    super(HandlerTest, self).tearDown()
+  def stub_requests_head(self):
+    """Automatically return 200 to outgoing HEAD requests."""
+    def fake_head(url, **kwargs):
+      resp = requests.Response()
+      resp.url = url
+      if '.' in url or url.startswith('http'):
+        resp.headers['content-type'] = 'text/html; charset=UTF-8'
+        resp.status_code = 200
+      else:
+        resp.status_code = 404
+      return resp
+    self.mox.stubs.Set(requests, 'head', fake_head)
+
+    self._is_head_mocked = False  # expect_requests_head() sets this to True
+
+  def unstub_requests_head(self):
+    """Mock outgoing HEAD requests so they must be expected individually."""
+    if not self._is_head_mocked:
+      self.mox.StubOutWithMock(requests, 'head', use_mock_anything=True)
+      self._is_head_mocked = True
+
+  def expect_requests_head(self, *args, **kwargs):
+    self.unstub_requests_head()
+    return self._expect_requests_call(*args, method=requests.head, **kwargs)
+
+  def expect_requests_get(self, *args, **kwargs):
+    return self._expect_requests_call(*args, method=requests.get, **kwargs)
+
+  def expect_requests_post(self, *args, **kwargs):
+    return self._expect_requests_call(*args, method=requests.post, **kwargs)
+
+  def _expect_requests_call(self, url, response='', status_code=200,
+                            content_type='text/html', method=requests.get,
+                            redirected_url=None, response_headers=None,
+                            **kwargs):
+    """
+    Args:
+      redirected_url: string URL or sequence of string URLs for multiple redirects
+    """
+    resp = requests.Response()
+
+    resp._text = response
+    resp._content = (response.encode('utf-8') if isinstance(response, unicode)
+                     else response)
+    resp.encoding = 'utf-8'
+
+    resp.url = url
+    if redirected_url is not None:
+      if isinstance(redirected_url, basestring):
+        redirected_url = [redirected_url]
+      assert isinstance(redirected_url, (list, tuple))
+      resp.url = redirected_url[-1]
+      for u in [url] + redirected_url[:-1]:
+        resp.history.append(requests.Response())
+        resp.history[-1].url = u
+
+    resp.status_code = status_code
+    resp.headers['content-type'] = content_type
+    if response_headers is not None:
+      resp.headers.update(response_headers)
+
+    kwargs.setdefault('timeout', appengine_config.HTTP_TIMEOUT)
+    if method is requests.head:
+      kwargs['allow_redirects'] = True
+
+    files = kwargs.get('files')
+    if files:
+      def check_files(actual):
+        self.assertEqual(actual.keys(), files.keys())
+        for name, expected in files.items():
+          self.assertEqual(expected, actual[name].read())
+        return True
+      kwargs['files'] = mox.Func(check_files)
+
+    call = method(url, **kwargs)
+    call.AndReturn(resp)
+    return call
 
   def expect_urlopen(self, url, response=None, status=200, data=None,
                      headers=None, response_headers={}, **kwargs):
@@ -170,8 +212,8 @@ class HandlerTest(mox.MoxTestBase):
       call.AndRaise(urllib2.HTTPError('url', status, 'message',
                                       response_headers, response))
     elif response is not None:
-      call.AndReturn(self.UrlopenResult(status, response, url=url,
-                                        headers=response_headers))
+      call.AndReturn(UrlopenResult(status, response, url=url,
+                                   headers=response_headers))
 
     return call
 
@@ -304,3 +346,49 @@ not found in:
       lines = [l.strip() + '\n' for l in val.splitlines(True)]
       return [l for i, l in enumerate(lines)
               if i <= 1 or not (lines[i - 1] == l == '\n')]
+
+
+class HandlerTest(TestCase):
+  """Base test class for webapp2 request handlers.
+
+  Uses App Engine's testbed to set up API stubs:
+  http://code.google.com/appengine/docs/python/tools/localunittesting.html
+
+  Attributes:
+    application: WSGIApplication
+    handler: webapp2.RequestHandler
+  """
+  def setUp(self):
+    super(HandlerTest, self).setUp()
+
+    logging.getLogger().removeHandler(appengine_config.ereporter_logging_handler)
+
+    os.environ['APPLICATION_ID'] = 'app_id'
+    self.current_user_id = '123'
+    self.current_user_email = 'foo@bar.com'
+
+    self.testbed = testbed.Testbed()
+    self.testbed.setup_env(user_id=self.current_user_id,
+                           user_email=self.current_user_email)
+    self.testbed.activate()
+
+    hrd_policy = datastore_stub_util.PseudoRandomHRConsistencyPolicy(probability=.5)
+    self.testbed.init_datastore_v3_stub(consistency_policy=hrd_policy)
+    self.testbed.init_taskqueue_stub(root_path='.')
+    self.testbed.init_user_stub()
+    self.testbed.init_mail_stub()
+    self.testbed.init_memcache_stub()
+    self.testbed.init_logservice_stub()
+
+    # unofficial API, whee! this is so we can call
+    # TaskQueueServiceStub.GetTasks() in tests. see
+    # google/appengine/api/taskqueue/taskqueue_stub.py
+    self.taskqueue_stub = self.testbed.get_stub('taskqueue')
+
+    self.request = webapp2.Request.blank('/')
+    self.response = webapp2.Response()
+    self.handler = webapp2.RequestHandler(self.request, self.response)
+
+  def tearDown(self):
+    self.testbed.deactivate()
+    super(HandlerTest, self).tearDown()

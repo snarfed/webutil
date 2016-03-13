@@ -12,6 +12,7 @@ import httplib
 import inspect
 import json
 import logging
+import mimetypes
 import numbers
 import os
 import re
@@ -1001,3 +1002,68 @@ requests_post = requests_fn('post')
 def _prune(kwargs):
   return {k: v for k, v in kwargs.items()
           if k not in ('allow_redirects', 'headers', 'stream', 'timeout')}
+
+
+def follow_redirects(url, cache=None, fail_cache_time_secs = 60 * 60 * 24,  # a day
+                     **kwargs):
+  """Fetches a URL with HEAD, repeating if necessary to follow redirects.
+
+  *Does not* raise an exception if any of the HTTP requests fail, just returns
+  the failed response. If you care, be sure to check the returned response's
+  status code!
+
+  Args:
+    url: string
+    cache: optional, a cache object to read and write resolved URLs to. Must
+      have get(key) and set(key, value, time=...) methods. Stores
+      'R [original URL]' in key, final URL in value.
+    **kwargs: passed to requests.head()
+
+  Returns:
+    the requests.Response for the final request. The `url` attribute has the
+      final URL.
+  """
+  if cache is not None:
+    cache_key = 'R ' + url
+    resolved = cache.get(cache_key)
+    if resolved is not None:
+      return resolved
+
+  # can't use urllib2 since it uses GET on redirect requests, even if i specify
+  # HEAD for the initial request.
+  # http://stackoverflow.com/questions/9967632
+  try:
+    # default scheme to http
+    parsed = urlparse.urlparse(url)
+    if not parsed.scheme:
+      url = 'http://' + url
+    resolved = requests_head(url, allow_redirects=True, **kwargs)
+    resolved.raise_for_status()
+    if resolved.url != url:
+      logging.debug('Resolved %s to %s', url, resolved.url)
+    cache_time = 0  # forever
+  except AssertionError:
+    raise
+  except BaseException, e:
+    logging.warning("Couldn't resolve URL %s : %s", url, e)
+    resolved = requests.Response()
+    resolved.url = url
+    resolved.status_code = 499  # not standard. i made this up.
+    cache_time = fail_cache_time_secs
+
+  content_type = resolved.headers.get('content-type')
+  if not content_type:
+    type, _ = mimetypes.guess_type(resolved.url)
+    resolved.headers['content-type'] = type or 'text/html'
+
+  refresh = resolved.headers.get('refresh')
+  if refresh:
+    for part in refresh.split(';'):
+      if part.strip().startswith('url='):
+        return follow_redirects(part.strip()[4:], cache=cache, **kwargs)
+
+  resolved.url = clean_url(resolved.url)
+  if cache is not None:
+    cache.set_multi({cache_key: resolved, 'R ' + resolved.url: resolved},
+                    time=cache_time)
+  return resolved
