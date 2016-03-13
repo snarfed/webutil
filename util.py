@@ -1067,3 +1067,58 @@ def follow_redirects(url, cache=None, fail_cache_time_secs = 60 * 60 * 24,  # a 
     cache.set_multi({cache_key: resolved, 'R ' + resolved.url: resolved},
                     time=cache_time)
   return resolved
+
+
+class UrlCanonicalizer(object):
+  """Converts URLs to their canonical form.
+
+  If an input URL matches approve or reject, it's automatically approved as is
+  without following redirects.
+
+  Constructor kwargs (all optional):
+    scheme: string canonical scheme for this source (default 'https')
+    domain: string canonical domain for this source (default None). If set,
+      links on other domains will be rejected without following redirects.
+    subdomain: string canonical subdomain, e.g. 'www' (default blank)
+    approve: string regexp matching URLs that are automatically considered
+      canonical
+    reject: string regexp matching URLs that are automatically considered
+      canonical
+    trailing slash: boolean, whether to add or remove trailing slash (default
+      neither)
+    redirects: boolean, whether to make HTTP HEAD requests to follow
+      redirects (default True)
+  """
+  def __init__(self, scheme='https', domain=None, subdomain=None, approve=None,
+               reject=None, trailing_slash=None, redirects=True):
+    self.scheme = scheme
+    self.domain = domain
+    self.subdomain = subdomain
+    self.approve = re.compile(approve) if approve else None
+    self.reject = re.compile(reject) if reject else None
+    self.trailing_slash = trailing_slash
+    self.redirects = redirects
+
+  def __call__(self, url, redirects=None):
+    """Canonicalizes a string URL.
+
+    Returns the canonical form of a string URL, or None if it can't be
+    canonicalized, ie it's in the blacklist or its domain doesn't match.
+    """
+    subdomain = self.subdomain + '.' if self.subdomain else ''
+
+    url = re.sub('^https?://(www\.)?', self.scheme + '://' + subdomain, url)
+
+    if self.approve and self.approve.match(url):
+      return url
+    elif self.reject and self.reject.match(url):
+      return None
+    elif self.domain and not domain_or_parent_in(domain_from_link(url), self.domain):
+      return None
+
+    if redirects or (redirects is None and self.redirects):
+      redirected = follow_redirects(url).url
+      if redirected != url:
+        return self(redirected, redirects=False)
+
+    return url

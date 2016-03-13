@@ -770,3 +770,21 @@ class UtilTest(testutil.HandlerTest):
     self.expect_requests_head('http://foo/bar', redirected_url='http://final')
     self.mox.ReplayAll()
     self.assert_equals('http://final', util.follow_redirects('foo/bar').url)
+
+  def test_url_canonicalizer(self):
+    def check(expected, input, **kwargs):
+      self.assertEquals(expected, util.UrlCanonicalizer(**kwargs)(input))
+
+    check('https://fa.ke/post', 'http://www.fa.ke/post')
+    check('http://fa.ke/123', 'https://fa.ke/123', scheme='http')
+    check('https://www.fa.ke/123', 'https://fa.ke/123', subdomain='www')
+    check('https://fa.ke/123', 'http://fa.ke/123', domain='fa.ke')
+    check(None, 'http://fa.ke/123', domain='a.bc')
+
+    self.unstub_requests_head()
+    self.expect_requests_head('https://a.bc/post', redirected_url='https://x.yz/post')
+    self.mox.ReplayAll()
+    check('https://x.yz/post', 'http://a.bc/post')
+
+    check('https://fa.ke/good', 'http://fa.ke/good', approve='.*/good')
+    check(None, 'http://fa.ke/bad', reject='.*/bad')
