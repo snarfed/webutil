@@ -777,9 +777,12 @@ class UtilTest(testutil.HandlerTest):
 
     check('https://fa.ke/post', 'http://www.fa.ke/post')
     check('http://fa.ke/123', 'https://fa.ke/123', scheme='http')
-    check('https://www.fa.ke/123', 'https://fa.ke/123', subdomain='www')
     check('https://fa.ke/123', 'http://fa.ke/123', domain='fa.ke')
     check(None, 'http://fa.ke/123', domain='a.bc')
+
+    check('https://www.fa.ke/123', 'https://fa.ke/123', subdomain='www')
+    check('https://foo.fa.ke/123', 'https://www.fa.ke/123', subdomain='foo')
+    check('https://foo.fa.ke/123', 'https://foo.fa.ke/123', subdomain='bar')
 
     check('https://fa.ke/123?x=y', 'http://fa.ke/123?x=y', query=True)
     check('https://fa.ke/123', 'http://fa.ke/123?x=y#abc', query=False)

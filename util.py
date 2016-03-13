@@ -1079,7 +1079,8 @@ class UrlCanonicalizer(object):
     scheme: string canonical scheme for this source (default 'https')
     domain: string canonical domain for this source (default None). If set,
       links on other domains will be rejected without following redirects.
-    subdomain: string canonical subdomain, e.g. 'www' (default none, ie root domain)
+    subdomain: string canonical subdomain, e.g. 'www' (default none, ie root
+      domain). only added if there's not already a subdomain.
     approve: string regexp matching URLs that are automatically considered
       canonical
     reject: string regexp matching URLs that are automatically considered
@@ -1121,7 +1122,7 @@ class UrlCanonicalizer(object):
       return None
     if domain.startswith('www.'):
       domain = domain[4:]
-    if self.subdomain and not domain.startswith(self.subdomain + '.'):
+    if self.subdomain and domain.count('.') == 1:
       domain = '%s.%s' % (self.subdomain, domain)
 
     scheme = self.scheme or parsed.scheme
