@@ -781,10 +781,24 @@ class UtilTest(testutil.HandlerTest):
     check('https://fa.ke/123', 'http://fa.ke/123', domain='fa.ke')
     check(None, 'http://fa.ke/123', domain='a.bc')
 
+    check('https://fa.ke/123?x=y', 'http://fa.ke/123?x=y', query=True)
+    check('https://fa.ke/123', 'http://fa.ke/123?x=y#abc', query=False)
+
+    check('https://fa.ke/123#abc', 'http://fa.ke/123#abc', fragment=True)
+    check('https://fa.ke/123', 'http://fa.ke/123#abc', fragment=False)
+
+    check('https://fa.ke/123/', 'http://fa.ke/123', trailing_slash=True)
+    check('https://fa.ke/123', 'http://fa.ke/123/', trailing_slash=False)
+
+    check('https://fa.ke/123/?x=y#abc', 'http://fa.ke/123?x=y#abc',
+          query=True, fragment=True, trailing_slash=True)
+    check('https://fa.ke/123', 'http://fa.ke/123/?x=y#abc',
+          query=False, fragment=False, trailing_slash=False)
+
     self.unstub_requests_head()
     self.expect_requests_head('https://a.bc/post', redirected_url='https://x.yz/post')
     self.mox.ReplayAll()
     check('https://x.yz/post', 'http://a.bc/post')
 
-    check('https://fa.ke/good', 'http://fa.ke/good', approve='.*/good')
+    check('http://fa.ke/good', 'http://fa.ke/good', approve='.*/good')
     check(None, 'http://fa.ke/bad', reject='.*/bad')

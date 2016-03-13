@@ -1079,23 +1079,27 @@ class UrlCanonicalizer(object):
     scheme: string canonical scheme for this source (default 'https')
     domain: string canonical domain for this source (default None). If set,
       links on other domains will be rejected without following redirects.
-    subdomain: string canonical subdomain, e.g. 'www' (default blank)
+    subdomain: string canonical subdomain, e.g. 'www' (default none, ie root domain)
     approve: string regexp matching URLs that are automatically considered
       canonical
     reject: string regexp matching URLs that are automatically considered
       canonical
-    trailing slash: boolean, whether to add or remove trailing slash (default
-      neither)
+    query: boolean, whether to keep query params, if any (default False)
+    fragment: boolean, whether to keep fragment, if any (default False)
+    trailing slash: boolean, whether the path should end in / (default False)
     redirects: boolean, whether to make HTTP HEAD requests to follow
       redirects (default True)
   """
   def __init__(self, scheme='https', domain=None, subdomain=None, approve=None,
-               reject=None, trailing_slash=None, redirects=True):
+               reject=None, query=False, fragment=False, trailing_slash=False,
+               redirects=True):
     self.scheme = scheme
     self.domain = domain
     self.subdomain = subdomain
     self.approve = re.compile(approve) if approve else None
     self.reject = re.compile(reject) if reject else None
+    self.query = query
+    self.fragment = fragment
     self.trailing_slash = trailing_slash
     self.redirects = redirects
 
@@ -1105,16 +1109,34 @@ class UrlCanonicalizer(object):
     Returns the canonical form of a string URL, or None if it can't be
     canonicalized, ie it's in the blacklist or its domain doesn't match.
     """
-    subdomain = self.subdomain + '.' if self.subdomain else ''
-
-    url = re.sub('^https?://(www\.)?', self.scheme + '://' + subdomain, url)
-
     if self.approve and self.approve.match(url):
       return url
     elif self.reject and self.reject.match(url):
       return None
-    elif self.domain and not domain_or_parent_in(domain_from_link(url), self.domain):
+
+    parsed = urlparse.urlparse(url)
+    domain = parsed.hostname
+    if self.domain and not (domain == self.domain or
+                            domain.endswith('.' + self.domain)):
       return None
+    if domain.startswith('www.'):
+      domain = domain[4:]
+    if self.subdomain and not domain.startswith(self.subdomain + '.'):
+      domain = '%s.%s' % (self.subdomain, domain)
+
+    scheme = self.scheme or parsed.scheme
+    query = parsed.query if self.query else ''
+    fragment = parsed.fragment if self.fragment else ''
+
+    path = parsed.path
+    if self.trailing_slash and not path.endswith('/'):
+      path += '/'
+    elif not self.trailing_slash and path.endswith('/'):
+      path = path[:-1]
+
+    new_url = urlparse.urlunparse((scheme, domain, path, '', query, fragment))
+    if new_url != url:
+      return self(new_url)  # recheck approve/reject
 
     if redirects or (redirects is None and self.redirects):
       redirected = follow_redirects(url).url
