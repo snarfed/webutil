@@ -1090,10 +1090,11 @@ class UrlCanonicalizer(object):
     trailing slash: boolean, whether the path should end in / (default False)
     redirects: boolean, whether to make HTTP HEAD requests to follow
       redirects (default True)
+    headers: passed through to the requests.head call for following redirects
   """
   def __init__(self, scheme='https', domain=None, subdomain=None, approve=None,
                reject=None, query=False, fragment=False, trailing_slash=False,
-               redirects=True):
+               redirects=True, headers=None):
     self.scheme = scheme
     self.domain = domain
     self.subdomain = subdomain
@@ -1103,6 +1104,7 @@ class UrlCanonicalizer(object):
     self.fragment = fragment
     self.trailing_slash = trailing_slash
     self.redirects = redirects
+    self.headers = headers
 
   def __call__(self, url, redirects=None):
     """Canonicalizes a string URL.
@@ -1140,7 +1142,7 @@ class UrlCanonicalizer(object):
       return self(new_url)  # recheck approve/reject
 
     if redirects or (redirects is None and self.redirects):
-      redirected = follow_redirects(url).url
+      redirected = follow_redirects(url, headers=self.headers).url
       if redirected != url:
         return self(redirected, redirects=False)
 

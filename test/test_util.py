@@ -799,9 +799,14 @@ class UtilTest(testutil.HandlerTest):
           query=False, fragment=False, trailing_slash=False)
 
     self.unstub_requests_head()
-    self.expect_requests_head('https://a.bc/post', redirected_url='https://x.yz/post')
+    self.expect_requests_head('https://a.bc/post', headers=None,
+                              redirected_url='https://x.yz/post')
+    self.expect_requests_head('https://a.bc/post', headers={'Foo': 'bar'},
+                              redirected_url='https://x.yz/post')
     self.mox.ReplayAll()
+
     check('https://x.yz/post', 'http://a.bc/post')
+    check('https://x.yz/post', 'http://a.bc/post', headers={'Foo': 'bar'})
 
     check('http://fa.ke/good', 'http://fa.ke/good', approve='.*/good')
     check(None, 'http://fa.ke/bad', reject='.*/bad')
