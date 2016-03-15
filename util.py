@@ -1075,6 +1075,9 @@ class UrlCanonicalizer(object):
   If an input URL matches approve or reject, it's automatically approved as is
   without following redirects.
 
+  If we HEAD the URL to follow redirects and it returns 4xx or 5xx, we return
+  None.
+
   Constructor kwargs (all optional):
     scheme: string canonical scheme for this source (default 'https')
     domain: string canonical domain for this source (default None). If set,
@@ -1142,8 +1145,10 @@ class UrlCanonicalizer(object):
       return self(new_url)  # recheck approve/reject
 
     if redirects or (redirects is None and self.redirects):
-      redirected = follow_redirects(url, headers=self.headers).url
-      if redirected != url:
-        return self(redirected, redirects=False)
+      resp = follow_redirects(url, headers=self.headers)
+      if resp.status_code // 100 in (4, 5):
+        return None
+      elif resp.url != url:
+        return self(resp.url, redirects=False)
 
     return url

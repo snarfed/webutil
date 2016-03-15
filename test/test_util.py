@@ -803,10 +803,14 @@ class UtilTest(testutil.HandlerTest):
                               redirected_url='https://x.yz/post')
     self.expect_requests_head('https://a.bc/post', headers={'Foo': 'bar'},
                               redirected_url='https://x.yz/post')
+    self.expect_requests_head('https://a.bc/post', headers=None,
+                              status_code=404)
     self.mox.ReplayAll()
 
     check('https://x.yz/post', 'http://a.bc/post')
     check('https://x.yz/post', 'http://a.bc/post', headers={'Foo': 'bar'})
+    check(None, 'http://a.bc/post')
 
+    # do these after unstub_requests_head to check that they don't HEAD
     check('http://fa.ke/good', 'http://fa.ke/good', approve='.*/good')
     check(None, 'http://fa.ke/bad', reject='.*/bad')
