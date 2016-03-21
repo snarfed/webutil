@@ -238,7 +238,6 @@ def domain_from_link(url):
     if domain and HOSTNAME_RE.match(domain):
       return domain
 
-  logging.error('domain_from_link: Invalid domain in %r', url)
   return None
 
 
