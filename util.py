@@ -1000,8 +1000,14 @@ requests_post = requests_fn('post')
 
 
 def _prune(kwargs):
-  return {k: v for k, v in kwargs.items()
-          if k not in ('allow_redirects', 'headers', 'stream', 'timeout')}
+  pruned = dict(kwargs)
+
+  headers = pruned.get('headers')
+  if headers:
+    pruned['headers'] = {k: '...' for k in headers}
+
+  return {k: v for k, v in pruned.items()
+          if k not in ('allow_redirects', 'stream', 'timeout')}
 
 
 def follow_redirects(url, cache=None, fail_cache_time_secs = 60 * 60 * 24,  # a day
