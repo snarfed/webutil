@@ -967,6 +967,27 @@ class FileLimiter(object):
     return data
 
 
+def load_file_lines(file):
+  """Reads lines from a file and returns them as a set.
+
+  Leading and trailing whitespace is trimmed. Blank lines and lines beginning
+  with # (ie comments) are ignored.
+
+  Args:
+    file: a file object or other iterable that returns lines
+
+  Returns: set of strings
+  """
+  items = set()
+
+  for line in file:
+    val = line.decode('utf-8').strip()
+    if val and not val.startswith('#'):
+      items.add(val)
+
+  return items
+
+
 def urlopen(url_or_req, *args, **kwargs):
   """Wraps urllib2.urlopen and logs the HTTP method and URL."""
   data = kwargs.get('data')
