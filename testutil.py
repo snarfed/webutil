@@ -126,13 +126,16 @@ class TestCase(mox.MoxTestBase):
 
     resp.url = url
     if redirected_url is not None:
-      if isinstance(redirected_url, basestring):
-        redirected_url = [redirected_url]
-      assert isinstance(redirected_url, (list, tuple))
-      resp.url = redirected_url[-1]
-      for u in [url] + redirected_url[:-1]:
-        resp.history.append(requests.Response())
-        resp.history[-1].url = u
+      if kwargs.get('allow_redirects') == False:
+        resp.headers['location'] = redirected_url
+      else:
+        if isinstance(redirected_url, basestring):
+          redirected_url = [redirected_url]
+        assert isinstance(redirected_url, (list, tuple))
+        resp.url = redirected_url[-1]
+        for u in [url] + redirected_url[:-1]:
+          resp.history.append(requests.Response())
+          resp.history[-1].url = u
 
     resp.status_code = status_code
     resp.headers['content-type'] = content_type
