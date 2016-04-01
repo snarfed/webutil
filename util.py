@@ -1148,7 +1148,9 @@ class UrlCanonicalizer(object):
 
     parsed = urlparse.urlparse(url)
     domain = parsed.hostname
-    if self.domain and not (domain == self.domain or
+    if not domain:
+      return None
+    elif self.domain and not (domain == self.domain or
                             domain.endswith('.' + self.domain)):
       return None
     if domain.startswith('www.'):
