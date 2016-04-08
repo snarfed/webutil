@@ -364,8 +364,6 @@ class HandlerTest(TestCase):
   def setUp(self):
     super(HandlerTest, self).setUp()
 
-    logging.getLogger().removeHandler(appengine_config.ereporter_logging_handler)
-
     os.environ['APPLICATION_ID'] = 'app_id'
     self.current_user_id = '123'
     self.current_user_email = 'foo@bar.com'
