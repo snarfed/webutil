@@ -614,7 +614,15 @@ class UtilTest(testutil.HandlerTest):
       {'error': {
         'code': 190,
         'type': 'OAuthException',
-        'message': 'The user must be an administrator of the page in order to impersonate it.'
+        'message': 'The user must be an administrator of the page in order to impersonate it.',
+      }},
+      # facebook, account is flagged for possibly being hacked
+      # http://stackoverflow.com/questions/36401621/facebook-oauthexception-code-190-subcode-490-user-is-enrolled-in-a-blocking-l
+      {'error': {
+        'code': 190,
+        'error_subcode': 490,
+        'type': 'OAuthException',
+        'message': 'Error validating access token: The user is enrolled in a blocking, logged-in checkpoint',
       }},
       # twitter
       # https://dev.twitter.com/overview/api/response-codes

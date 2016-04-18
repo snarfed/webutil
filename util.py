@@ -885,10 +885,11 @@ def interpret_http_exception(exception):
         'authorization code has expired.' in message or
         'the user is not a confirmed user.' in message or
         'user must be an administrator of the page' in message or
+        'user is enrolled in a blocking, logged-in checkpoint' in message or
         'Permissions error' == message
        )) or
       (type == 'FacebookApiException' and 'Permissions error' in message) or
-      (err_code in (102, 190) and err_subcode in (458, 460, 463)) or
+      (err_code in (102, 190) and err_subcode in (458, 460, 463, 490)) or
       (err_code == 326 and 'this account is temporarily locked' in message)
     ):
     code = '401'
