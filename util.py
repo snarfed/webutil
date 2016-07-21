@@ -894,13 +894,17 @@ def interpret_http_exception(exception):
         'Permissions error' == message
        )) or
       (type == 'FacebookApiException' and 'Permissions error' in message) or
-      (err_code in (102, 190) and err_subcode in (458, 460, 463, 490)) or
+      (err_code in (102, 190) and err_subcode in (458, 459, 460, 463, 490)) or
       (err_code == 326 and 'this account is temporarily locked' in message)
     ):
     code = '401'
 
   if code == '401' and error.get('is_transient'):
     code = orig_code if orig_code != '401' else '402'
+
+  if (code == '400' and type == 'OAuthException' and
+      'Page request limited reached' in message):
+    code = '429'
 
   if orig_code != code:
     logging.info('Converting code %s to %s', orig_code, code)

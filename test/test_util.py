@@ -541,6 +541,7 @@ class UtilTest(testutil.HandlerTest):
     self.assertEquals(('429', 'my body'), ihc(
         apiclient.errors.HttpError(httplib2.Response({'status': 429}), 'my body')))
 
+    # rate limiting
     ex = urllib2.HTTPError('url', 429, 'msg', {}, StringIO.StringIO('my body'))
     self.assertEquals(('429', 'my body'), ihc(ex))
     # check that it works multiple times even though read() doesn't.
@@ -550,6 +551,15 @@ class UtilTest(testutil.HandlerTest):
 
     self.assertEquals(('429', 'my body'), ihc(
         requests.HTTPError(response=util.Struct(status_code='429', text='my body'))))
+
+    # facebook page rate limiting
+    body = json.dumps({'error': {
+      'type': 'OAuthException',
+      'code': 32,
+      'message': '(#32) Page request limited reached',
+    }})
+    code, _ = ihc(urllib2.HTTPError('url', 400, '', {}, StringIO.StringIO(body)))
+    self.assertEquals('429', code)
 
     # fake gdata.client.RequestError since gdata isn't a dependency
     class RequestError(util.Struct):
@@ -629,6 +639,13 @@ class UtilTest(testutil.HandlerTest):
         'error_subcode': 490,
         'type': 'OAuthException',
         'message': 'Error validating access token: The user is enrolled in a blocking, logged-in checkpoint',
+      }},
+      # facebook, account is soft-disabled and needs to log in to re-enable
+      {'error': {
+        'code': 190,
+        'error_subcode': 459,
+        'type': 'OAuthException',
+        'message': 'Error validating access token: You cannot access the app till you log in to www.facebook.com and follow the instructions given.',
       }},
       # twitter
       # https://dev.twitter.com/overview/api/response-codes
