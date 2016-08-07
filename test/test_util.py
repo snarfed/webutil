@@ -632,6 +632,12 @@ class UtilTest(testutil.HandlerTest):
         'type': 'OAuthException',
         'message': 'The user must be an administrator of the page in order to impersonate it.',
       }},
+      # facebook, deleted page
+      {'error': {
+        'message': 'This Page access token belongs to a Page that has been deleted.',
+        'type': 'OAuthException',
+        'code': 190,
+      }},
       # facebook, account is flagged for possibly being hacked
       # http://stackoverflow.com/questions/36401621/facebook-oauthexception-code-190-subcode-490-user-is-enrolled-in-a-blocking-l
       {'error': {

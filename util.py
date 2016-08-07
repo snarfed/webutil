@@ -891,6 +891,7 @@ def interpret_http_exception(exception):
         'the user is not a confirmed user.' in message or
         'user must be an administrator of the page' in message or
         'user is enrolled in a blocking, logged-in checkpoint' in message or
+        'access token belongs to a Page that has been deleted.' in message or
         'Permissions error' == message
        )) or
       (type == 'FacebookApiException' and 'Permissions error' in message) or
