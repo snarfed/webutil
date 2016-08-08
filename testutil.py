@@ -10,12 +10,12 @@ import pprint
 import re
 import os
 import rfc822
-import StringIO
+import io
 import traceback
-import urllib2
-import urlparse
+import urllib.request, urllib.error, urllib.parse
+import urllib.parse
 
-import appengine_config
+from . import appengine_config
 import requests
 import webapp2
 
@@ -28,8 +28,8 @@ from google.appengine.ext import testbed
 def get_task_params(task):
   """Parses a task's POST body and returns the query params in a dict.
   """
-  params = urlparse.parse_qs(base64.b64decode(task['body']))
-  params = dict((key, val[0]) for key, val in params.items())
+  params = urllib.parse.parse_qs(base64.b64decode(task['body']))
+  params = dict((key, val[0]) for key, val in list(params.items()))
   return params
 
 
@@ -53,7 +53,7 @@ def requests_response(body='', url=None, status=200, content_type=None,
         content_type = 'application/json'
 
     resp._text = body
-    resp._content = body.encode('utf-8') if isinstance(body, unicode) else body
+    resp._content = body.encode('utf-8') if isinstance(body, str) else body
     resp.encoding = 'utf-8'
 
     resp.url = url
@@ -84,7 +84,7 @@ class UrlopenResult(object):
   """
   def __init__(self, status_code, content, url=None, headers={}):
     self.status_code = status_code
-    self.content = StringIO.StringIO(content)
+    self.content = io.StringIO(content)
     self.url = url
     self.headers = headers
 
@@ -98,8 +98,8 @@ class UrlopenResult(object):
     return self.url
 
   def info(self):
-    return rfc822.Message(StringIO.StringIO(
-        '\n'.join('%s: %s' % item for item in self.headers.items())))
+    return rfc822.Message(io.StringIO(
+        '\n'.join('%s: %s' % item for item in list(self.headers.items()))))
 
 
 class Asserts(object):
@@ -143,7 +143,7 @@ class Asserts(object):
 
       def props(e):
         all = e.to_dict() if isinstance(e, ndb.Model) else e.properties()
-        return {k: v for k, v in all.items() if k not in ignore}
+        return {k: v for k, v in list(all.items()) if k not in ignore}
 
       if not keys_only:
         self.assert_equals(props(x), props(y), flat_key(x))
@@ -160,10 +160,10 @@ class Asserts(object):
     """
     try:
       self._assert_equals(expected, actual, in_order=in_order)
-    except AssertionError, e:
-      if not isinstance(expected, basestring):
+    except AssertionError as e:
+      if not isinstance(expected, str):
         expected = pprint.pformat(expected)
-      if not isinstance(actual, basestring):
+      if not isinstance(actual, str):
         actual = pprint.pformat(actual)
       raise AssertionError("""\
 %s: %s
@@ -193,13 +193,13 @@ Actual value:
                          (len(expected), len(actual)))
         for key, (e, a) in enumerate(zip(expected, actual)):
           self._assert_equals(e, a, in_order=in_order)
-      elif (isinstance(expected, basestring) and isinstance(actual, basestring) and
+      elif (isinstance(expected, str) and isinstance(actual, str) and
             '\n' in expected):
         self.assert_multiline_equals(expected, actual)
       else:
-        self.assertEquals(expected, actual)
+        self.assertEqual(expected, actual)
 
-    except AssertionError, e:
+    except AssertionError as e:
       # fill in where this failure came from. this recursively builds,
       # backwards, all the way up to the root.
       args = ('[%s] ' % key if key is not None else '') + ''.join(e.args)

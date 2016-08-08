@@ -10,7 +10,7 @@ import testutil
 class StringIdModelTest(testutil.HandlerTest):
 
   def test_put(self):
-    self.assertEquals(ndb.Key('StringIdModel', 'x'),
+    self.assertEqual(ndb.Key('StringIdModel', 'x'),
                       StringIdModel(id='x').put())
 
     self.assertRaises(AssertionError, StringIdModel().put)

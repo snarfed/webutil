@@ -5,7 +5,7 @@ import datetime
 import os
 import socket
 import traceback
-import urllib2
+import urllib
 
 from google.appengine.api import memcache
 from google.appengine.ext.webapp import template
@@ -45,7 +45,7 @@ class HandlersTest(testutil.HandlerTest):
     app = webapp2.WSGIApplication([('/', Handler)])
 
     # HTTP exception
-    Handler.err = urllib2.HTTPError('/', 408, 'foo bar', None, None)
+    Handler.err = urllib.error.HTTPError('/', 408, 'foo bar', None, None)
     resp = app.get_response('/')
     self.assertEquals(408, resp.status_int)
     self.assertEquals('HTTP Error 408: foo bar', resp.body)
@@ -79,24 +79,24 @@ class HandlersTest(testutil.HandlerTest):
     for url in '/', '/a/b/c', '/d?x=y':
       for scheme in 'http', 'https':
         resp = app.get_response(url, base_url=scheme + '://from.com')
-        self.assertEquals(301, resp.status_int)
-        self.assertEquals('%s://to.org%s' % (scheme, url), resp.headers['Location'])
+        self.assertEqual(301, resp.status_int)
+        self.assertEqual('%s://to.org%s' % (scheme, url), resp.headers['Location'])
 
     # should redirect and include *args
     for url in 'http://from.com', 'http://from.net':
       resp = app.get_response('/x/y', method='POST', base_url=url)
-      self.assertEquals(301, resp.status_int)
-      self.assertEquals('http://to.org/x/y', resp.headers['Location'])
+      self.assertEqual(301, resp.status_int)
+      self.assertEqual('http://to.org/x/y', resp.headers['Location'])
 
     for base_url in 'http://abc.net', 'https://to.org':
       # shouldn't redirect
       resp = app.get_response('/', base_url=base_url)
-      self.assertEquals(204, resp.status_int)
+      self.assertEqual(204, resp.status_int)
       self.assertNotIn('Location', resp.headers)
 
       # shouldn't redirect, should include *args
       resp = app.get_response('/x/y', method='POST', base_url='http://')
-      self.assertEquals(205, resp.status_int)
+      self.assertEqual(205, resp.status_int)
       self.assertNotIn('Location', resp.headers)
 
   def test_template_handler_get_jinja(self):

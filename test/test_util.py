@@ -2,13 +2,12 @@
 """Unit tests for util.py.
 """
 import datetime
-import httplib
+import http.client
 import json
 import socket
-import StringIO
-import urllib
-import urllib2
-import urlparse
+import io
+import urllib.request, urllib.error, urllib.parse
+import urllib.parse
 
 import apiclient.errors
 import httplib2
@@ -201,7 +200,7 @@ class UtilTest(testutil.HandlerTest):
     self.assertEqual('asdf.com.', util.domain_from_link('http://asdf.com./x'))
 
     for bad_link in '', '  ', 'a&b.com', 'http://', 'file:///':
-      self.assertEquals(None, util.domain_from_link(bad_link))
+      self.assertEqual(None, util.domain_from_link(bad_link))
 
   def test_domain_or_parent_in(self):
     for expected, inputs in (
@@ -216,8 +215,8 @@ class UtilTest(testutil.HandlerTest):
           ('w.x', ['x']), ('u.v.w.x', ['y', 'v.w.x']),
         ])):
       for input, domains in inputs:
-        self.assertEquals(expected, util.domain_or_parent_in(input, domains),
-                          `input, domains, expected`)
+        self.assertEqual(expected, util.domain_or_parent_in(input, domains),
+                          repr((input, domains, expected)))
 
   def test_update_scheme(self):
     for orig in 'http', 'https':
@@ -262,51 +261,48 @@ class UtilTest(testutil.HandlerTest):
 
   def test_clean_url(self):
     for unchanged in '', 'http://foo', 'http://foo#bar', 'http://foo?x=y&z=w':
-      self.assertEquals(unchanged, util.clean_url(unchanged))
+      self.assertEqual(unchanged, util.clean_url(unchanged))
 
     for bad in None, 'http://foo]', 3.14, ['http://foo']:
       self.assertIsNone(util.clean_url(bad))
 
-    self.assertEquals(
-      'http://foo',
-      util.clean_url('http://foo?utm_source=x&utm_campaign=y'
-                     '&source=rss----12b80d28f892---4'))
-    self.assertEquals(
-      'http://foo?a=b&c=d',
-      util.clean_url('http://foo?a=b&utm_source=x&c=d'
-                     '&source=rss----12b80d28f892---4'))
-    self.assertEquals(
-      'http://foo?source=not-rss',
-      util.clean_url('http://foo?&source=not-rss'))
+    self.assertEquals('http://foo',
+                      util.clean_url('http://foo?utm_source=x&utm_campaign=y'
+                                     '&source=rss----12b80d28f892---4'))
+    self.assertEquals('http://foo?a=b&c=d',
+                      util.clean_url('http://foo?a=b&utm_source=x&c=d'
+                                     '&source=rss----12b80d28f892---4'))
+    self.assertEquals('http://foo?source=not-rss',
+                      util.clean_url('http://foo?&source=not-rss'))
 
   def test_dedupe_urls(self):
-    self.assertEquals([], util.dedupe_urls([]))
-    self.assertEquals([], util.dedupe_urls(['', None, '']))
-    self.assertEquals(['http://foo/'], util.dedupe_urls(['http://foo']))
-    self.assertEquals(['http://foo/'], util.dedupe_urls(['http://foo', 'http://foo']))
-    self.assertEquals(['http://foo/'], util.dedupe_urls(['http://foo', 'http://foo/']))
-    self.assertEquals(['https://foo/'], util.dedupe_urls([
+    self.assertEqual([], util.dedupe_urls([]))
+    self.assertEqual([], util.dedupe_urls(['', None, '']))
+    self.assertEqual(['http://foo/'], util.dedupe_urls(['http://foo']))
+    self.assertEqual(['http://foo/'], util.dedupe_urls(['http://foo', 'http://foo']))
+    self.assertEqual(['http://foo/'], util.dedupe_urls(['http://foo', 'http://foo/']))
+    self.assertEqual(['https://foo/'], util.dedupe_urls([
       'https://foo', 'http://foo', 'https://foo/', 'http://foo/']))
-    self.assertEquals(['https://foo/'],
+    self.assertEqual(['https://foo/'],
                       util.dedupe_urls(['http://foo', '', 'https://foo/']))
-    self.assertEquals(['http://foo/bar', 'http://foo/bar/'],
+    self.assertEqual(['http://foo/bar', 'http://foo/bar/'],
                       util.dedupe_urls(['http://foo/bar', 'http://foo/bar/', None, '']))
-    self.assertEquals(['http://foo/'],
+    self.assertEqual(['http://foo/'],
                       util.dedupe_urls(['http://foo', 'http://FOO/', 'http://FoO/']))
 
   def test_tag_uri(self):
-    self.assertEquals('tag:x.com:foo', util.tag_uri('x.com', 'foo'))
-    self.assertEquals('tag:x.com,2013:foo',
+    self.assertEqual('tag:x.com:foo', util.tag_uri('x.com', 'foo'))
+    self.assertEqual('tag:x.com,2013:foo',
                       util.tag_uri('x.com', 'foo', year=2013))
 
   def test_parse_tag_uri(self):
-    self.assertEquals(('x.com', 'foo'), util.parse_tag_uri('tag:x.com,2013:foo'))
-    self.assertEquals(('x.com', 'foo'), util.parse_tag_uri('tag:x.com:foo'))
-    self.assertEquals(None, util.parse_tag_uri('asdf'))
+    self.assertEqual(('x.com', 'foo'), util.parse_tag_uri('tag:x.com,2013:foo'))
+    self.assertEqual(('x.com', 'foo'), util.parse_tag_uri('tag:x.com:foo'))
+    self.assertEqual(None, util.parse_tag_uri('asdf'))
 
   def test_parse_acct_uri(self):
-    self.assertEquals(('me', 'x.com'), util.parse_acct_uri('acct:me@x.com'))
-    self.assertEquals(('me', 'x.com'),
+    self.assertEqual(('me', 'x.com'), util.parse_acct_uri('acct:me@x.com'))
+    self.assertEqual(('me', 'x.com'),
                       util.parse_acct_uri('acct:me@x.com', ['x.com', 'y.com']))
     self.assertRaises(ValueError, util.parse_acct_uri, 'mailto:me@x.com')
     self.assertRaises(ValueError, util.parse_acct_uri, 'acct:foo')
@@ -314,9 +310,9 @@ class UtilTest(testutil.HandlerTest):
                       util.parse_acct_uri, 'acct:me@a.com', ['x.com'])
 
   def test_extract_links(self):
-    self.assertEquals([], util.extract_links(None))
-    self.assertEquals([], util.extract_links(''))
-    self.assertEquals([], util.extract_links('asdf qwert'))
+    self.assertEqual([], util.extract_links(None))
+    self.assertEqual([], util.extract_links(''))
+    self.assertEqual([], util.extract_links('asdf qwert'))
 
     for text in ('http://foo.com',
                  '  http://foo.com  ',
@@ -329,13 +325,13 @@ class UtilTest(testutil.HandlerTest):
                  "<a href='http://foo.com'>",
                  '<a href="xyz">http://foo.com</a>',
                  ):
-      self.assertEquals(['http://foo.com'], util.extract_links(text),
+      self.assertEqual(['http://foo.com'], util.extract_links(text),
                         'Failed on %r' % text)
 
-    self.assertEquals(
+    self.assertEqual(
       ['http://foo.com', 'https://www.bar.com'],
       util.extract_links('x http://foo.com y https://www.bar.com z'))
-    self.assertEquals(
+    self.assertEqual(
       ['http://foo.com', 'http://bar.com'],
       util.extract_links('asdf http://foo.com qwert <a class="x" href="http://bar.com" >xyz</a> www.baz.com'))
 
@@ -348,7 +344,7 @@ class UtilTest(testutil.HandlerTest):
                       util.extract_links('x http://foo.com/z-'))
 
     # query
-    self.assertEquals(['http://foo.com/bar?baz=baj'],
+    self.assertEqual(['http://foo.com/bar?baz=baj'],
                       util.extract_links('http://foo.com/bar?baz=baj y'))
 
     # trailing paren inside link vs outside
@@ -356,6 +352,10 @@ class UtilTest(testutil.HandlerTest):
                       util.extract_links('http://example/inside_(parens)'))
     self.assertEquals(['http://example/outside_parens'],
                       util.extract_links('(http://example/outside_parens)'))
+
+    # preserve order
+    self.assertEqual(['http://%s' % c for c in ('a', 'b', 'c', 'd')],
+                      util.extract_links('http://a http://b http://c http://d'))
 
   def test_linkify(self):
     for unchanged in (
@@ -368,7 +368,7 @@ class UtilTest(testutil.HandlerTest):
         "X <a href='http://foo.com' />",
         'asdf <a href="http://foo.com">foo</a> qwert ',
         # only a-z0-9 allowed in domain names
-        u'http://aÇb.com'):
+        'http://aÇb.com'):
       self.assertEqual(unchanged, util.linkify(unchanged))
 
     for expected, input in (
@@ -401,54 +401,54 @@ class UtilTest(testutil.HandlerTest):
 
   def test_pretty_link(self):
     pl = util.pretty_link
-    self.assertEquals('<a href="http://foo">foo</a>', pl('http://foo'))
-    self.assertEquals('<a href="http://foo/">foo</a>', pl('http://foo/'))
-    self.assertEquals('<a href="http://foo?bar=baz#biff">foo?bar=baz#biff</a>',
-                      pl('http://foo?bar=baz#biff'))
-    self.assertEquals('<a attr="val" href="http://foo">foo</a>',
+    self.assertEqual('<a href="http://foo">foo</a>', pl('http://foo'))
+    self.assertEqual('<a href="http://foo/">foo</a>', pl('http://foo/'))
+    self.assertEqual('<a href="http://foo?bar=baz#biff">foo?bar=baz#biff</a>',
+                     pl('http://foo?bar=baz#biff'))
+    self.assertEqual('<a attr="val" href="http://foo">foo</a>',
                       pl('http://foo', attrs={'attr': 'val'}))
-    self.assertEquals('<a target="_blank" href="http://foo">foo</a>',
+    self.assertEqual('<a target="_blank" href="http://foo">foo</a>',
                       pl('http://foo', new_tab=True))
-    self.assertEquals('<a href="http://www.foo">foo</a>', pl('http://www.foo'))
-    self.assertEquals('<a href="http://www.foo/bar">foo/ba...</a>',
+    self.assertEqual('<a href="http://www.foo">foo</a>', pl('http://www.foo'))
+    self.assertEqual('<a href="http://www.foo/bar">foo/ba...</a>',
                       pl('http://www.foo/bar', max_length=6))
-    self.assertEquals('<a href="http://foo/bar/baz">foo/ba...</a>',
+    self.assertEqual('<a href="http://foo/bar/baz">foo/ba...</a>',
                       pl('http://foo/bar/baz', max_length=6))
-    self.assertEquals('<a href="http://foo/bar/baz">foo/ba...</a>',
+    self.assertEqual('<a href="http://foo/bar/baz">foo/ba...</a>',
                       pl('http://foo/bar/baz', max_length=6))
 
-    self.assertEquals('<a href="http://foo/bar/baz">bar/baz</a>',
+    self.assertEqual('<a href="http://foo/bar/baz">bar/baz</a>',
                       pl('http://foo/bar/baz', keep_host=False))
-    self.assertEquals('<a href="http://foo/bar/baz">bar/ba...</a>',
+    self.assertEqual('<a href="http://foo/bar/baz">bar/ba...</a>',
                       pl('http://foo/bar/baz', keep_host=False, max_length=6))
 
-    self.assertEquals('<a href="http://foo">foo</a>', pl('http://foo', text=''))
-    self.assertEquals('<a href="http://foo">biff</a>',
+    self.assertEqual('<a href="http://foo">foo</a>', pl('http://foo', text=''))
+    self.assertEqual('<a href="http://foo">biff</a>',
                       pl('http://foo', text='biff'))
 
     # default text max length is full domain plus 14 chars
-    self.assertEquals(
+    self.assertEqual(
       '<a href="http://foo/bar/baz/baj/XY">foo/bar/baz/baj/XY</a>',
       pl('http://foo/bar/baz/baj/XY'))
-    self.assertEquals(
+    self.assertEqual(
       '<a href="http://foo/bar/baz/baj/asdf_qwert">foo/bar/baz/baj/as...</a>',
       pl('http://foo/bar/baz/baj/asdf_qwert'))
 
     # default link max length is 30 chars
-    self.assertEquals('<a href="http://foo">123456789012345678901234567890...</a>',
+    self.assertEqual('<a href="http://foo">123456789012345678901234567890...</a>',
                       pl('http://foo', text='123456789012345678901234567890TOOMUCH'))
-    self.assertEquals('<a href="http://foo">bar...</a>',
+    self.assertEqual('<a href="http://foo">bar...</a>',
                       pl('http://foo', text='barbazbaj', max_length=3))
 
     # unquote URL escape chars and decode UTF-8 in link text
-    expected = u'<a href="http://x/ben-werdm%C3%BCller">x/ben-werdmüller</a>'
+    expected = '<a href="http://x/ben-werdm%C3%BCller">x/ben-werdmüller</a>'
     url = 'http://x/ben-werdm%C3%BCller'
     for type in str, unicode:
       self.assertEquals(expected, pl(type(url)))
 
     # pass through unicode chars gracefully(ish)
-    self.assertEquals(u'<a href="http://x/ben-werdmüller">x/ben-werdmüller</a>',
-                      pl(u'http://x/ben-werdmüller'))
+    self.assertEquals('<a href="http://x/ben-werdmüller">x/ben-werdmüller</a>',
+                      pl('http://x/ben-werdmüller'))
 
   # TODO: make this work
   # def test_linkify_broken(self):
@@ -459,8 +459,8 @@ class UtilTest(testutil.HandlerTest):
     lp = lambda url: util.linkify(url, pretty=True, max_length=6)
     self.assertEqual('', lp(''))
     self.assertEqual('asdf qwert', lp('asdf qwert'))
-    self.assertEquals('x <a href="http://foo.co">foo.co</a> y', lp('x http://foo.co y'))
-    self.assertEquals('x <a href="http://www.foo.ly/baz/baj">foo.ly...</a> y',
+    self.assertEqual('x <a href="http://foo.co">foo.co</a> y', lp('x http://foo.co y'))
+    self.assertEqual('x <a href="http://www.foo.ly/baz/baj">foo.ly...</a> y',
                       lp('x http://www.foo.ly/baz/baj y'))
     self.assertEquals('x <a href="http://foo.co/bar?baz=baj#biff">foo.co...</a> y',
                       lp('x http://foo.co/bar?baz=baj#biff y'))
@@ -548,32 +548,32 @@ class UtilTest(testutil.HandlerTest):
       ('http://a.com?x=y&x=z&x=w', 'http://a.com?x=y&x=z', [('x', 'w')]),
       ('http://a.com?x=y', 'http://a.com', {'x': 'y'}),
       # note encoding declaration at top of file
-      ('http://a.com?x=R+%C3%87', 'http://a.com', {'x': u'R Ç'}),
-      ('http://a.com?x=R+%C3%87&x=R+%C3%87', 'http://a.com?x=R+%C3%87', {'x': u'R Ç'}),
+      ('http://a.com?x=R+%C3%87', 'http://a.com', {'x': 'R Ç'}),
+      ('http://a.com?x=R+%C3%87&x=R+%C3%87', 'http://a.com?x=R+%C3%87', {'x': 'R Ç'}),
       ):
       self.assertEqual(expected, util.add_query_params(url, params))
 
     for expected, req, params in (
-      (urllib2.Request('http://a.com?x=y'), urllib2.Request('http://a.com'),
+      (urllib.request.Request('http://a.com?x=y'), urllib.request.Request('http://a.com'),
        [('x', 'y')]),
-      (urllib2.Request('http://a.com?x=y&u=v'), urllib2.Request('http://a.com?x=y'),
+      (urllib.request.Request('http://a.com?x=y&u=v'), urllib.request.Request('http://a.com?x=y'),
        [('u', 'v')]),
-      (urllib2.Request('http://a.com?x=y', data='my data', headers={'X': 'Y'}),
-       urllib2.Request('http://a.com', data='my data', headers={'X': 'Y'}),
+      (urllib.request.Request('http://a.com?x=y', data='my data', headers={'X': 'Y'}),
+       urllib.request.Request('http://a.com', data='my data', headers={'X': 'Y'}),
        [('x', 'y')]),
       ):
       actual = util.add_query_params(req, params)
-      self.assertIsInstance(actual, urllib2.Request)
+      self.assertIsInstance(actual, urllib.request.Request)
       self.assertEqual(expected.get_full_url(), actual.get_full_url())
       self.assertEqual(expected.get_data(), actual.get_data())
       self.assertEqual(expected.headers, actual.headers)
 
     query_string = ''
     for i in range(2):
-      query_string = util.add_query_params(query_string, {'x': u'Ryan Çelik'})
-      for key, val in urlparse.parse_qsl(query_string[1:]):
-        self.assertEquals('x', key)
-        self.assertEquals(u'Ryan Çelik', val.decode('utf-8'))
+      query_string = util.add_query_params(query_string, {'x': 'Ryan Çelik'})
+      for key, val in urllib.parse.parse_qsl(query_string[1:]):
+        self.assertEqual('x', key)
+        self.assertEqual('Ryan Çelik', val.decode('utf-8'))
 
   def test_get_required_param(self):
     handler = webapp2.RequestHandler(webapp2.Request.blank('/?a=b'), None)
@@ -601,18 +601,18 @@ class UtilTest(testutil.HandlerTest):
       self.assertIsNone(None, util.if_changed(cache, updates, 'x', val))
       del cache['x']
 
-    self.assertEquals(1, util.if_changed(cache, updates, 'x', 1))
-    self.assertEquals(1, updates['x'])
+    self.assertEqual(1, util.if_changed(cache, updates, 'x', 1))
+    self.assertEqual(1, updates['x'])
     cache['x'] = 1
     self.assertIsNone(util.if_changed(cache, updates, 'x', 1))
-    self.assertEquals(2, util.if_changed(cache, updates, 'x', 2))
-    self.assertEquals(2, updates['x'])
+    self.assertEqual(2, util.if_changed(cache, updates, 'x', 2))
+    self.assertEqual(2, updates['x'])
 
     self.assertIsNone(util.if_changed(cache, updates, 'x', None))
-    self.assertEquals(None, updates['x'])
+    self.assertEqual(None, updates['x'])
 
   def test_generate_secret(self):
-    self.assertEquals(24, len(util.generate_secret()))
+    self.assertEqual(24, len(util.generate_secret()))
 
   def test_cache_dict(self):
     data = {1: 2, 3: 4}
@@ -625,43 +625,43 @@ class UtilTest(testutil.HandlerTest):
 
     # get_multi should handle a generator args ok
     self.assert_equals(data, cd.get_multi(k for k in [1, 3]))
-    self.assert_equals(data, cd.get_multi(xrange(4)))
+    self.assert_equals(data, cd.get_multi(list(range(4))))
 
   def test_is_int(self):
     for arg in 0, 1, -1, '0', '11', 1.0, 12345:
-      self.assertTrue(util.is_int(arg), `arg`)
+      self.assertTrue(util.is_int(arg), repr(arg))
     for arg in 0.1, 3.14, '3.0', '3xyz', None, self:
-      self.assertFalse(util.is_int(arg), `arg`)
+      self.assertFalse(util.is_int(arg), repr(arg))
 
   def test_is_float(self):
     for arg in 0, 1, -1, '0', '11', 1.0, 12345, 0.1, 3.14, '3.0':
-      self.assertTrue(util.is_float(arg), `arg`)
+      self.assertTrue(util.is_float(arg), repr(arg))
     for arg in '3xyz', None, self:
-      self.assertFalse(util.is_float(arg), `arg`)
+      self.assertFalse(util.is_float(arg), repr(arg))
 
   def test_is_base64(self):
     for arg in '', 'asdf', '1', '1===', '_-aglzfmJyaWQtZ3lyDgsSB1R3aXR0ZXIiAXQM':
-      self.assertTrue(util.is_base64(arg), `arg`)
+      self.assertTrue(util.is_base64(arg), repr(arg))
     for arg in 0, 12.2, ')(,.",\'",[---', None, self:
-      self.assertFalse(util.is_base64(arg), `arg`)
+      self.assertFalse(util.is_base64(arg), repr(arg))
 
   def test_interpret_http_exception(self):
     ihc = util.interpret_http_exception
 
-    self.assertEquals(('402', '402 Payment Required\n\nmy body'), ihc(
+    self.assertEqual(('402', '402 Payment Required\n\nmy body'), ihc(
         exc.HTTPPaymentRequired(body_template='my body')))
-    self.assertEquals(('429', 'my body'), ihc(
+    self.assertEqual(('429', 'my body'), ihc(
         apiclient.errors.HttpError(httplib2.Response({'status': 429}), 'my body')))
 
     # rate limiting
-    ex = urllib2.HTTPError('url', 429, 'msg', {}, StringIO.StringIO('my body'))
-    self.assertEquals(('429', 'my body'), ihc(ex))
+    ex = urllib.error.HTTPError('url', 429, 'msg', {}, io.StringIO('my body'))
+    self.assertEqual(('429', 'my body'), ihc(ex))
     # check that it works multiple times even though read() doesn't.
-    self.assertEquals(('429', 'my body'), ihc(ex))
+    self.assertEqual(('429', 'my body'), ihc(ex))
 
-    self.assertEquals((None, 'foo bar'), ihc(urllib2.URLError('foo bar')))
+    self.assertEqual((None, 'foo bar'), ihc(urllib.error.URLError('foo bar')))
 
-    self.assertEquals(('429', 'my body'), ihc(
+    self.assertEqual(('429', 'my body'), ihc(
         requests.HTTPError(response=util.Struct(status_code='429', text='my body'))))
 
     # facebook page rate limiting
@@ -670,34 +670,34 @@ class UtilTest(testutil.HandlerTest):
       'code': 32,
       'message': '(#32) Page request limited reached',
     }})
-    code, _ = ihc(urllib2.HTTPError('url', 400, '', {}, StringIO.StringIO(body)))
-    self.assertEquals('429', code)
+    code, _ = ihc(urllib.error.HTTPError('url', 400, '', {}, io.StringIO(body)))
+    self.assertEqual('429', code)
 
     # fake gdata.client.RequestError since gdata isn't a dependency
     class RequestError(util.Struct):
       pass
     ex = RequestError(status=429, body='my body')
-    self.assertEquals(('429', 'my body'), ihc(ex))
+    self.assertEqual(('429', 'my body'), ihc(ex))
 
     # Google+
-    self.assertEquals((None, 'invalid_foo'),
+    self.assertEqual((None, 'invalid_foo'),
                       ihc(AccessTokenRefreshError('invalid_foo')))
-    self.assertEquals(('401', 'invalid_grant'),
+    self.assertEqual(('401', 'invalid_grant'),
                       ihc(AccessTokenRefreshError('invalid_grant')))
     msg = 'invalid_grant: Token has been revoked.'
-    self.assertEquals(('401', msg), ihc(AccessTokenRefreshError(msg)))
-    self.assertEquals(('502', 'internal_failure'),
+    self.assertEqual(('401', msg), ihc(AccessTokenRefreshError(msg)))
+    self.assertEqual(('502', 'internal_failure'),
                       ihc(AccessTokenRefreshError('internal_failure')))
 
     # Flickr
     #
     # generated by oauth_dropins.flickr_auth.raise_for_failure()
     msg = 'message=Sorry, the Flickr API service is not currently available., flickr code=0'
-    self.assertEquals(('504', msg), ihc(urllib2.HTTPError('url', '400', msg, {}, None)))
+    self.assertEquals(('504', msg), ihc(urllib.error.HTTPError('url', '400', msg, {}, None)))
 
     # https://console.cloud.google.com/errors/13299057966731352169?project=brid-gy
     self.assertEquals(('504', 'Unknown'),
-                      ihc(urllib2.HTTPError('url', '418', 'Unknown', {}, None)))
+                      ihc(urllib.error.HTTPError('url', '418', 'Unknown', {}, None)))
 
     # auth failures as HTTPErrors that should become 401s
     for body in (
@@ -777,9 +777,9 @@ class UtilTest(testutil.HandlerTest):
       }]},
       ):
       for code in 400, 500:
-        got_code, got_body = ihc(urllib2.HTTPError(
-          'url', code, 'BAD REQUEST', {}, StringIO.StringIO(json.dumps(body))))
-        self.assertEquals('401', got_code, (got_code, body))
+        got_code, got_body = ihc(urllib.error.HTTPError(
+          'url', code, 'BAD REQUEST', {}, io.StringIO(json.dumps(body))))
+        self.assertEqual('401', got_code, (got_code, body))
         self.assert_equals(body, json.loads(got_body), body)
 
     # HTTPErrors that *shouldn't* become 401s
@@ -804,9 +804,9 @@ class UtilTest(testutil.HandlerTest):
       }},
     ):
       for code, expected in (400, 400), (500, 502):
-        got_code, got_body = ihc(urllib2.HTTPError(
+        got_code, got_body = ihc(urllib.error.HTTPError(
           'url', code, 'BAD REQUEST', {}, StringIO.StringIO(json.dumps(body))))
-        self.assertEquals(str(expected), got_code, (code, got_code, body))
+        self.assertEqual(str(expected), got_code, (code, got_code, body))
         self.assert_equals(body, json.loads(got_body), body)
 
     # facebook temporarily unavailable with is_transient
@@ -826,8 +826,8 @@ class UtilTest(testutil.HandlerTest):
     # make sure we handle non-facebook JSON bodies ok
     wordpress_rest_error = json.dumps(
       {'error': 'unauthorized', 'message': 'Comments on this post are closed'})
-    self.assertEquals(('402', wordpress_rest_error), ihc(urllib2.HTTPError(
-      'url', 402, 'BAD REQUEST', {}, StringIO.StringIO(wordpress_rest_error))))
+    self.assertEqual(('402', wordpress_rest_error), ihc(urllib.error.HTTPError(
+      'url', 402, 'BAD REQUEST', {}, io.StringIO(wordpress_rest_error))))
 
     # upstream connection failures are converted to 504
     self.assertEquals(('504', 'foo bar'), ihc(socket.timeout('foo bar')))
@@ -846,44 +846,45 @@ class UtilTest(testutil.HandlerTest):
 
   def test_is_connection_failure(self):
     for e in (socket.timeout(), socket.error(), requests.ConnectionError(),
-              httplib.NotConnected(), urllib2.URLError(socket.gaierror('foo bar')),
+              http.client.NotConnected(),
+              urllib.error.URLError(socket.gaierror('foo bar')),
               urllib3.exceptions.TimeoutError(),
               Exception('Connection closed unexpectedly by server at URL: ...'),
     ):
       assert util.is_connection_failure(e), e
 
-    for e in (None, 3, 'asdf', IOError(), httplib.HTTPException('unknown'),
-              urllib2.URLError('asdf'),
-              urllib2.HTTPError('url', 403, 'msg', {}, None),
+    for e in (None, 3, 'asdf', IOError(), http.client.HTTPException('unknown'),
+              urllib.error.URLError('asdf'),
+              urllib.error.HTTPError('url', 403, 'msg', {}, None),
               ):
       assert not util.is_connection_failure(e), e
 
   def test_file_limiter(self):
-    buf = StringIO.StringIO('abcdefghijk')
+    buf = io.StringIO('abcdefghijk')
 
     lim = util.FileLimiter(buf, 1)
-    self.assertEquals('a', lim.read())
-    self.assertEquals('', lim.read())
+    self.assertEqual('a', lim.read())
+    self.assertEqual('', lim.read())
     self.assertFalse(lim.ateof)
 
     lim = util.FileLimiter(buf, 1)
-    self.assertEquals('b', lim.read(2))
-    self.assertEquals('', lim.read(2))
+    self.assertEqual('b', lim.read(2))
+    self.assertEqual('', lim.read(2))
 
     lim = util.FileLimiter(buf, 1)
-    self.assertEquals('c', lim.read(1))
-    self.assertEquals('', lim.read(1))
+    self.assertEqual('c', lim.read(1))
+    self.assertEqual('', lim.read(1))
 
     lim = util.FileLimiter(buf, 5)
-    self.assertEquals('d', lim.read(1))
-    self.assertEquals('efgh', lim.read(6))
-    self.assertEquals('', lim.read(6))
+    self.assertEqual('d', lim.read(1))
+    self.assertEqual('efgh', lim.read(6))
+    self.assertEqual('', lim.read(6))
     self.assertFalse(lim.ateof)
 
     lim = util.FileLimiter(buf, 5)
-    self.assertEquals('ij', lim.read(2))
-    self.assertEquals('k', lim.read())
-    self.assertEquals('', lim.read())
+    self.assertEqual('ij', lim.read(2))
+    self.assertEqual('k', lim.read())
+    self.assertEqual('', lim.read())
     self.assertTrue(lim.ateof)
 
   def test_base_url(self):
@@ -893,7 +894,7 @@ class UtilTest(testutil.HandlerTest):
         ('http://site/path/', 'http://site/path/leaf'),
         ('http://site/path/', 'http://site/path/leaf?query#frag'),
       ):
-      self.assertEquals(expected, util.base_url(url))
+      self.assertEqual(expected, util.base_url(url))
 
   def test_follow_redirects(self):
     for i in range(2):
@@ -906,7 +907,7 @@ class UtilTest(testutil.HandlerTest):
       'http://final/url',
       util.follow_redirects('http://will/redirect', cache=cache).url)
 
-    self.assertEquals('http://final/url', cache['R http://will/redirect'].url)
+    self.assertEqual('http://final/url', cache['R http://will/redirect'].url)
 
     # another call without cache should refetch
     self.assert_equals(
@@ -938,7 +939,7 @@ class UtilTest(testutil.HandlerTest):
 
   def test_url_canonicalizer(self):
     def check(expected, input, **kwargs):
-      self.assertEquals(expected, util.UrlCanonicalizer(**kwargs)(input))
+      self.assertEqual(expected, util.UrlCanonicalizer(**kwargs)(input))
 
     check('https://fa.ke/post', 'http://www.fa.ke/post')
     check('http://fa.ke/123', 'https://fa.ke/123', scheme='http')
@@ -989,7 +990,7 @@ class UtilTest(testutil.HandlerTest):
       (('asdf', 'qwert'), '# header\nasdf\n\nqwert\n\nqwert\n  # comment\n  asdf  '),
     ):
       self.assert_equals(set(expected),
-                         util.load_file_lines(StringIO.StringIO(contents)))
+                         util.load_file_lines(io.StringIO(contents)))
 
   def test_wide_unicode(self):
     empty = util.WideUnicode('')
@@ -1007,19 +1008,19 @@ class UtilTest(testutil.HandlerTest):
     with self.assertRaises(IndexError):
       ascii[5]
 
-    low = util.WideUnicode(u'xÇy')
+    low = util.WideUnicode('xÇy')
     self.assert_equals(3, len(low))
-    self.assert_equals(u'xÇ', low[:2])
-    self.assert_equals(u'y', low[2])
+    self.assert_equals('xÇ', low[:2])
+    self.assert_equals('y', low[2])
     self.assert_equals('', low[8:])
     with self.assertRaises(IndexError):
       low[3]
 
-    high = util.WideUnicode(u'💯💯💯')
+    high = util.WideUnicode('💯💯💯')
     self.assert_equals(3, len(high))
-    self.assert_equals(u'💯', high[2])
-    self.assert_equals(u'💯', high[2:3])
-    self.assert_equals(u'', high[8:])
+    self.assert_equals('💯', high[2])
+    self.assert_equals('💯', high[2:3])
+    self.assert_equals('', high[8:])
     self.assert_equals(high, high[:9])
     with self.assertRaises(IndexError):
       high[3]
@@ -1044,4 +1045,3 @@ class UtilTest(testutil.HandlerTest):
       self.assert_equals(obj, util.decode_oauth_state(str))
       self.assert_equals(obj, util.decode_oauth_state(util.encode_oauth_state(obj)))
       self.assert_equals(str, urllib.unquote(util.encode_oauth_state(util.decode_oauth_state(str))))
-

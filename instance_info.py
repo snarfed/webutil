@@ -21,9 +21,9 @@ import datetime
 import heapq
 import os
 
-import appengine_config
+from . import appengine_config
 from google.appengine.api import runtime
-import handlers
+from . import handlers
 import threading
 import webapp2
 

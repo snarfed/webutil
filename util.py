@@ -5,7 +5,7 @@ import collections
 import contextlib
 import base64
 import datetime
-import httplib
+import http.client
 import inspect
 import json
 import logging
@@ -14,9 +14,7 @@ import numbers
 import os
 import re
 import socket
-import urllib
-import urllib2
-import urlparse
+import urllib.error, urllib.parse, urllib.request
 
 # These are used in interpret_http_exception() and is_connection_failure(). They
 # use dependencies that we may or may not have, so degrade gracefully if they're
@@ -52,7 +50,7 @@ except ImportError:
   exc = None
 
 try:
-  from appengine_config import HTTP_TIMEOUT
+  from .appengine_config import HTTP_TIMEOUT
   from google.appengine.api import urlfetch_errors
   from google.appengine.runtime import apiproxy_errors
 except ImportError:
@@ -78,7 +76,7 @@ class CacheDict(dict):
   """
   def get_multi(self, keys):
     keys = set(keys)
-    return {k: v for k, v in self.items() if k in keys}
+    return {k: v for k, v in list(self.items()) if k in keys}
 
   def set(self, key, val, **kwargs):
     self[key] = val
@@ -93,15 +91,15 @@ def to_xml(value):
     if not value:
       return ''
     elems = []
-    for key, vals in value.iteritems():
+    for key, vals in list(value.items()):
       if not isinstance(vals, (list, tuple)):
         vals = [vals]
-      elems.extend(u'<%s>%s</%s>' % (key, to_xml(val), key) for val in vals)
+      elems.extend('<%s>%s</%s>' % (key, to_xml(val), key) for val in vals)
     return '\n' + '\n'.join(elems) + '\n'
   else:
     if value is None:
       value = ''
-    return unicode(value)
+    return str(value)
 
 
 def trim_nulls(value, ignore=()):
@@ -135,7 +133,7 @@ def uniquify(input):
   """
   if not input:
     return []
-  return collections.OrderedDict([x, 0] for x in input).keys()
+  return list(collections.OrderedDict([x, 0] for x in input).keys())
 
 
 def get_list(obj, key):
@@ -255,7 +253,7 @@ def parse_acct_uri(uri, hosts=None):
 
   Raises: ValueError if the uri is invalid or the host isn't allowed.
   """
-  parsed = urlparse.urlparse(uri)
+  parsed = urllib.parse.urlparse(uri)
   if parsed.scheme and parsed.scheme != 'acct':
     raise ValueError('Acct URI %s has unsupported scheme: %s' %
                      (uri, parsed.scheme))
@@ -274,7 +272,7 @@ def parse_acct_uri(uri, hosts=None):
 
 
 def favicon_for_url(url):
-  return 'http://%s/favicon.ico' % urlparse.urlparse(url).netloc
+  return 'http://%s/favicon.ico' % urllib.parse.urlparse(url).netloc
 
 
 # http://stackoverflow.com/questions/2532053/validate-hostname-string-in-python
@@ -292,9 +290,9 @@ def domain_from_link(url):
   Returns:
     string
   """
-  parsed = urlparse.urlparse(url)
+  parsed = urllib.parse.urlparse(url)
   if not parsed.hostname and '//' not in url:
-    parsed = urlparse.urlparse('http://' + url)
+    parsed = urllib.parse.urlparse('http://' + url)
 
   domain = parsed.hostname
   if domain:
@@ -353,8 +351,8 @@ def update_scheme(url, handler):
                'http://distillery.s3.amazonaws.com', url)
   url = re.sub(r'^http://photos-\w\.(ak\.)instagram\.com',
                'http://igcdn-photos-e-a.akamaihd.net', url)
-  return urlparse.urlunparse((handler.request.scheme,) +
-                             urlparse.urlparse(url)[1:])
+  return urllib.parse.urlunparse((handler.request.scheme,) +
+                             urllib.parse.urlparse(url)[1:])
 
 
 def schemeless(url, slashes=True):
@@ -368,7 +366,7 @@ def schemeless(url, slashes=True):
   Returns:
     string URL
   """
-  url = urlparse.urlunparse(('',) + urlparse.urlparse(url)[1:])
+  url = urllib.parse.urlunparse(('',) + urllib.parse.urlparse(url)[1:])
   if not slashes:
     url = url.strip('/')
   return url
@@ -383,7 +381,7 @@ def fragmentless(url):
   Returns:
     string URL
   """
-  return urlparse.urlunparse(urlparse.urlparse(url)[:5] + ('',))
+  return urllib.parse.urlunparse(urllib.parse.urlparse(url)[:5] + ('',))
 
 
 def clean_url(url):
@@ -403,17 +401,17 @@ def clean_url(url):
   utm_params = set(('utm_campaign', 'utm_content', 'utm_medium', 'utm_source',
                     'utm_term'))
   try:
-    parts = list(urlparse.urlparse(url))
-  except (AttributeError, TypeError, ValueError), e:
+    parts = list(urllib.parse.urlparse(url))
+  except (AttributeError, TypeError, ValueError) as e:
     logging.info('%s: %s', e, url)
     return None
 
-  query = urllib.unquote_plus(parts[4].encode('utf-8'))
-  params = [(name, value) for name, value in urlparse.parse_qsl(query)
+  query = urllib.parse.unquote_plus(parts[4].encode('utf-8'))
+  params = [(name, value) for name, value in urllib.parse.parse_qsl(query)
             if name not in utm_params
             and not (name == 'source' and value.startswith('rss-'))]
-  parts[4] = urllib.urlencode(params)
-  return urlparse.urlunparse(parts)
+  parts[4] = urllib.parse.urlencode(params)
+  return urllib.parse.urlunparse(parts)
 
 
 def base_url(url):
@@ -424,7 +422,7 @@ def base_url(url):
   Args:
     url: string
   """
-  return urlparse.urljoin(url, ' ')[:-1] if url else None
+  return urllib.parse.urljoin(url, ' ')[:-1] if url else None
 
 
 # Based on kylewm's from redwind:
@@ -460,7 +458,7 @@ def extract_links(text):
   links = uniquify(match.group() for match in _LINK_RE.finditer(text))
   # strip "outside" parens
   links = [l[:-1] if l[-1] == ')' and '(' not in l else l
-           for l in links ]
+           for l in links]
   return links
 
 
@@ -480,7 +478,7 @@ def tokenize_links(text, skip_bare_cc_tlds=False):
   links = _LINKIFY_RE.findall(text)
   splits = _LINKIFY_RE.split(text)
 
-  for ii in xrange(len(links)):
+  for ii in range(len(links)):
     # trim trailing punctuation from links
     link = links[ii]
     jj = len(link) - 1
@@ -536,7 +534,7 @@ def linkify(text, pretty=False, skip_bare_cc_tlds=False, **kwargs):
   links, splits = tokenize_links(text, skip_bare_cc_tlds)
   result = []
 
-  for ii in xrange(len(links)):
+  for ii in range(len(links)):
     result.append(splits[ii])
 
     url = href = links[ii]
@@ -546,7 +544,7 @@ def linkify(text, pretty=False, skip_bare_cc_tlds=False, **kwargs):
     if pretty:
       result.append(pretty_link(href, **kwargs))
     else:
-      result.append(u'<a href="%s">%s</a>' % (href, url))
+      result.append('<a href="%s">%s</a>' % (href, url))
   result.append(splits[-1])
   return ''.join(result)
 
@@ -583,7 +581,7 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
       max_length = 30
   else:
     # use shortened version of URL as link text
-    parsed = urlparse.urlparse(url)
+    parsed = urllib.parse.urlparse(url)
     text = url[len(parsed.scheme) + 3:]  # strip scheme and ://
     host_len = len(parsed.netloc)
     if (keep_host and not parsed.params and not parsed.query and not parsed.fragment):
@@ -606,7 +604,7 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
 
   if glyphicon is not None:
     text += ' <span class="glyphicon glyphicon-%s"></span>' % glyphicon
-  attr_str = (''.join('%s="%s" ' % (attr, val) for attr, val in attrs.items())
+  attr_str = (''.join('%s="%s" ' % (attr, val) for attr, val in list(attrs.items()))
               if attrs else '')
   target = 'target="_blank" ' if new_tab else ''
   return ('<a %s%shref="%s">%s</a>' % (attr_str, target, url, text))
@@ -744,23 +742,23 @@ def add_query_params(url, params):
   Returns:
     string URL
   """
-  is_request = isinstance(url, urllib2.Request)
+  is_request = isinstance(url, urllib.request.Request)
   if is_request:
     req = url
     url = req.get_full_url()
 
   if isinstance(params, dict):
-    params = params.items()
+    params = list(params.items())
 
   # convert to list so we can modify later
-  parsed = list(urlparse.urlparse(url))
+  parsed = list(urllib.parse.urlparse(url))
   # query params are in index 4
-  params = set((k, unicode(v).encode('utf-8')) for k, v in params)
-  parsed[4] += ('&' if parsed[4] else '') + urllib.urlencode(list(params))
-  updated = urlparse.urlunparse(parsed)
+  params = set((k, str(v).encode('utf-8')) for k, v in params)
+  parsed[4] += ('&' if parsed[4] else '') + urllib.parse.urlencode(list(params))
+  updated = urllib.parse.urlunparse(parsed)
 
   if is_request:
-    return urllib2.Request(updated, data=req.get_data(), headers=req.headers)
+    return urllib.request.Request(updated, data=req.get_data(), headers=req.headers)
   else:
     return updated
 
@@ -806,22 +804,20 @@ def dedupe_urls(urls):
   result = []
 
   for url in urls:
-    if not url:
-      continue
+    p = urllib.parse.urlsplit(url)
 
-    p = urlparse.urlsplit(url)
     # normalize domain (hostname attr is lower case) and path
     norm = [p.scheme, p.hostname, p.path or '/', p.query, p.fragment]
 
-    if p.scheme == 'http' and urlparse.urlunsplit(['https'] + norm[1:]) in result:
+    if p.scheme == 'http' and urllib.parse.urlunsplit(['https'] + norm[1:]) in result:
       continue
     elif p.scheme == 'https':
       try:
-        result.remove(urlparse.urlunsplit(['http'] + norm[1:]))
+        result.remove(urllib.parse.urlunsplit(['http'] + norm[1:]))
       except ValueError:
         pass
 
-    url = urlparse.urlunsplit(norm)
+    url = urllib.parse.urlunsplit(norm)
     if url not in result:
       result.append(url)
 
@@ -945,7 +941,7 @@ def is_float(arg):
 
 def is_base64(arg):
   """Returns True if arg is a base64 encoded string, False otherwise."""
-  return isinstance(arg, basestring) and re.match('^[a-zA-Z0-9_=-]*$', arg)
+  return isinstance(arg, str) and re.match('^[a-zA-Z0-9_=-]*$', arg)
 
 
 def interpret_http_exception(exception):
@@ -972,7 +968,7 @@ def interpret_http_exception(exception):
     code = e.code
     body = e.plain_body({})
 
-  elif isinstance(e, urllib2.HTTPError):
+  elif isinstance(e, urllib.error.HTTPError):
     code = e.code
     try:
       body = e.read() or getattr(e, 'body')
@@ -980,7 +976,7 @@ def interpret_http_exception(exception):
         # store a copy inside the exception because e.fp.seek(0) to reset isn't
         # always available.
         e.body = body
-    except AttributeError, ae:
+    except AttributeError as ae:
       if not body:
         body = e.reason
 
@@ -990,7 +986,7 @@ def interpret_http_exception(exception):
          'Sorry, the Flickr API service is not currently available' in body)):
       code = '504'
 
-  elif isinstance(e, urllib2.URLError):
+  elif isinstance(e, urllib.error.URLError):
     body = e.reason
 
   elif requests and isinstance(e, requests.HTTPError):
@@ -1035,7 +1031,7 @@ def interpret_http_exception(exception):
       body_json = json.loads(body)
       error = body_json.get('error', {})
       if not isinstance(error, dict):
-        error = {'message': `error`}
+        error = {'message': repr(error)}
     except BaseException:
       pass
 
@@ -1048,8 +1044,8 @@ def interpret_http_exception(exception):
 
   type = error.get('type')
   message = error.get('message')
-  if not isinstance(message, basestring):
-    message = `message`
+  if not isinstance(message, str):
+    message = repr(message)
   err_code = error.get('code')
   err_subcode = error.get('error_subcode')
   if ((type == 'OAuthException' and
@@ -1103,9 +1099,9 @@ def interpret_http_exception(exception):
 def ignore_http_4xx_error():
   try:
     yield
-  except BaseException, e:
+  except BaseException as e:
     code, _ = interpret_http_exception(e)
-    if not (code and int(code) / 100 == 4):
+    if not (code and int(code) // 100 == 4):
       raise
 
 
@@ -1115,8 +1111,8 @@ def is_connection_failure(exception):
   ...False otherwise.
   """
   types = [
-      httplib.ImproperConnectionState,
-      httplib.NotConnected,
+      http.client.ImproperConnectionState,
+      http.client.NotConnected,
       socket.error,  # base class for all socket exceptions, including socket.timeout
   ]
   if apiproxy_errors:
@@ -1140,9 +1136,9 @@ def is_connection_failure(exception):
 
   msg = unicode(exception)
   if (isinstance(exception, tuple(types)) or
-      (isinstance(exception, urllib2.URLError) and
+      (isinstance(exception, urllib.error.URLError) and
        isinstance(exception.reason, socket.error)) or
-      (isinstance(exception, httplib.HTTPException) and
+      (isinstance(exception, http.client.HTTPException) and
        'Deadline exceeded' in msg) or
       'Connection closed unexpectedly' in msg  # tweepy.TweepError
      ):
@@ -1209,7 +1205,7 @@ def urlopen(url_or_req, *args, **kwargs):
   """Wraps urllib2.urlopen and logs the HTTP method and URL."""
   data = kwargs.get('data')
 
-  if isinstance(url_or_req, urllib2.Request):
+  if isinstance(url_or_req, urllib.request.Request):
     if data is None:
       data = url_or_req.get_data()
     url = url_or_req.get_full_url()
@@ -1219,7 +1215,7 @@ def urlopen(url_or_req, *args, **kwargs):
   logging.info('urlopen %s %s %s', 'GET' if data is None else 'POST', url,
                _prune(kwargs))
   kwargs.setdefault('timeout', HTTP_TIMEOUT)
-  return urllib2.urlopen(url_or_req, *args, **kwargs)
+  return urllib.request.urlopen(url_or_req, *args, **kwargs)
 
 
 def requests_fn(fn):
@@ -1244,7 +1240,7 @@ def _prune(kwargs):
   if headers:
     pruned['headers'] = {k: '...' for k in headers}
 
-  return {k: v for k, v in pruned.items()
+  return {k: v for k, v in list(pruned.items())
           if k not in ('allow_redirects', 'stream', 'timeout')}
 
 
@@ -1278,7 +1274,7 @@ def follow_redirects(url, cache=None, fail_cache_time_secs = 60 * 60 * 24,  # a 
   # http://stackoverflow.com/questions/9967632
   try:
     # default scheme to http
-    parsed = urlparse.urlparse(url)
+    parsed = urllib.parse.urlparse(url)
     if not parsed.scheme:
       url = 'http://' + url
     resolved = requests_head(url, allow_redirects=True, **kwargs)
@@ -1288,7 +1284,7 @@ def follow_redirects(url, cache=None, fail_cache_time_secs = 60 * 60 * 24,  # a 
     cache_time = 0  # forever
   except AssertionError:
     raise
-  except BaseException, e:
+  except BaseException as e:
     logging.warning("Couldn't resolve URL %s : %s", url, e)
     resolved = requests.Response()
     resolved.url = url
@@ -1366,7 +1362,7 @@ class UrlCanonicalizer(object):
     elif self.reject and self.reject.match(url):
       return None
 
-    parsed = urlparse.urlparse(url)
+    parsed = urllib.parse.urlparse(url)
     domain = parsed.hostname
     if not domain:
       return None
@@ -1388,7 +1384,7 @@ class UrlCanonicalizer(object):
     elif not self.trailing_slash and path.endswith('/'):
       path = path[:-1]
 
-    new_url = urlparse.urlunparse((scheme, domain, path, '', query, fragment))
+    new_url = urllib.parse.urlunparse((scheme, domain, path, '', query, fragment))
     if new_url != url:
       return self(new_url)  # recheck approve/reject
 

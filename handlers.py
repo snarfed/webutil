@@ -7,18 +7,17 @@ import calendar
 import json
 import logging
 import os
-import urllib2
-import urlparse
+import urllib.request, urllib.error, urllib.parse
+import urllib.parse
 
-import appengine_config
+from . import appengine_config
 
 from google.appengine.ext.webapp import template
 from google.appengine.api import memcache
 import jinja2
 import webapp2
 
-import logs
-import util
+from . import logs, util
 
 JINJA_ENV = jinja2.Environment(
   loader=jinja2.FileSystemLoader(('.', 'templates')),
@@ -70,16 +69,16 @@ def redirect(from_domain, to_domain):
     from_domain: string or sequence of strings
     to_domain: strings
   """
-  if isinstance(from_domain, basestring):
+  if isinstance(from_domain, str):
     from_domain = [from_domain]
 
   def decorator(method):
     def wrapper(self, *args, **kwargs):
-      parts = list(urlparse.urlparse(self.request.url))
+      parts = list(urllib.parse.urlparse(self.request.url))
       # not using self.request.host because it includes port
       if parts[1] in from_domain:  # netloc
         parts[1] = to_domain
-        return self.redirect(urlparse.urlunparse(parts), permanent=True)
+        return self.redirect(urllib.parse.urlunparse(parts), permanent=True)
       else:
         return method(self, *args, **kwargs)
 
@@ -181,7 +180,7 @@ class TemplateHandler(ModernHandler):
   def get(self, *args, **kwargs):
     self.response.headers['Content-Type'] = self.content_type()
     # can't update() because wsgiref.headers.Headers doesn't have it.
-    for key, val in self.headers().items():
+    for key, val in list(self.headers().items()):
       self.response.headers[key] = val
 
     vars = {

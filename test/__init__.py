@@ -26,13 +26,6 @@ if 'discover' in sys.argv or '-q' in sys.argv or '--quiet' in sys.argv:
 elif '-v' in sys.argv:
   logging.getLogger().setLevel(logging.DEBUG)
 
-# Monkey patch to fix template loader issue:
-#
-# File "/usr/local/google_appengine/lib/django-1.4/django/template/loader.py", line 101, in find_template_loader:
-# ImproperlyConfigured: Error importing template source loader django.template.loaders.filesystem.load_template_source: "'module' object has no attribute 'load_template_source'"
-from django.template.loaders import filesystem
-filesystem.load_template_source = filesystem._loader.load_template_source
-
 # dumb hack to add the webutil dir to sys.path so the tests can be run from
 # oauth-dropins even though they import webutil modules as top level
 # (ie not from oauth_dropins.webutil import ...)
