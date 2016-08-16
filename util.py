@@ -472,8 +472,9 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
                 new_tab=False, max_length=None):
   """Renders a pretty, short HTML link to a URL.
 
-  In the the link text, Removes the leading http(s)://[www.] and ellipsizes at
-  the end if necessary.
+  If text is not provided, the link text is the URL without the leading
+  http(s)://[www.], ellipsized at the end if necessary. URL escape characters
+  and UTF-8 are decoded.
 
   The default maximum length follow's Twitter's rules: full domain plus 15
   characters of path (including leading slash).
@@ -489,6 +490,8 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
     attrs: dict of attributes => values to include in the a tag. optional
     new_tab: boolean, include target="_blank" if True
     max_length: int, max link text length in characters. ellipsized beyond this.
+
+  Returns: unicode string HTML snippet with <a> tag
   """
   if text:
     if max_length is None:
@@ -508,6 +511,10 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
       host_len -= 4
     if max_length is None:
       max_length = host_len + 15
+    try:
+      text = urllib.unquote_plus(str(text)).decode('utf-8')
+    except ValueError:
+      pass
 
   if max_length and len(text) > max_length:
     text = text[:max_length] + '...'

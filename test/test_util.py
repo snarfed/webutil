@@ -357,6 +357,16 @@ class UtilTest(testutil.HandlerTest):
     self.assertEquals('<a href="http://foo">bar...</a>',
                       pl('http://foo', text='barbazbaj', max_length=3))
 
+    # unquote URL escape chars and decode UTF-8 in link text
+    expected = u'<a href="http://x/ben-werdm%C3%BCller">x/ben-werdmüller</a>'
+    url = 'http://x/ben-werdm%C3%BCller'
+    for type in str, unicode:
+      self.assertEquals(expected, pl(type(url)))
+
+    # pass through unicode chars gracefully(ish)
+    self.assertEquals(u'<a href="http://x/ben-werdmüller">x/ben-werdmüller</a>',
+                      pl(u'http://x/ben-werdmüller'))
+
   # TODO: make this work
   # def test_linkify_broken(self):
   #   self.assertEqual('', util.linkify(
