@@ -322,6 +322,8 @@ def clean_url(url):
   The utm_* (Urchin Tracking Metrics?) params come from Google Analytics.
   https://support.google.com/analytics/answer/1033867
 
+  The source=rss-... params are on all links in Medium's RSS feeds.
+
   Args:
     url: string
 
@@ -337,7 +339,8 @@ def clean_url(url):
 
   query = urllib.unquote_plus(parts[4].encode('utf-8'))
   params = [(name, value) for name, value in urlparse.parse_qsl(query)
-            if name not in utm_params]
+            if name not in utm_params
+            and not (name == 'source' and value.startswith('rss-'))]
   parts[4] = urllib.urlencode(params)
   return urlparse.urlunparse(parts)
 

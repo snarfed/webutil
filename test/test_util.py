@@ -199,10 +199,17 @@ class UtilTest(testutil.HandlerTest):
     for bad in None, 'http://foo]', 3.14, ['http://foo']:
       self.assertIsNone(util.clean_url(bad))
 
-    self.assertEquals('http://foo',
-                      util.clean_url('http://foo?utm_source=x&utm_campaign=y'))
-    self.assertEquals('http://foo?a=b&c=d',
-                      util.clean_url('http://foo?a=b&utm_source=x&c=d'))
+    self.assertEquals(
+      'http://foo',
+      util.clean_url('http://foo?utm_source=x&utm_campaign=y'
+                     '&source=rss----12b80d28f892---4'))
+    self.assertEquals(
+      'http://foo?a=b&c=d',
+      util.clean_url('http://foo?a=b&utm_source=x&c=d'
+                     '&source=rss----12b80d28f892---4'))
+    self.assertEquals(
+      'http://foo?source=not-rss',
+      util.clean_url('http://foo?&source=not-rss'))
 
   def test_dedupe_urls(self):
     self.assertEquals([], util.dedupe_urls([]))
