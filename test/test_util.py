@@ -329,6 +329,8 @@ class UtilTest(testutil.HandlerTest):
     pl = util.pretty_link
     self.assertEquals('<a href="http://foo">foo</a>', pl('http://foo'))
     self.assertEquals('<a href="http://foo/">foo</a>', pl('http://foo/'))
+    self.assertEquals('<a href="http://foo?bar=baz#biff">foo?bar=baz#biff</a>',
+                      pl('http://foo?bar=baz#biff'))
     self.assertEquals('<a attr="val" href="http://foo">foo</a>',
                       pl('http://foo', attrs={'attr': 'val'}))
     self.assertEquals('<a target="_blank" href="http://foo">foo</a>',
@@ -386,6 +388,8 @@ class UtilTest(testutil.HandlerTest):
     self.assertEquals('x <a href="http://foo.co">foo.co</a> y', lp('x http://foo.co y'))
     self.assertEquals('x <a href="http://www.foo.ly/baz/baj">foo.ly...</a> y',
                       lp('x http://www.foo.ly/baz/baj y'))
+    self.assertEquals('x <a href="http://foo.co/bar?baz=baj#biff">foo.co...</a> y',
+                      lp('x http://foo.co/bar?baz=baj#biff y'))
 
   def test_parse_iso8601(self):
     for str, offset in (
