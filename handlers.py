@@ -74,7 +74,26 @@ def redirect(from_domain, to_domain):
   return decorator
 
 
-class TemplateHandler(webapp2.RequestHandler):
+class ModernHandler(webapp2.RequestHandler):
+  """Base handler that adds modern open/secure headers like CORS, HSTS, etc."""
+  def __init__(self, *args, **kwargs):
+    super(ModernHandler, self).__init__(*args, **kwargs)
+    self.response.headers.update({
+      'Access-Control-Allow-Origin': '*',
+      # see https://content-security-policy.com/
+      'Content-Security-Policy':
+        "script-src https: localhost:8080 'unsafe-inline'; "
+        "frame-ancestors 'self'; "
+        "report-uri /csp-report; ",
+      # 16070400 seconds is 6 months
+      'Strict-Transport-Security': 'max-age=16070400; includeSubDomains; preload',
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'SAMEORIGIN',
+      'X-XSS-Protection': '1; mode=block',
+    })
+
+
+class TemplateHandler(ModernHandler):
   """Renders and serves a template based on class attributes.
 
   Subclasses must override template_file() and may also override template_vars()
@@ -94,11 +113,15 @@ class TemplateHandler(webapp2.RequestHandler):
     return 'text/html; charset=utf-8'
 
   def headers(self):
-    """Returns dict of HTTP response headers. Subclasses may override."""
+    """Returns dict of HTTP response headers. Subclasses may override.
+
+    To advertise XRDS, use:
+
+      headers['X-XRDS-Location'] = \
+          'https://%s/.well-known/host-meta.xrds' % appengine_config.HOST
+    """
     return {
       'Cache-Control': 'max-age=300',
-      'X-XRDS-Location': 'https://%s/.well-known/host-meta.xrds' %
-        appengine_config.HOST,
       'Access-Control-Allow-Origin': '*',
       }
 
