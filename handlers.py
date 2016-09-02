@@ -93,10 +93,6 @@ class TemplateHandler(webapp2.RequestHandler):
     """Returns the string content type."""
     return 'text/html; charset=utf-8'
 
-  def force_to_sequence(self):
-    """Returns variables that should be coerced to sequences if necessary."""
-    return set()
-
   def headers(self):
     """Returns dict of HTTP response headers. Subclasses may override."""
     return {
@@ -122,11 +118,6 @@ class TemplateHandler(webapp2.RequestHandler):
       vars[key] = values
 
     vars.update(self.template_vars())
-
-    for key in self.force_to_sequence():
-      val = vars.get(key, None)
-      if val is not None and not isinstance(val, (list, tuple)):
-        vars[key] = (val,)
 
     self.response.out.write(template.render(self.template_file(), vars))
 

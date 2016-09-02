@@ -90,15 +90,3 @@ class HandlersTest(testutil.HandlerTest):
     self.mox.ReplayAll()
 
     webapp2.WSGIApplication([('/', FakeTemplateHandler)]).get_response('/')
-
-  def test_template_handler_force_to_sequence(self):
-    class ForceFoo(FakeTemplateHandler):
-      def force_to_sequence(self):
-        return ['foo']
-
-    self.mox.StubOutWithMock(template, 'render')
-    template.render('my_template_file', {'host': 'localhost', 'foo': ('bar',)})\
-        .AndReturn('')
-    self.mox.ReplayAll()
-
-    webapp2.WSGIApplication([('/', ForceFoo)]).get_response('/')
