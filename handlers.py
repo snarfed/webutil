@@ -40,9 +40,11 @@ def handle_exception(self, e, debug):
   """
   code, body = util.interpret_http_exception(e)
   if code:
-    logging.warning(e)
     self.response.set_status(int(code))
     self.response.write('HTTP Error %s: %s' % (code, body))
+  elif util.is_connection_failure(e):
+    self.response.set_status(502)
+    self.response.write('Upstream server request failed: %s' % e)
   else:
     raise
 

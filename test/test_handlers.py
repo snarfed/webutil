@@ -3,6 +3,7 @@
 
 __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 
+import socket
 import urllib2
 
 from google.appengine.ext.webapp import template
@@ -26,23 +27,29 @@ class FakeTemplateHandler(handlers.TemplateHandler):
 class HandlersTest(testutil.HandlerTest):
 
   def test_handle_exception(self):
-    # HTTP exception
-    class HttpException(webapp2.RequestHandler):
+    class Handler(webapp2.RequestHandler):
       handle_exception = handlers.handle_exception
+      err = None
       def get(self):
-        raise urllib2.HTTPError('/', 408, 'foo bar', None, None)
+        raise self.err
 
-    resp = webapp2.WSGIApplication([('/', HttpException)]).get_response('/')
+    app = webapp2.WSGIApplication([('/', Handler)])
+
+    # HTTP exception
+    Handler.err = urllib2.HTTPError('/', 408, 'foo bar', None, None)
+    resp = app.get_response('/')
     self.assertEquals(408, resp.status_int)
     self.assertEquals('HTTP Error 408: foo bar', resp.body)
 
-    # other exception
-    class Assertion(webapp2.RequestHandler):
-      handle_exception = handlers.handle_exception
-      def get(self):
-        assert False
+    # network failure
+    Handler.err = socket.error('foo bar')
+    resp = app.get_response('/')
+    self.assertEquals(502, resp.status_int)
+    self.assertEquals('Upstream server request failed: foo bar', resp.body)
 
-    resp = webapp2.WSGIApplication([('/', Assertion)]).get_response('/')
+    # other exception
+    Handler.err = AssertionError('foo')
+    resp = app.get_response('/')
     self.assertEquals(500, resp.status_int)
 
   def test_redirect(self):
