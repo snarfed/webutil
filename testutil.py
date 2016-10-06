@@ -142,7 +142,11 @@ class TestCase(mox.MoxTestBase):
     if response_headers is not None:
       resp.headers.update(response_headers)
 
-    kwargs.setdefault('timeout', appengine_config.HTTP_TIMEOUT)
+    if 'timeout' not in kwargs:
+      kwargs['timeout'] = appengine_config.HTTP_TIMEOUT
+    elif kwargs['timeout'] is None:
+      del kwargs['timeout']
+
     if method is requests.head:
       kwargs['allow_redirects'] = True
 
