@@ -37,8 +37,10 @@ except ImportError:
 
 try:
   import requests
+  import urllib3
 except ImportError:
   requests = None
+  urllib3 = None
 
 try:
   from webob import exc
@@ -948,6 +950,7 @@ def is_connection_failure(exception):
       socket.error,  # base class for all socket exceptions, including socket.timeout
       urlfetch_errors.DownloadError,  # base class, e.g. for DeadlineExceededError
       urlfetch_errors.InternalTransientError,
+      urllib3.exceptions.HTTPError,
       )) or
       (isinstance(exception, urllib2.URLError) and
        isinstance(exception.reason, socket.error)) or
