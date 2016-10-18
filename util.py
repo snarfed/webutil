@@ -1023,7 +1023,8 @@ def urlopen(url_or_req, *args, **kwargs):
   else:
     url = url_or_req
 
-  logging.info('urlopen %s %s %s', 'POST' if data else 'GET', url, _prune(kwargs))
+  logging.info('urlopen %s %s %s', 'GET' if data is None else 'POST', url,
+               _prune(kwargs))
   kwargs.setdefault('timeout', HTTP_TIMEOUT)
   return urllib2.urlopen(url_or_req, *args, **kwargs)
 
