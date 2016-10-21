@@ -940,18 +940,29 @@ def is_connection_failure(exception):
 
   ...False otherwise.
   """
-  if (isinstance(exception, (
-      apiproxy_errors.CancelledError,
-      apiproxy_errors.DeadlineExceededError,
+  types = [
       httplib.ImproperConnectionState,
       httplib.NotConnected,
-      requests.ConnectionError,
-      requests.Timeout,
       socket.error,  # base class for all socket exceptions, including socket.timeout
+      urllib3.exceptions.HTTPError,
+  ]
+  if apiproxy_errors:
+    types += [
+      apiproxy_errors.CancelledError,
+      apiproxy_errors.DeadlineExceededError,
+    ]
+  if urlfetch_errors:
+    types += [
       urlfetch_errors.DownloadError,  # base class, e.g. for DeadlineExceededError
       urlfetch_errors.InternalTransientError,
-      urllib3.exceptions.HTTPError,
-      )) or
+    ]
+  if requests:
+    types += [
+      requests.ConnectionError,
+      requests.Timeout,
+    ]
+
+  if (isinstance(exception, tuple(types)) or
       (isinstance(exception, urllib2.URLError) and
        isinstance(exception.reason, socket.error)) or
       (isinstance(exception, httplib.HTTPException) and
