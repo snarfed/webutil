@@ -944,7 +944,6 @@ def is_connection_failure(exception):
       httplib.ImproperConnectionState,
       httplib.NotConnected,
       socket.error,  # base class for all socket exceptions, including socket.timeout
-      urllib3.exceptions.HTTPError,
   ]
   if apiproxy_errors:
     types += [
@@ -960,6 +959,7 @@ def is_connection_failure(exception):
     types += [
       requests.ConnectionError,
       requests.Timeout,
+      urllib3.exceptions.HTTPError,
     ]
 
   if (isinstance(exception, tuple(types)) or
