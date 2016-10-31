@@ -1,11 +1,8 @@
-#!/usr/bin/env python
 """Request handler utility classes.
 
 Includes classes for serving templates with common variables and XRD[S] and JRD
 files like host-meta and friends.
 """
-
-__author__ = 'Ryan Barrett <webutil@ryanb.org>'
 
 import logging
 import os
@@ -13,7 +10,7 @@ import urllib2
 import urlparse
 
 import appengine_config
-from google.appengine.ext.webapp import template
+import jinja2
 import webapp2
 
 import util
@@ -144,7 +141,9 @@ class TemplateHandler(ModernHandler):
 
     vars.update(self.template_vars())
 
-    self.response.out.write(template.render(self.template_file(), vars))
+    env = jinja2.Environment(loader=jinja2.FileSystemLoader(('.', '/')),
+                             autoescape=True)
+    self.response.out.write(env.get_template(self.template_file()).render(**vars))
 
 
 class XrdOrJrdHandler(TemplateHandler):

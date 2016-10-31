@@ -1,12 +1,12 @@
 """Unit tests for handlers.py.
 """
 
-__author__ = ['Ryan Barrett <webutil@ryanb.org>']
-
+import os
 import socket
+import traceback
 import urllib2
 
-from google.appengine.ext.webapp import template
+import jinja2
 import webapp2
 
 import handlers
@@ -15,13 +15,17 @@ import testutil
 
 class FakeTemplateHandler(handlers.TemplateHandler):
   def template_file(self):
-    return 'my_template_file'
+    return os.path.join(os.path.dirname(__file__), 'test_handler_get.tmpl')
 
   def template_vars(self):
     return {'foo': 'bar'}
 
   def content_type(self):
     return 'text/baz'
+
+  def handle_exception(self, e, debug):
+    traceback.print_exc()
+    raise e
 
 
 class HandlersTest(testutil.HandlerTest):
@@ -91,9 +95,8 @@ class HandlersTest(testutil.HandlerTest):
       self.assertNotIn('Location', resp.headers)
 
   def test_template_handler_get(self):
-    self.mox.StubOutWithMock(template, 'render')
-    template.render('my_template_file', {'host': 'localhost', 'foo': 'bar'})\
-        .AndReturn('')
-    self.mox.ReplayAll()
+    resp = webapp2.WSGIApplication([('/', FakeTemplateHandler)]).get_response('/')
+    self.assertEquals("""\
+my host: localhost
+my foo: bar""", resp.body)
 
-    webapp2.WSGIApplication([('/', FakeTemplateHandler)]).get_response('/')
