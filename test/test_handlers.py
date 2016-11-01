@@ -6,6 +6,7 @@ import socket
 import traceback
 import urllib2
 
+from google.appengine.ext.webapp import template
 import jinja2
 import webapp2
 
@@ -94,9 +95,18 @@ class HandlersTest(testutil.HandlerTest):
       self.assertEquals(205, resp.status_int)
       self.assertNotIn('Location', resp.headers)
 
-  def test_template_handler_get(self):
+  def test_template_handler_get_jinja(self):
     resp = webapp2.WSGIApplication([('/', FakeTemplateHandler)]).get_response('/')
     self.assertEquals("""\
 my host: localhost
 my foo: bar""", resp.body)
 
+  def test_template_handler_get_appengine_webapp(self):
+    class WebappTemplateHandler(FakeTemplateHandler):
+      USE_APPENGINE_WEBAPP = True
+
+    self.mox.StubOutWithMock(template, 'render')
+    filename = WebappTemplateHandler(self.request, self.response).template_file()
+    template.render(filename, {'host': 'localhost', 'foo': 'bar'}).AndReturn('')
+    self.mox.ReplayAll()
+    webapp2.WSGIApplication([('/', WebappTemplateHandler)]).get_response('/')

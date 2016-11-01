@@ -10,6 +10,7 @@ import urllib2
 import urlparse
 
 import appengine_config
+from google.appengine.ext.webapp import template
 import jinja2
 import webapp2
 
@@ -98,6 +99,8 @@ class TemplateHandler(ModernHandler):
   Subclasses must override template_file() and may also override template_vars()
   and content_type().
   """
+  # set to True to use google.appengine.ext.webapp.template instead of jinja2
+  USE_APPENGINE_WEBAPP = False
 
   def template_file(self):
     """Returns the string template file path."""
@@ -141,9 +144,12 @@ class TemplateHandler(ModernHandler):
 
     vars.update(self.template_vars())
 
-    env = jinja2.Environment(loader=jinja2.FileSystemLoader(('.', '/')),
-                             autoescape=True)
-    self.response.out.write(env.get_template(self.template_file()).render(**vars))
+    if self.USE_APPENGINE_WEBAPP:
+      self.response.out.write(template.render(self.template_file(), vars))
+    else:
+      env = jinja2.Environment(loader=jinja2.FileSystemLoader(('.', '/')),
+                               autoescape=True)
+      self.response.out.write(env.get_template(self.template_file()).render(**vars))
 
 
 class XrdOrJrdHandler(TemplateHandler):
