@@ -41,6 +41,8 @@ concurrents = []  # a heapq. stores Concurrents
 
 
 class InfoHandler(handlers.TemplateHandler):
+  USE_APPENGINE_WEBAPP = True
+
   def template_file(self):
     return os.path.join(os.path.dirname(__file__),
                         'templates/instance_info.html')
