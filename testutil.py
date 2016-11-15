@@ -42,7 +42,7 @@ def get_task_eta(task):
 
 
 class UrlopenResult(object):
-  """A fake urllib2.urlopen() result object. Also works for urlfetch.fetch().
+  """A fake :func:`urllib2.urlopen()` or :func:`urlfetch.fetch()` result object.
   """
   def __init__(self, status_code, content, url=None, headers={}):
     self.status_code = status_code
@@ -165,17 +165,18 @@ class TestCase(mox.MoxTestBase):
 
   def expect_urlopen(self, url, response=None, status=200, data=None,
                      headers=None, response_headers={}, **kwargs):
-    """Stubs out urllib2.urlopen() and sets up an expected call.
+    """Stubs out :func:`urllib2.urlopen()` and sets up an expected call.
 
-    If status isn't 2xx, makes the expected call raise a urllib2.HTTPError
-    instead of returning the response.
+    If status isn't 2xx, makes the expected call raise a
+    :class:`urllib2.HTTPError` instead of returning the response.
 
-    If data is set, url *must* be a urllib2.Request.
+    If data is set, url *must* be a :class:`urllib2.Request`.
 
     If response is unset, returns the expected call.
 
     Args:
-      url: string, re.RegexObject or urllib2.Request or webob.Request
+      url: string, :class:`re.RegexObject` or :class:`urllib2.Request` or
+        :class:`webob.Request`
       response: string
       status: int, HTTP response code
       data: optional string POST body
@@ -232,7 +233,8 @@ class TestCase(mox.MoxTestBase):
     have populated keys, that their keys are equal too.
 
     Args:
-      a, b: db.Model or ndb.Model instances or lists of instances
+      a, b: :class:`db.Model` or :class:`ndb.Model` instances or
+        lists of instances
       ignore: sequence of strings, property names not to compare
       keys_only: boolean, if True only compare keys
       in_order: boolean. If False, all entities must have keys.
@@ -362,8 +364,8 @@ class HandlerTest(TestCase):
   http://code.google.com/appengine/docs/python/tools/localunittesting.html
 
   Attributes:
-    application: WSGIApplication
-    handler: webapp2.RequestHandler
+    application: :class:`webapp2.WSGIApplication`
+    handler: :class:`webapp2.RequestHandler`
   """
   def setUp(self):
     super(HandlerTest, self).setUp()

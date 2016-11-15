@@ -170,7 +170,7 @@ _TAG_URI_RE = re.compile('tag:([^,]+)(?:,\d+)?:(.+)$')
 def parse_tag_uri(uri):
   """Returns the domain and name in a tag URI string.
 
-  Inverse of tag_uri().
+  Inverse of :func:`tag_uri()`.
 
   Returns: (string domain, string name) tuple, or None if the tag URI couldn't
     be parsed
@@ -246,13 +246,14 @@ def domain_from_link(url):
 def domain_or_parent_in(input, domains):
   """Returns True if an input domain or its parent is in a set of domains.
 
-  Examples:
-    foo, [] => False
-    foo, [foo] => True
-    foo.bar.com, [bar.com] => True
-    foo.bar.com, [.bar.com] => True
-    foo.bar.com, [fux.bar.com] => False
-    bar.com, [fux.bar.com] => False
+  Examples::
+
+      foo, [] => False
+      foo, [foo] => True
+      foo.bar.com, [bar.com] => True
+      foo.bar.com, [.bar.com] => True
+      foo.bar.com, [fux.bar.com] => False
+      bar.com, [fux.bar.com] => False
 
   Args:
     input: string domain
@@ -348,7 +349,7 @@ def clean_url(url):
 
 
 def base_url(url):
-  """Returns the base of a given URL
+  """Returns the base of a given URL.
 
   For example, returns 'http://site/posts/' for 'http://site/posts/123'.
 
@@ -388,17 +389,16 @@ _LINKIFY_RE = re.compile(r"""
 
 
 def tokenize_links(text, skip_bare_cc_tlds=False):
-  """Split text into link and non-link text, returning two lists
-  roughly equivalent to the output of re.findall and re.split (with
-  some post-processing)
+  """Splits text into link and non-link text.
 
   Args:
     text: string to linkify
     skip_bare_cc_tlds: boolean, whether to skip links of the form
       [domain].[2-letter TLD] with no schema and no path
 
-  Returns: a tuple containing two lists of strings, a list of links
-  and list of non-link text
+  Returns: a tuple containing two lists of strings, a list of links and list of
+  non-link text. Roughly equivalent to the output of re.findall and re.split,
+  with some post-processing.
   """
   links = _LINKIFY_RE.findall(text)
   splits = _LINKIFY_RE.split(text)
@@ -442,15 +442,15 @@ def tokenize_links(text, skip_bare_cc_tlds=False):
 def linkify(text, pretty=False, skip_bare_cc_tlds=False, **kwargs):
   """Adds HTML links to URLs in the given plain text.
 
-  For example: linkify("Hello http://tornadoweb.org!") would return
-  Hello <a href="http://tornadoweb.org">http://tornadoweb.org</a>!
+  For example: ``linkify('Hello http://tornadoweb.org!')`` would return
+  'Hello <a href="http://tornadoweb.org">http://tornadoweb.org</a>!'
 
   Ignores URLs that are inside HTML links, ie anchor tags that look like
   <a href="..."> .
 
   Args:
     text: string, input
-    pretty: if True, uses pretty_link() for link text
+    pretty: if True, uses :func:`pretty_link()` for link text
 
   Returns: string, linkified input
   """
@@ -483,8 +483,8 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
 
   The default maximum length follow's Twitter's rules: full domain plus 15
   characters of path (including leading slash).
-  https://dev.twitter.com/docs/tco-link-wrapper/faq
-  https://dev.twitter.com/docs/counting-characters
+  * https://dev.twitter.com/docs/tco-link-wrapper/faq
+  * https://dev.twitter.com/docs/counting-characters
 
   Args:
     url: string
@@ -643,7 +643,7 @@ def add_query_params(url, params):
   """Adds new query parameters to a URL. Encodes as UTF-8 and URL-safe.
 
   Args:
-    url: string URL or urllib2.Request. May already have query parameters.
+    url: string URL or :class:`urllib2.Request`. May already have query parameters.
     params: dict or list of (string key, string value) tuples. Keys may repeat.
 
   Returns: string URL
@@ -761,7 +761,7 @@ def if_changed(cache, updates, key, value):
 def generate_secret():
   """Generates a URL-safe random secret string.
 
-  Uses App Engine's os.urandom(), which is designed to be cryptographically
+  Uses App Engine's `os.urandom()`, which is designed to be cryptographically
   secure: http://code.google.com/p/googleappengine/issues/detail?id=1055
 
   Args:
@@ -800,13 +800,13 @@ def interpret_http_exception(exception):
 
   Args:
     exception: one of:
-      apiclient.errors.HttpError
-      exc.WSGIHTTPException
-      gdata.client.RequestError
-      oauth2client.client.AccessTokenRefreshError
-      requests.HTTPError
-      urllib2.HTTPError
-      urllib2.URLError
+    * `apiclient.errors.HttpError`
+    * `exc.WSGIHTTPException`
+    * `gdata.client.RequestError`
+    * `oauth2client.client.AccessTokenRefreshError`
+    * `requests.HTTPError`
+    * `urllib2.HTTPError`
+    * `urllib2.URLError`
 
   Returns: (string status code or None, string response body or None)
   """
@@ -1079,10 +1079,10 @@ def follow_redirects(url, cache=None, fail_cache_time_secs = 60 * 60 * 24,  # a 
     cache: optional, a cache object to read and write resolved URLs to. Must
       have get(key) and set(key, value, time=...) methods. Stores
       'R [original URL]' in key, final URL in value.
-    **kwargs: passed to requests.head()
+    kwargs: passed to requests.head()
 
   Returns:
-    the requests.Response for the final request. The `url` attribute has the
+    the `requests.Response` for the final request. The `url` attribute has the
       final URL.
   """
   if cache is not None:
@@ -1139,27 +1139,29 @@ class UrlCanonicalizer(object):
 
   If we HEAD the URL to follow redirects and it returns 4xx or 5xx, we return
   None.
-
-  Constructor kwargs (all optional):
-    scheme: string canonical scheme for this source (default 'https')
-    domain: string canonical domain for this source (default None). If set,
-      links on other domains will be rejected without following redirects.
-    subdomain: string canonical subdomain, e.g. 'www' (default none, ie root
-      domain). only added if there's not already a subdomain.
-    approve: string regexp matching URLs that are automatically considered
-      canonical
-    reject: string regexp matching URLs that are automatically considered
-      canonical
-    query: boolean, whether to keep query params, if any (default False)
-    fragment: boolean, whether to keep fragment, if any (default False)
-    trailing slash: boolean, whether the path should end in / (default False)
-    redirects: boolean, whether to make HTTP HEAD requests to follow
-      redirects (default True)
-    headers: passed through to the requests.head call for following redirects
   """
   def __init__(self, scheme='https', domain=None, subdomain=None, approve=None,
                reject=None, query=False, fragment=False, trailing_slash=False,
                redirects=True, headers=None):
+    """Constructor.
+
+    Args:
+      scheme: string canonical scheme for this source (default 'https')
+      domain: string canonical domain for this source (default None). If set,
+        links on other domains will be rejected without following redirects.
+      subdomain: string canonical subdomain, e.g. 'www' (default none, ie root
+        domain). only added if there's not already a subdomain.
+      approve: string regexp matching URLs that are automatically considered
+        canonical
+      reject: string regexp matching URLs that are automatically considered
+        canonical
+      query: boolean, whether to keep query params, if any (default False)
+      fragment: boolean, whether to keep fragment, if any (default False)
+      trailing slash: boolean, whether the path should end in / (default False)
+      redirects: boolean, whether to make HTTP HEAD requests to follow
+        redirects (default True)
+      headers: passed through to the requests.head call for following redirects
+    """
     self.scheme = scheme
     self.domain = domain
     self.subdomain = subdomain

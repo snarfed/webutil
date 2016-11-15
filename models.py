@@ -36,9 +36,9 @@ class KeyNameModel(db.Model):
 class SingleEGModel(db.Model):
   """A model class that stores all entities in a single entity group.
 
-  All entities use the same parent key (below), and all() automatically adds it
-  as an ancestor. That allows, among other things, fetching all entities of
-  this kind with strong consistency.
+  All entities use the same parent key (below), and :meth:`all()` automatically
+  adds it as an ancestor. That allows, among other things, fetching all entities
+  of this kind with strong consistency.
   """
 
   def enforce_parent(fn):

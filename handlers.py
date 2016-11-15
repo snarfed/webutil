@@ -20,21 +20,20 @@ import util
 def handle_exception(self, e, debug):
   """A webapp2 exception handler that propagates HTTP exceptions into the response.
 
-  Use this as a webapp2.RequestHandler handle_exception() method by adding this
-  line to your handler class definition:
+  Use this as a `webapp2.RequestHandler` `handle_exception()` method by
+  adding this line to your handler class definition::
 
     handle_exception = handlers.handle_exception
 
   I originally tried to put this in a RequestHandler subclass, but it gave me
-  this exception:
+  this exception::
 
-  File ".../webapp2-2.5.1/webapp2_extras/local.py", line 136, in _get_current_object
-    raise RuntimeError('no object bound to %s' % self.__name__)
-    RuntimeError: no object bound to app
+    File ".../webapp2-2.5.1/webapp2_extras/local.py", line 136, in _get_current_object
+      raise RuntimeError('no object bound to %s' % self.__name__) RuntimeError: no object bound to app
 
   These are probably related:
-  http://eemyop.blogspot.com/2013/05/digging-around-in-webapp2-finding-out.html
-  http://code.google.com/p/webapp-improved/source/detail?r=d962ac4625ce3c43a3e59fd7fc07daf8d7b7c46a
+  * http://eemyop.blogspot.com/2013/05/digging-around-in-webapp2-finding-out.html
+  * http://code.google.com/p/webapp-improved/source/detail?r=d962ac4625ce3c43a3e59fd7fc07daf8d7b7c46a
   """
   code, body = util.interpret_http_exception(e)
   if code:
@@ -48,7 +47,7 @@ def handle_exception(self, e, debug):
 
 
 def redirect(from_domain, to_domain):
-  """Decorator for RequestHandler methods that 301 redirects to a new domain.
+  """Decorator for `RequestHandler` methods that 301 redirects to a new domain.
 
   Preserves scheme, path, and query.
 
@@ -96,8 +95,8 @@ class ModernHandler(webapp2.RequestHandler):
 class TemplateHandler(ModernHandler):
   """Renders and serves a template based on class attributes.
 
-  Subclasses must override template_file() and may also override template_vars()
-  and content_type().
+  Subclasses must override :meth:`template_file()` and may also override
+  :meth:`template_vars()` and :meth:`content_type()`.
   """
   # set to True to use google.appengine.ext.webapp.template instead of jinja2
   USE_APPENGINE_WEBAPP = False
@@ -117,10 +116,9 @@ class TemplateHandler(ModernHandler):
   def headers(self):
     """Returns dict of HTTP response headers. Subclasses may override.
 
-    To advertise XRDS, use:
+    To advertise XRDS, use::
 
-      headers['X-XRDS-Location'] = \
-          'https://%s/.well-known/host-meta.xrds' % appengine_config.HOST
+      headers['X-XRDS-Location'] = 'https://%s/.well-known/host-meta.xrds' % appengine_config.HOST
     """
     return {
       'Cache-Control': 'max-age=300',
@@ -159,7 +157,7 @@ class XrdOrJrdHandler(TemplateHandler):
   include 'format=json', or the request headers include
   'Accept: application/json'.
 
-  Subclasses must override template_prefix().
+  Subclasses must override :meth:`template_prefix()`.
   """
   def content_type(self):
     return 'application/json' if self.is_jrd() else 'application/xrd+xml'

@@ -9,11 +9,11 @@ be reported as 0.
 (The docs say it's deprecated because it's part of Backends, which is replaced
 by Modules, but I haven't found a corresponding part of the Modules API.)
 
-To turn on concurrent request recording, add this to your appengine_config.py:
+To turn on concurrent request recording, add this to your appengine_config.py::
 
-def webapp_add_wsgi_middleware(app):
-  from webutil import instance_info
-  app = instance_info.concurrent_requests_wsgi_middleware(app)
+  def webapp_add_wsgi_middleware(app):
+    from webutil import instance_info
+    app = instance_info.concurrent_requests_wsgi_middleware(app)
 """
 
 import collections
