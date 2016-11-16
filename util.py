@@ -37,10 +37,17 @@ except ImportError:
 
 try:
   import requests
-  import urllib3
 except ImportError:
   requests = None
-  urllib3 = None
+
+try:
+  import urllib3
+except ImportError:
+  if requests:
+    try:
+      from requests .packages import urllib3
+    except ImportError:
+      urllib3 = None
 
 try:
   from webob import exc
@@ -959,8 +966,10 @@ def is_connection_failure(exception):
     types += [
       requests.ConnectionError,
       requests.Timeout,
-      urllib3.exceptions.HTTPError,
     ]
+
+  if urllib3:
+    types += [urllib3.exceptions.HTTPError]
 
   if (isinstance(exception, tuple(types)) or
       (isinstance(exception, urllib2.URLError) and
