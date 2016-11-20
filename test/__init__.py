@@ -1,17 +1,21 @@
-# Add the App Engine SDK's bundled libraries (django, webob, yaml, etc.) to
-# sys.path so we can use them instead of adding them all to tests_require in
-# setup.py.
-# https://cloud.google.com/appengine/docs/python/tools/localunittesting#Python_Setting_up_a_testing_framework
-import dev_appserver
-dev_appserver.fix_sys_path()
+import logging, os, sys
 
-# Also use the App Engine SDK's mox because it has bug fixes that aren't in pypi
-# 0.5.3. (Annoyingly, they both say they're version 0.5.3.)
-import os, sys
-sys.path.append(os.path.join(dev_appserver._DIR_PATH, 'lib', 'mox'))
+try:
+  # Add the App Engine SDK's bundled libraries (django, webob, yaml, etc.) to
+  # sys.path so we can use them instead of adding them all to tests_require in
+  # setup.py.
+  # https://cloud.google.com/appengine/docs/python/tools/localunittesting#Python_Setting_up_a_testing_framework
+  import dev_appserver
+  dev_appserver.fix_sys_path()
+
+  # Also use the App Engine SDK's mox because it has bug fixes that aren't in pypi
+  # 0.5.3. (Annoyingly, they both say they're version 0.5.3.)
+  sys.path.append(os.path.join(dev_appserver._DIR_PATH, 'lib', 'mox'))
+
+except ImportError:
+  logging.warning("Couldn't load App Engine SDK!")
 
 # Piggyback on unittest's -v and -q flags to show/hide logging.
-import logging
 if 'discover' in sys.argv or '-q' in sys.argv or '--quiet' in sys.argv:
   logging.disable(logging.CRITICAL + 1)
 elif '-v' in sys.argv:
@@ -27,7 +31,6 @@ filesystem.load_template_source = filesystem._loader.load_template_source
 # dumb hack to add the webutil dir to sys.path so the tests can be run from
 # oauth-dropins even though they import webutil modules as top level
 # (ie not from oauth_dropins.webutil import ...)
-import os, sys
 pkg = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
 if pkg not in sys.path:
   sys.path.append(pkg)
