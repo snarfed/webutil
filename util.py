@@ -179,7 +179,8 @@ def parse_tag_uri(uri):
 
   Inverse of :func:`tag_uri()`.
 
-  Returns: (string domain, string name) tuple, or None if the tag URI couldn't
+  Returns:
+    (string domain, string name) tuple, or None if the tag URI couldn't
     be parsed
   """
   match = _TAG_URI_RE.match(uri)
@@ -195,7 +196,8 @@ def parse_acct_uri(uri, hosts=None):
     uri: string
     hosts: sequence of allowed hosts (usually domains). None means allow all.
 
-  Returns: (username, host) tuple
+  Returns:
+    (username, host) tuple
 
   Raises: ValueError if the uri is invalid or the host isn't allowed.
   """
@@ -233,7 +235,8 @@ def domain_from_link(url):
   Args:
     url: string
 
-  Returns: string
+  Returns:
+    string
   """
   parsed = urlparse.urlparse(url)
   if not parsed.hostname and '//' not in url:
@@ -266,7 +269,8 @@ def domain_or_parent_in(input, domains):
     input: string domain
     domains: sequence of string domains
 
-  Returns: boolean
+  Returns:
+    boolean
   """
   if not input or not domains:
     return False
@@ -307,7 +311,8 @@ def schemeless(url, slashes=True):
     leading_slashes: if False, also strips leading slashes and trailing slash,
       e.g. 'http://example.com/' becomes 'example.com'
 
-  Returns: string URL
+  Returns:
+    string URL
   """
   url = urlparse.urlunparse(('',) + urlparse.urlparse(url)[1:])
   if not slashes:
@@ -321,7 +326,8 @@ def fragmentless(url):
   Args:
     url: string
 
-  Returns: string URL
+  Returns:
+    string URL
   """
   return urlparse.urlunparse(urlparse.urlparse(url)[:5] + ('',))
 
@@ -337,7 +343,8 @@ def clean_url(url):
   Args:
     url: string
 
-  Returns: string, the cleaned url, or None if it can't be parsed
+  Returns:
+    string, the cleaned url, or None if it can't be parsed
   """
   utm_params = set(('utm_campaign', 'utm_content', 'utm_medium', 'utm_source',
                     'utm_term'))
@@ -403,9 +410,10 @@ def tokenize_links(text, skip_bare_cc_tlds=False):
     skip_bare_cc_tlds: boolean, whether to skip links of the form
       [domain].[2-letter TLD] with no schema and no path
 
-  Returns: a tuple containing two lists of strings, a list of links and list of
-  non-link text. Roughly equivalent to the output of re.findall and re.split,
-  with some post-processing.
+  Returns:
+    a tuple containing two lists of strings, a list of links and list of
+    non-link text. Roughly equivalent to the output of re.findall and re.split,
+    with some post-processing.
   """
   links = _LINKIFY_RE.findall(text)
   splits = _LINKIFY_RE.split(text)
@@ -459,7 +467,8 @@ def linkify(text, pretty=False, skip_bare_cc_tlds=False, **kwargs):
     text: string, input
     pretty: if True, uses :func:`pretty_link()` for link text
 
-  Returns: string, linkified input
+  Returns:
+    string, linkified input
   """
 
   links, splits = tokenize_links(text, skip_bare_cc_tlds)
@@ -503,7 +512,8 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
     new_tab: boolean, include target="_blank" if True
     max_length: int, max link text length in characters. ellipsized beyond this.
 
-  Returns: unicode string HTML snippet with <a> tag
+  Returns:
+    unicode string HTML snippet with <a> tag
   """
   if text:
     if max_length is None:
@@ -563,7 +573,8 @@ def parse_iso8601(str):
   Args:
     str: string ISO 8601 or RFC 3339, e.g. '2012-07-23T05:54:49+00:00'
 
-  Returns: datetime
+  Returns:
+    datetime
   """
   # grr, this would be way easier if strptime supported %z, but evidently that
   # was only added in python 3.2.
@@ -653,7 +664,8 @@ def add_query_params(url, params):
     url: string URL or :class:`urllib2.Request`. May already have query parameters.
     params: dict or list of (string key, string value) tuples. Keys may repeat.
 
-  Returns: string URL
+  Returns:
+    string URL
   """
   is_request = isinstance(url, urllib2.Request)
   if is_request:
@@ -746,7 +758,8 @@ def if_changed(cache, updates, key, value):
     key: anything supported by cache
     value: anything supported by cache
 
-  Returns: value or None
+  Returns:
+    value or None
   """
   if cache is None:
     return value
@@ -774,7 +787,8 @@ def generate_secret():
   Args:
     bytes: integer, length of string to generate
 
-  Returns: random string
+  Returns:
+    random string
   """
   return base64.urlsafe_b64encode(os.urandom(16))
 
@@ -815,7 +829,8 @@ def interpret_http_exception(exception):
     * `urllib2.HTTPError`
     * `urllib2.URLError`
 
-  Returns: (string status code or None, string response body or None)
+  Returns:
+    (string status code or None, string response body or None)
   """
   e = exception
   code = body = None
@@ -1020,7 +1035,8 @@ def load_file_lines(file):
   Args:
     file: a file object or other iterable that returns lines
 
-  Returns: set of strings
+  Returns:
+    set of strings
   """
   items = set()
 
