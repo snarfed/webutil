@@ -176,7 +176,7 @@ class TestCase(mox.MoxTestBase):
 
     Args:
       url: string, :class:`re.RegexObject` or :class:`urllib2.Request` or
-        :class:`webob.Request`
+        :class:`webob.request.Request`
       response: string
       status: int, HTTP response code
       data: optional string POST body
@@ -233,8 +233,9 @@ class TestCase(mox.MoxTestBase):
     have populated keys, that their keys are equal too.
 
     Args:
-      a, b: :class:`db.Model` or :class:`ndb.Model` instances or
+      a: :class:`db.Model` or :class:`ndb.Model` instances or
         lists of instances
+      b: same
       ignore: sequence of strings, property names not to compare
       keys_only: boolean, if True only compare keys
       in_order: boolean. If False, all entities must have keys.

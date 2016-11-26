@@ -256,14 +256,14 @@ def domain_from_link(url):
 def domain_or_parent_in(input, domains):
   """Returns True if an input domain or its parent is in a set of domains.
 
-  Examples::
+  Examples:
 
-      foo, [] => False
-      foo, [foo] => True
-      foo.bar.com, [bar.com] => True
-      foo.bar.com, [.bar.com] => True
-      foo.bar.com, [fux.bar.com] => False
-      bar.com, [fux.bar.com] => False
+  * foo, [] => False
+  * foo, [foo] => True
+  * foo.bar.com, [bar.com] => True
+  * foo.bar.com, [.bar.com] => True
+  * foo.bar.com, [fux.bar.com] => False
+  * bar.com, [fux.bar.com] => False
 
   Args:
     input: string domain
@@ -499,6 +499,7 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
 
   The default maximum length follow's Twitter's rules: full domain plus 15
   characters of path (including leading slash).
+
   * https://dev.twitter.com/docs/tco-link-wrapper/faq
   * https://dev.twitter.com/docs/counting-characters
 
@@ -820,14 +821,15 @@ def interpret_http_exception(exception):
   """Extracts the status code and response from different HTTP exception types.
 
   Args:
-    exception: one of:
-    * `apiclient.errors.HttpError`
-    * `exc.WSGIHTTPException`
-    * `gdata.client.RequestError`
-    * `oauth2client.client.AccessTokenRefreshError`
-    * `requests.HTTPError`
-    * `urllib2.HTTPError`
-    * `urllib2.URLError`
+    exception: an HTTP request exception. Supported types:
+
+      * :class:`apiclient.errors.HttpError`
+      * :class:`webob.exc.WSGIHTTPException`
+      * :class:`gdata.client.RequestError`
+      * :class:`oauth2client.client.AccessTokenRefreshError`
+      * :class:`requests.HTTPError`
+      * :class:`urllib2.HTTPError`
+      * :class:`urllib2.URLError`
 
   Returns:
     (string status code or None, string response body or None)
