@@ -743,7 +743,9 @@ class UtilTest(testutil.HandlerTest):
   def test_is_connection_failure(self):
     for e in (socket.timeout(), socket.error(), requests.ConnectionError(),
               httplib.NotConnected(), urllib2.URLError(socket.gaierror('foo bar')),
-              urllib3.exceptions.TimeoutError()):
+              urllib3.exceptions.TimeoutError(),
+              Exception('Connection closed unexpectedly by server at URL: ...'),
+    ):
       assert util.is_connection_failure(e), e
 
     for e in (None, 3, 'asdf', IOError(), httplib.HTTPException('unknown'),

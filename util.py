@@ -988,11 +988,13 @@ def is_connection_failure(exception):
   if urllib3:
     types += [urllib3.exceptions.HTTPError]
 
+  msg = unicode(exception)
   if (isinstance(exception, tuple(types)) or
       (isinstance(exception, urllib2.URLError) and
        isinstance(exception.reason, socket.error)) or
       (isinstance(exception, httplib.HTTPException) and
-       'Deadline exceeded' in exception.message)
+       'Deadline exceeded' in msg) or
+      'Connection closed unexpectedly' in msg  # tweepy.TweepError
      ):
     logging.info('Connection failure: ', exc_info=True)
     return True
