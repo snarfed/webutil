@@ -1,6 +1,7 @@
 """Unit tests for handlers.py.
 """
 
+import datetime
 import os
 import socket
 import traceback
@@ -110,3 +111,33 @@ my foo: bar""", resp.body)
     template.render(filename, {'host': 'localhost', 'foo': 'bar'}).AndReturn('')
     self.mox.ReplayAll()
     webapp2.WSGIApplication([('/', WebappTemplateHandler)]).get_response('/')
+
+  def test_memcache_response(self):
+    class Handler(webapp2.RequestHandler):
+      calls = 0
+
+      @handlers.memcache_response(datetime.timedelta(days=1))
+      def get(self):
+        Handler.calls += 1
+        self.response.set_status(204)
+        self.response.out.write('got %s' % self.request.url)
+
+    app = webapp2.WSGIApplication([('.*', Handler)])
+
+    # first fetch populates the cache
+    resp = app.get_response('/?x')
+    self.assertEquals(1, Handler.calls)
+    self.assertEquals(204, resp.status_int)
+    self.assertEquals('got http://localhost/?x', resp.body)
+
+    # second fetch should use the cache instead of fetching from the silo
+    resp = app.get_response('/?x')
+    self.assertEquals(1, Handler.calls)
+    self.assertEquals(204, resp.status_int)
+    self.assertEquals('got http://localhost/?x', resp.body)
+
+    # a different URL shouldn't be cached
+    resp = app.get_response('/?y')
+    self.assertEquals(2, Handler.calls)
+    self.assertEquals(204, resp.status_int)
+    self.assertEquals('got http://localhost/?y', resp.body)

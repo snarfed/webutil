@@ -11,6 +11,7 @@ import urlparse
 
 import appengine_config
 from google.appengine.ext.webapp import template
+from google.appengine.api import memcache
 import jinja2
 import webapp2
 
@@ -75,6 +76,30 @@ def redirect(from_domain, to_domain):
   return decorator
 
 
+def memcache_response(expiration):
+  """:class:`webapp2.RequestHandler` decorator that memcaches the response.
+
+  Args:
+    expiration: :class:`datetime.timedelta`
+  """
+  def decorator(method):
+    def wrapper(self, *args, **kwargs):
+      cache_key = 'memcache_response %s' % self.request.url
+      cached = memcache.get(cache_key)
+      if cached:
+        logging.info('Serving cached response %r', cache_key)
+        return cached
+
+      resp = method(self, *args, **kwargs)
+
+      logging.info('Caching response in %r', cache_key)
+      memcache.set(cache_key, resp or self.response, expiration.total_seconds())
+
+    return wrapper
+
+  return decorator
+
+
 class ModernHandler(webapp2.RequestHandler):
   """Base handler that adds modern open/secure headers like CORS, HSTS, etc."""
   def __init__(self, *args, **kwargs):
@@ -89,6 +114,7 @@ class ModernHandler(webapp2.RequestHandler):
       # 16070400 seconds is 6 months
       'Strict-Transport-Security': 'max-age=16070400; includeSubDomains; preload',
       'X-Content-Type-Options': 'nosniff',
+      # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options
       'X-Frame-Options': 'SAMEORIGIN',
       'X-XSS-Protection': '1; mode=block',
     })
