@@ -856,7 +856,7 @@ def interpret_http_exception(exception):
     # yes, flickr returns 400s when they're down. kinda ridiculous. fix that.
     if (code == '400' and
         'Sorry, the Flickr API service is not currently available' in body):
-      code = '503'
+      code = '504'
 
   elif isinstance(e, urllib2.URLError):
     body = e.reason
@@ -870,11 +870,11 @@ def interpret_http_exception(exception):
     body = e.content
 
   elif AccessTokenRefreshError and isinstance(e, AccessTokenRefreshError):
-    body = str(e)
+    body = unicode(e)
     if body.startswith('invalid_grant'):
       code = '401'
     elif body.startswith('internal_failure'):
-      code = '500'
+      code = '502'
 
   # hack to interpret gdata.client.RequestError since gdata isn't a dependency
   elif e.__class__.__name__ == 'RequestError':
@@ -942,6 +942,14 @@ def interpret_http_exception(exception):
   if (code == '400' and type == 'OAuthException' and
       'Page request limited reached' in message):
     code = '429'
+
+  # upstream errors and connection failures become 502s and 504s, respectively
+  if code == '500':
+    code = '502'
+  elif is_connection_failure(e):
+    code = '504'
+    if not body:
+      body = unicode(e)
 
   if orig_code != code:
     logging.info('Converting code %s to %s', orig_code, code)

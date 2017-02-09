@@ -50,7 +50,7 @@ class HandlersTest(testutil.HandlerTest):
     # network failure
     Handler.err = socket.error('foo bar')
     resp = app.get_response('/')
-    self.assertEquals(502, resp.status_int)
+    self.assertEquals(504, resp.status_int)
     self.assertEquals('Upstream server request failed: foo bar', resp.body)
 
     # other exception
