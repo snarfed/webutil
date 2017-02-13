@@ -854,8 +854,9 @@ def interpret_http_exception(exception):
         body = e.reason
 
     # yes, flickr returns 400s when they're down. kinda ridiculous. fix that.
-    if (code == '400' and
-        'Sorry, the Flickr API service is not currently available' in body):
+    if (code == '418' or
+        (code == '400' and
+         'Sorry, the Flickr API service is not currently available' in body)):
       code = '504'
 
   elif isinstance(e, urllib2.URLError):

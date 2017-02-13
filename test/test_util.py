@@ -605,6 +605,10 @@ class UtilTest(testutil.HandlerTest):
     msg = 'message=Sorry, the Flickr API service is not currently available., flickr code=0'
     self.assertEquals(('504', msg), ihc(urllib2.HTTPError('url', '400', msg, {}, None)))
 
+    # https://console.cloud.google.com/errors/13299057966731352169?project=brid-gy
+    self.assertEquals(('504', 'Unknown'),
+                      ihc(urllib2.HTTPError('url', '418', 'Unknown', {}, None)))
+
     # auth failures as HTTPErrors that should become 401s
     for body in (
       # instagram, expired or revoked
