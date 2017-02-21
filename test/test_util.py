@@ -897,6 +897,7 @@ class UtilTest(testutil.HandlerTest):
   def test_wide_unicode(self):
     empty = util.WideUnicode('')
     self.assert_equals(0, len(empty))
+    self.assert_equals('', empty[2:3])
     with self.assertRaises(IndexError):
       empty[0]
 
@@ -904,6 +905,8 @@ class UtilTest(testutil.HandlerTest):
     self.assert_equals(4, len(ascii))
     self.assert_equals('s', ascii[1])
     self.assert_equals('sd', ascii[1:-1])
+    self.assert_equals('', ascii[0:0])
+    self.assert_equals('', ascii[8:9])
     with self.assertRaises(IndexError):
       ascii[5]
 
@@ -911,6 +914,7 @@ class UtilTest(testutil.HandlerTest):
     self.assert_equals(3, len(low))
     self.assert_equals(u'xÇ', low[:2])
     self.assert_equals(u'y', low[2])
+    self.assert_equals('', low[8:])
     with self.assertRaises(IndexError):
       low[3]
 
@@ -918,5 +922,7 @@ class UtilTest(testutil.HandlerTest):
     self.assert_equals(3, len(high))
     self.assert_equals(u'💯', high[2])
     self.assert_equals(u'💯', high[2:3])
+    self.assert_equals(u'', high[8:])
+    self.assert_equals(high, high[:9])
     with self.assertRaises(IndexError):
       high[3]

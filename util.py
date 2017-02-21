@@ -1268,15 +1268,15 @@ class WideUnicode(unicode):
     return len(self.__utf32) / 4 - 1
 
   def __getitem__(self, key):
+    length = len(self)
+
     if isinstance(key, int):
+      if key >= length:
+        raise IndexError()
       key = slice(key, key + 1)
 
-    length = len(self)
     if key.stop is None:
       key.stop = length
-
-    if key.start >= length or key.stop > length:
-      raise IndexError()
 
     assert key.step is None
 
