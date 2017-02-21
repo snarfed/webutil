@@ -893,3 +893,30 @@ class UtilTest(testutil.HandlerTest):
     ):
       self.assert_equals(set(expected),
                          util.load_file_lines(StringIO.StringIO(contents)))
+
+  def test_wide_unicode(self):
+    empty = util.WideUnicode('')
+    self.assert_equals(0, len(empty))
+    with self.assertRaises(IndexError):
+      empty[0]
+
+    ascii = util.WideUnicode('asdf')
+    self.assert_equals(4, len(ascii))
+    self.assert_equals('s', ascii[1])
+    self.assert_equals('sd', ascii[1:-1])
+    with self.assertRaises(IndexError):
+      ascii[5]
+
+    low = util.WideUnicode(u'xÇy')
+    self.assert_equals(3, len(low))
+    self.assert_equals(u'xÇ', low[:2])
+    self.assert_equals(u'y', low[2])
+    with self.assertRaises(IndexError):
+      low[3]
+
+    high = util.WideUnicode(u'💯💯💯')
+    self.assert_equals(3, len(high))
+    self.assert_equals(u'💯', high[2])
+    self.assert_equals(u'💯', high[2:3])
+    with self.assertRaises(IndexError):
+      high[3]

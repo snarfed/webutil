@@ -1256,3 +1256,22 @@ class UrlCanonicalizer(object):
         return self(resp.url, redirects=False)
 
     return url
+
+
+class WideUnicode(unicode):
+  """TODO"""
+  def __init__(self, *args, **kwargs):
+    super(WideUnicode, self).__init__(*args, **kwargs)
+    self.__utf32 = unicode(self).encode('utf-32')
+
+  def __len__(self):
+    return len(self.__utf32) / 4 - 1
+
+  def __getslice__(self, i, j):
+    if i >= len(self) or j > len(self):
+      raise IndexError()
+    return WideUnicode(self.__utf32[(i + 1) * 4:(j + 1) * 4].decode('utf-32'))
+
+  def __getitem__(self, key):
+    assert isinstance(key, int)  # ie not a slice
+    return self[key:key + 1]
