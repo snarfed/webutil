@@ -1267,11 +1267,21 @@ class WideUnicode(unicode):
   def __len__(self):
     return len(self.__utf32) / 4 - 1
 
-  def __getslice__(self, i, j):
-    if i >= len(self) or j > len(self):
-      raise IndexError()
-    return WideUnicode(self.__utf32[(i + 1) * 4:(j + 1) * 4].decode('utf-32'))
-
   def __getitem__(self, key):
-    assert isinstance(key, int)  # ie not a slice
-    return self[key:key + 1]
+    if isinstance(key, int):
+      key = slice(key, key + 1)
+
+    length = len(self)
+    if key.stop is None:
+      key.stop = length
+
+    if key.start >= length or key.stop > length:
+      raise IndexError()
+
+    assert key.step is None
+
+    return WideUnicode(self.__utf32[(key.start + 1) * 4:(key.stop + 1) * 4]
+                       .decode('utf-32'))
+
+  def __getslice__(self, i, j):
+    return self.__getitem__(slice(i, j))
