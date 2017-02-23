@@ -1259,13 +1259,48 @@ class UrlCanonicalizer(object):
 
 
 class WideUnicode(unicode):
-  """TODO"""
+  """String class with consistent indexing and len() on narrow *and* wide Python.
+
+  PEP 261 describes that Python 2 builds come in "narrow" and "wide" flavors.
+  Wide is configured with --enable-unicode=ucs4, which represents Unicode high
+  code points above the 16-bit Basic Multilingual Plane in unicode strings as
+  single characters. This means that len(), indexing, and slices of unicode
+  strings use Unicode code points consistently.
+
+  Narrow, on the other hand, represents high code points as "surrogate pairs" of
+  16-bit characters. This means that len(), indexing, and slicing unicode
+  strings does *not* always correspond to Unicode code points.
+
+  Mac OS X, Windows, and older Linux distributions have narrow Python 2 builds,
+  while many modern Linux distributions have wide builds, so this can cause
+  platform-specific bugs, e.g. with many commonly used emoji.
+
+  Docs:
+  https://www.python.org/dev/peps/pep-0261/
+  https://docs.python.org/2.7/library/codecs.html?highlight=ucs2#encodings-and-unicode
+  http://www.unicode.org/glossary/#high_surrogate_code_point
+
+  Inspired by: http://stackoverflow.com/a/9934913
+
+  Related work:
+  https://uniseg-python.readthedocs.io/
+  https://pypi.python.org/pypi/pytextseg
+  https://github.com/LuminosoInsight/python-ftfy/
+  https://github.com/PythonCharmers/python-future/issues/116
+  https://dev.twitter.com/basics/counting-characters
+
+  On StackOverflow:
+  http://stackoverflow.com/questions/1446347/how-to-find-out-if-python-is-compiled-with-ucs-2-or-ucs-4
+  http://stackoverflow.com/questions/12907022/python-getting-correct-string-length-when-it-contains-surrogate-pairs
+  http://stackoverflow.com/questions/35404144/correctly-extract-emojis-from-a-unicode-string
+  """
   def __init__(self, *args, **kwargs):
     super(WideUnicode, self).__init__(*args, **kwargs)
-    self.__utf32 = unicode(self).encode('utf-32')
+    # use UTF-32LE to avoid a byte order marker at the beginning of the string
+    self.__utf32le = unicode(self).encode('utf-32le')
 
   def __len__(self):
-    return len(self.__utf32) / 4 - 1
+    return len(self.__utf32le) / 4
 
   def __getitem__(self, key):
     length = len(self)
@@ -1280,8 +1315,8 @@ class WideUnicode(unicode):
 
     assert key.step is None
 
-    return WideUnicode(self.__utf32[(key.start + 1) * 4:(key.stop + 1) * 4]
-                       .decode('utf-32'))
+    return WideUnicode(self.__utf32le[key.start * 4:key.stop * 4]
+                       .decode('utf-32le'))
 
   def __getslice__(self, i, j):
     return self.__getitem__(slice(i, j))
