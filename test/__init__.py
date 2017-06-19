@@ -8,6 +8,11 @@ try:
   import dev_appserver
   dev_appserver.fix_sys_path()
 
+  # Put them at the end of sys.path so that we prefer versions in our
+  # virtualenv. Necessary for e.g. google-api-python-client and oauth2client,
+  # which we want newer versions of.
+  sys.path.sort(key=lambda path: 1 if path.startswith(dev_appserver._DIR_PATH) else 0)
+
   # Also use the App Engine SDK's mox because it has bug fixes that aren't in pypi
   # 0.5.3. (Annoyingly, they both say they're version 0.5.3.)
   sys.path.append(os.path.join(dev_appserver._DIR_PATH, 'lib', 'mox'))
