@@ -104,16 +104,21 @@ def to_xml(value):
     return unicode(value)
 
 
-def trim_nulls(value):
-  """Recursively removes dict and list elements with None or empty values."""
+def trim_nulls(value, ignore=()):
+  """Recursively removes dict and list elements with None or empty values.
+
+  Args:
+    value: dict or list
+    ignore: optional sequence of keys to allow to have None/empty values
+  """
   NULLS = (None, {}, [], (), '', set(), frozenset())
 
   if isinstance(value, dict):
-    trimmed = {k: trim_nulls(v) for k, v in value.items()}
-    return {k: v for k, v in trimmed.items() if v not in NULLS}
+    trimmed = {k: trim_nulls(v, ignore=ignore) for k, v in value.items()}
+    return {k: v for k, v in trimmed.items() if k in ignore or v not in NULLS}
   elif (isinstance(value, (tuple, list, set, frozenset, collections.Iterator)) or
         inspect.isgenerator(value)):
-    trimmed = [trim_nulls(v) for v in value]
+    trimmed = [trim_nulls(v, ignore=ignore) for v in value]
     ret = (v for v in trimmed if v if v not in NULLS)
     if isinstance(value, collections.Iterator) or inspect.isgenerator(value):
       return ret

@@ -83,6 +83,13 @@ class UtilTest(testutil.HandlerTest):
     self.assertEqual(['a', 'b'], list(util.trim_nulls(iter(['a', None, 'b']))))
     self.assertEqual(['a', 'b'], list(util.trim_nulls(x for x in ['a', None, 'b'])))
 
+    # ignore
+    self.assertEqual({'a': None}, util.trim_nulls({'a': None}, ignore=('a',)))
+    self.assertEqual(['a'], util.trim_nulls(['a', None], ignore=('a',)))
+    self.assertEqual({'a': {}}, util.trim_nulls({'a': {'b': ''}}, ignore=('a',)))
+    self.assertEqual({'a': {'b': None}}, util.trim_nulls({'a': {'b': None}},
+                                                         ignore=('a', 'b')))
+
   def test_uniquify(self):
     self.assertEqual([], util.uniquify(None))
     self.assertEqual([], util.uniquify([]))
