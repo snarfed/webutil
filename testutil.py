@@ -325,14 +325,17 @@ Actual value:
       args = ('[%s] ' % key if key is not None else '') + ''.join(e.args)
       raise AssertionError(args)
 
-  def assert_multiline_equals(self, expected, actual):
+  def assert_multiline_equals(self, expected, actual, ignore_blanks=False):
     """Compares two multi-line strings and reports a diff style output.
 
     Ignores leading and trailing whitespace on each line, and squeezes repeated
     blank lines down to just one.
+
+    Args:
+      ignore_blanks: boolean, whether to ignore blank lines altogether
     """
-    exp_lines = self._normalize_lines(expected)
-    act_lines = self._normalize_lines(actual)
+    exp_lines = self._normalize_lines(expected, ignore_blanks=ignore_blanks)
+    act_lines = self._normalize_lines(actual, ignore_blanks=ignore_blanks)
     if exp_lines != act_lines:
       self.fail(''.join(difflib.Differ().compare(exp_lines, act_lines)))
 
@@ -352,10 +355,11 @@ not found in:
 %s""" % (exp, act))
 
   @staticmethod
-  def _normalize_lines(val):
+  def _normalize_lines(val, ignore_blanks=False):
       lines = [l.strip() + '\n' for l in val.splitlines(True)]
       return [l for i, l in enumerate(lines)
-              if i <= 1 or not (lines[i - 1] == l == '\n')]
+              if not (ignore_blanks and l == '\n') and
+                 (i <= 1 or not (lines[i - 1] == l == '\n'))]
 
 
 class HandlerTest(TestCase):
