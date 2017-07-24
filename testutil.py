@@ -334,19 +334,22 @@ Actual value:
     Args:
       ignore_blanks: boolean, whether to ignore blank lines altogether
     """
-    exp_lines = self._normalize_lines(expected, ignore_blanks=ignore_blanks)
-    act_lines = self._normalize_lines(actual, ignore_blanks=ignore_blanks)
-    if exp_lines != act_lines:
-      self.fail(''.join(difflib.Differ().compare(exp_lines, act_lines)))
+    exp = self._normalize_lines(expected, ignore_blanks=ignore_blanks)
+    act = self._normalize_lines(actual, ignore_blanks=ignore_blanks)
+    if exp != act:
+      self.fail(''.join(difflib.Differ().compare(exp, act)))
 
-  def assert_multiline_in(self, expected, actual):
+  def assert_multiline_in(self, expected, actual, ignore_blanks=False):
     """Checks that a multi-line string is in another and reports a diff output.
 
     Ignores leading and trailing whitespace on each line, and squeezes repeated
     blank lines down to just one.
+
+    Args:
+      ignore_blanks: boolean, whether to ignore blank lines altogether
     """
-    exp = ''.join(self._normalize_lines(expected)).strip()
-    act = ''.join(self._normalize_lines(actual))
+    exp = ''.join(self._normalize_lines(expected, ignore_blanks=ignore_blanks)).strip()
+    act = ''.join(self._normalize_lines(actual, ignore_blanks=ignore_blanks))
     self.assertIn(exp, act, """\
 %s
 
