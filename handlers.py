@@ -68,7 +68,7 @@ def redirect(from_domain, to_domain):
         parts[1] = to_domain
         return self.redirect(urlparse.urlunparse(parts), permanent=True)
       else:
-        return method(self, *args)
+        return method(self, *args, **kwargs)
 
     return wrapper
 
