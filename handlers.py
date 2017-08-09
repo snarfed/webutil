@@ -82,6 +82,9 @@ def memcache_response(expiration):
     expiration: :class:`datetime.timedelta`
   """
   def decorator(method):
+    if appengine_config.DEBUG:
+      return method
+
     def wrapper(self, *args, **kwargs):
       cache_key = 'memcache_response %s' % self.request.url
       cached = memcache.get(cache_key)
