@@ -1010,7 +1010,10 @@ def is_connection_failure(exception):
        'Deadline exceeded' in msg) or
       'Connection closed unexpectedly' in msg  # tweepy.TweepError
      ):
-    logging.info('Connection failure: ', exc_info=True)
+    # TODO: exc_info might not be for exception, e.g. if the json.loads() in
+    # interpret_http_exception() fails. need to pass through the whole
+    # sys.exc_info() tuple here, not just the exception object.
+    logging.info('Connection failure: %s' % exception, exc_info=True)
     return True
 
   return False
