@@ -10,6 +10,7 @@ import urllib2
 import urlparse
 
 import appengine_config
+
 from google.appengine.ext.webapp import template
 from google.appengine.api import memcache
 import jinja2
@@ -114,7 +115,7 @@ class ModernHandler(webapp2.RequestHandler):
         "frame-ancestors 'self'; "
         "report-uri /csp-report; ",
       # 16070400 seconds is 6 months
-      'Strict-Transport-Security': 'max-age=16070400; includeSubDomains; preload',
+      'Strict-Transport-Security': 'max-age=16070400; preload',
       'X-Content-Type-Options': 'nosniff',
       # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options
       'X-Frame-Options': 'SAMEORIGIN',
