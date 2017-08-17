@@ -748,6 +748,52 @@ def dedupe_urls(urls):
   return result
 
 
+def encode_oauth_state(obj):
+  """The Ostate parameter is passed to various source authorization
+  endpoints and returned in a callback. This encodes a JSON object
+  so that it can be safely included as a query string parameter.
+
+  Args:
+    obj: a JSON-serializable dict
+
+  Returns:
+    a string
+  """
+  if not isinstance(obj, dict):
+    raise TypeError('Expected dict, got %s' % obj.__class__)
+
+  logging.debug('encoding state "%s"' % obj)
+  # pass in custom separators to cut down on whitespace, and sort keys for
+  # unit test consistency
+  return urllib.quote_plus(json.dumps(trim_nulls(obj), separators=(',', ':'),
+                                      sort_keys=True))
+
+
+def decode_oauth_state(state):
+  """Decodes a state parameter encoded by :meth:`encode_state_parameter`.
+
+  Args:
+    state: a string (JSON-serialized dict)
+
+  Returns: dict
+  """
+  if not isinstance(state, basestring):
+    raise TypeError('Expected basestring, got %s' % state.__class__)
+
+  logging.debug('decoding state "%s"' % state)
+  try:
+    obj = json.loads(urllib.unquote_plus(state)) if state else {}
+  except ValueError:
+    logging.exception('Invalid value for state parameter: %s' % state)
+    raise exc.HTTPBadRequest('Invalid value for state parameter: %s' % state)
+
+  if not isinstance(obj, dict):
+    logging.error('got a non-dict state parameter %s', state)
+    return {}
+
+  return obj
+
+
 def if_changed(cache, updates, key, value):
   """Returns a value if it's different from the cached value, otherwise None.
 

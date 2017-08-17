@@ -9,6 +9,7 @@ import httplib
 import json
 import socket
 import StringIO
+import urllib
 import urllib2
 import urlparse
 
@@ -933,3 +934,23 @@ class UtilTest(testutil.HandlerTest):
     self.assert_equals(high, high[:9])
     with self.assertRaises(IndexError):
       high[3]
+
+  def test_encode_decode_oauth_state(self):
+    for bad in None, 1, [], (), 'x':
+      with self.assertRaises(TypeError):
+        util.encode_oauth_state(bad)
+
+    for bad in None, 1, [], (), {}:
+      with self.assertRaises(TypeError):
+        util.decode_oauth_state(bad)
+
+    for obj, str in (
+        ({}, '{}'),
+        ({'foo': 'bar', 'baz': None}, '{"foo":"bar"}'),
+        ({'b': 1, 'a': 2}, '{"a":2,"b":1}'),
+    ):
+      self.assert_equals(str, urllib.unquote(util.encode_oauth_state(obj)))
+      self.assert_equals(obj, util.decode_oauth_state(str))
+      self.assert_equals(obj, util.decode_oauth_state(util.encode_oauth_state(obj)))
+      self.assert_equals(str, urllib.unquote(util.encode_oauth_state(util.decode_oauth_state(str))))
+
