@@ -773,11 +773,11 @@ def decode_oauth_state(state):
   """Decodes a state parameter encoded by :meth:`encode_state_parameter`.
 
   Args:
-    state: a string (JSON-serialized dict)
+    state: a string (JSON-serialized dict), or None
 
   Returns: dict
   """
-  if not isinstance(state, basestring):
+  if not isinstance(state, basestring) and state is not None:
     raise TypeError('Expected basestring, got %s' % state.__class__)
 
   logging.debug('decoding state "%s"' % state)

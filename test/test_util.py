@@ -940,9 +940,11 @@ class UtilTest(testutil.HandlerTest):
       with self.assertRaises(TypeError):
         util.encode_oauth_state(bad)
 
-    for bad in None, 1, [], (), {}:
+    for bad in 1, [], (), {}:
       with self.assertRaises(TypeError):
         util.decode_oauth_state(bad)
+
+    self.assertEquals({}, util.decode_oauth_state(None))
 
     for obj, str in (
         ({}, '{}'),
