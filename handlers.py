@@ -136,8 +136,12 @@ class TemplateHandler(ModernHandler):
     """Returns the string template file path."""
     raise NotImplementedError()
 
-  def template_vars(self):
-    """Returns a dict of template variable string keys and values."""
+  def template_vars(self, *args, **kwargs):
+    """Returns a dict of template variable string keys and values.
+
+    Args:
+      *args, **kwargs: passed through from get()
+    """
     return {}
 
   def content_type(self):
@@ -156,7 +160,7 @@ class TemplateHandler(ModernHandler):
       'Access-Control-Allow-Origin': '*',
       }
 
-  def get(self):
+  def get(self, *args, **kwargs):
     self.response.headers['Content-Type'] = self.content_type()
     # can't update() because wsgiref.headers.Headers doesn't have it.
     for key, val in self.headers().items():
@@ -171,7 +175,7 @@ class TemplateHandler(ModernHandler):
         values = values[0]
       vars[key] = values
 
-    vars.update(self.template_vars())
+    vars.update(self.template_vars(*args, **kwargs))
 
     if self.USE_APPENGINE_WEBAPP:
       self.response.out.write(template.render(self.template_file(), vars))
