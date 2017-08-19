@@ -3,7 +3,7 @@
 Includes classes for serving templates with common variables and XRD[S] and JRD
 files like host-meta and friends.
 """
-
+import json
 import logging
 import os
 import urllib2
@@ -193,9 +193,27 @@ class XrdOrJrdHandler(TemplateHandler):
   'Accept: application/json'.
 
   Subclasses must override :meth:`template_prefix()`.
+
+  Class members:
+    JRD_TEMPLATE: boolean, renders JRD with a template if True,
+    otherwise renders it as JSON directly.
   """
+  JRD_TEMPLATE = True
+
+  def get(self, *args, **kwargs):
+    if self.JRD_TEMPLATE:
+      return super(XrdOrJrdHandler, self).get(*args, **kwargs)
+
+    self.response.headers['Content-Type'] = self.content_type()
+    # can't update() because wsgiref.headers.Headers doesn't have it.
+    for key, val in self.headers().items():
+      self.response.headers[key] = val
+
+    self.response.write(json.dumps(self.template_vars(*args, **kwargs), indent=2))
+
   def content_type(self):
-    return 'application/json' if self.is_jrd() else 'application/xrd+xml'
+    return ('application/json; charset=utf-8' if self.is_jrd()
+            else 'application/xrd+xml; charset=utf-8')
 
   def template_prefix(self):
     """Returns template filename, without extension."""
