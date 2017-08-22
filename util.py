@@ -949,13 +949,15 @@ def interpret_http_exception(exception):
   # facebook
   # https://developers.facebook.com/docs/graph-api/using-graph-api/#errors
   body_json = None
-  try:
-    body_json = json.loads(body)
-    error = body_json.get('error', {})
-    if not isinstance(error, dict):
-      error = {'message': `error`}
-  except BaseException:
-    error = {}
+  error = {}
+  if body:
+    try:
+      body_json = json.loads(body)
+      error = body_json.get('error', {})
+      if not isinstance(error, dict):
+        error = {'message': `error`}
+    except BaseException:
+      pass
 
   # twitter
   # https://dev.twitter.com/overview/api/response-codes
