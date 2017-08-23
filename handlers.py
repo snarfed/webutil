@@ -96,7 +96,10 @@ def memcache_response(expiration):
       resp = method(self, *args, **kwargs)
 
       logging.info('Caching response in %r', cache_key)
-      memcache.set(cache_key, resp or self.response, expiration.total_seconds())
+      try:
+        memcache.set(cache_key, resp or self.response, expiration.total_seconds())
+      except ValueError:
+        logging.warning('Response is too big for memcache!')
 
     return wrapper
 

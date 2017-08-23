@@ -7,6 +7,7 @@ import socket
 import traceback
 import urllib2
 
+from google.appengine.api import memcache
 from google.appengine.ext.webapp import template
 import jinja2
 import webapp2
@@ -141,3 +142,16 @@ my foo: bar""", resp.body)
     self.assertEquals(2, Handler.calls)
     self.assertEquals(204, resp.status_int)
     self.assertEquals('got http://localhost/?y', resp.body)
+
+  def test_memcache_response_too_big(self):
+    self.mox.stubs.Set(memcache, 'MAX_VALUE_SIZE', 100)
+
+    class Handler(webapp2.RequestHandler):
+      @handlers.memcache_response(datetime.timedelta(days=1))
+      def get(self):
+        self.response.out.write('x' * 101)
+
+    app = webapp2.WSGIApplication([('.*', Handler)])
+    resp = app.get_response('/?x')
+    self.assertEquals(200, resp.status_int)
+    self.assertIsNone(memcache.get('memcache_response http://localhost/?x'))
