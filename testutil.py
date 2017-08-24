@@ -6,6 +6,7 @@ __author__ = ['Ryan Barrett <webutil@ryanb.org>']
 import base64
 import datetime
 import difflib
+import json
 import logging
 import mox
 import pprint
@@ -41,13 +42,18 @@ def get_task_eta(task):
     float(dict(task['headers'])['X-AppEngine-TaskETA']))
 
 
-def requests_response(body='', url=None, status=200, content_type='text/html',
+def requests_response(body='', url=None, status=200, content_type=None,
                       redirected_url=None, headers=None, allow_redirects=None):
     """
     Args:
       redirected_url: string URL or sequence of string URLs for multiple redirects
     """
     resp = requests.Response()
+
+    if isinstance(body, (dict, list)):
+      body = json.dumps(body, indent=2)
+      if content_type is None:
+        content_type = 'application/json'
 
     resp._text = body
     resp._content = body.encode('utf-8') if isinstance(body, unicode) else body
@@ -67,6 +73,8 @@ def requests_response(body='', url=None, status=200, content_type='text/html',
           resp.history[-1].url = u
 
     resp.status_code = status
+    if content_type is None:
+      content_type = 'text/html'
     resp.headers['content-type'] = content_type
     if headers is not None:
       resp.headers.update(headers)
