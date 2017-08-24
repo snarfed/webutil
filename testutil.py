@@ -41,6 +41,39 @@ def get_task_eta(task):
     float(dict(task['headers'])['X-AppEngine-TaskETA']))
 
 
+def requests_response(body='', url=None, status=200, content_type='text/html',
+                      redirected_url=None, headers=None, allow_redirects=None):
+    """
+    Args:
+      redirected_url: string URL or sequence of string URLs for multiple redirects
+    """
+    resp = requests.Response()
+
+    resp._text = body
+    resp._content = body.encode('utf-8') if isinstance(body, unicode) else body
+    resp.encoding = 'utf-8'
+
+    resp.url = url
+    if redirected_url is not None:
+      if allow_redirects is False:
+        resp.headers['location'] = redirected_url
+      else:
+        if isinstance(redirected_url, basestring):
+          redirected_url = [redirected_url]
+        assert isinstance(redirected_url, (list, tuple))
+        resp.url = redirected_url[-1]
+        for u in [url] + redirected_url[:-1]:
+          resp.history.append(requests.Response())
+          resp.history[-1].url = u
+
+    resp.status_code = status
+    resp.headers['content-type'] = content_type
+    if headers is not None:
+      resp.headers.update(headers)
+
+    return resp
+
+
 class UrlopenResult(object):
   """A fake :func:`urllib2.urlopen()` or :func:`urlfetch.fetch()` result object.
   """
@@ -117,30 +150,10 @@ class TestCase(mox.MoxTestBase):
     Args:
       redirected_url: string URL or sequence of string URLs for multiple redirects
     """
-    resp = requests.Response()
-
-    resp._text = response
-    resp._content = (response.encode('utf-8') if isinstance(response, unicode)
-                     else response)
-    resp.encoding = 'utf-8'
-
-    resp.url = url
-    if redirected_url is not None:
-      if kwargs.get('allow_redirects') == False:
-        resp.headers['location'] = redirected_url
-      else:
-        if isinstance(redirected_url, basestring):
-          redirected_url = [redirected_url]
-        assert isinstance(redirected_url, (list, tuple))
-        resp.url = redirected_url[-1]
-        for u in [url] + redirected_url[:-1]:
-          resp.history.append(requests.Response())
-          resp.history[-1].url = u
-
-    resp.status_code = status_code
-    resp.headers['content-type'] = content_type
-    if response_headers is not None:
-      resp.headers.update(response_headers)
+    resp = requests_response(
+      response, url=url, status=status_code, content_type=content_type,
+      redirected_url=redirected_url, headers=response_headers,
+      allow_redirects=kwargs.get('allow_redirects'))
 
     if 'timeout' not in kwargs:
       kwargs['timeout'] = appengine_config.HTTP_TIMEOUT
