@@ -994,7 +994,8 @@ def interpret_http_exception(exception):
     code = orig_code if orig_code != '401' else '402'
 
   if (code == '400' and type == 'OAuthException' and
-      'Page request limited reached' in message):
+      ('Page request limit reached' in message or
+       'Page request limited reached' in message)):
     code = '429'
 
   # upstream errors and connection failures become 502s and 504s, respectively
