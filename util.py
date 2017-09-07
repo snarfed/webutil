@@ -378,21 +378,6 @@ def base_url(url):
   return urlparse.urljoin(url, ' ')[:-1] if url else None
 
 
-_LINK_RE = re.compile(ur'\bhttps?://[^\s<>]+\b')
-# more complicated alternative:
-# http://stackoverflow.com/questions/720113#comment23297770_2102648
-
-
-def extract_links(text):
-  """Returns a list of unique string URLs in the given text.
-
-  URLs in the returned list are in the order they first appear in the text.
-  """
-  if not text:  # handle None
-    return []
-  return uniquify(match.group() for match in _LINK_RE.finditer(text))
-
-
 # Based on kylewm's from redwind:
 # https://github.com/snarfed/bridgy/issues/209#issuecomment-47583528
 # https://github.com/kylewm/redwind/blob/863989d48b97a85a1c1a92c6d79753d2fbb70775/redwind/util.py#L39
@@ -400,11 +385,29 @@ def extract_links(text):
 # I used to use a more complicated regexp based on
 # https://github.com/silas/huck/blob/master/huck/utils.py#L59 , but i kept
 # finding new input strings that would make it hang the regexp engine.
-_LINKIFY_RE = re.compile(r"""
-  \b(?:[a-z]{3,9}:/{1,3})?                   # optional scheme
-  (?:[a-z0-9\-]+\.)+[a-z]{2,4}(?::\d{2,6})?  # host and optional port
-  (?:(?:/[\w/.\-_~.;:%?@$#&()=+]*)|\b)       # path and query
-  """, re.VERBOSE | re.UNICODE | re.IGNORECASE)
+#
+# more complicated alternative:
+# http://stackoverflow.com/questions/720113#comment23297770_2102648
+_SCHEME_RE = r'\b(?:[a-z]{3,9}:/{1,3})'
+_HOST_RE = r'(?:[a-z0-9\-.])+(?::\d{2,6})?'
+_DOMAIN_RE = r'(?:[a-z0-9\-]+\.)+[a-z]{2,4}(?::\d{2,6})?'
+_PATH_QUERY_RE = r'(?:(?:/[\w/.\-_~.;:%?@$#&()=+]*)|\b)'
+_LINK_RE = re.compile(
+  _SCHEME_RE + _HOST_RE + _PATH_QUERY_RE,  # scheme required
+  re.UNICODE | re.IGNORECASE)
+_LINKIFY_RE = re.compile(
+  _SCHEME_RE + '?' + _DOMAIN_RE + _PATH_QUERY_RE,  # scheme optional
+  re.UNICODE | re.IGNORECASE)
+
+
+def extract_links(text):
+  """Returns a list of unique string URLs in the given text.
+
+  URLs in the returned list are in the order they first appear in the text.
+  """
+  if not text:
+    return []
+  return uniquify(match.group() for match in _LINK_RE.finditer(text))
 
 
 def tokenize_links(text, skip_bare_cc_tlds=False):

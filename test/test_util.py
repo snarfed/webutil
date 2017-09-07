@@ -280,9 +280,12 @@ class UtilTest(testutil.HandlerTest):
       util.extract_links('asdf http://foo.com qwert <a class="x" href="http://bar.com" >xyz</a> www.baz.com'))
 
     # trailing slash
-    # TODO: make this work
-    # self.assertEquals(['http://foo.com/'],
-    #                   util.extract_links('x http://foo.com/'))
+    self.assertEquals(['http://foo.com/'],
+                      util.extract_links('x http://foo.com/'))
+
+    # trailing dash
+    self.assertEquals(['http://foo.com/z-'],
+                      util.extract_links('x http://foo.com/z-'))
 
     # query
     self.assertEquals(['http://foo.com/bar?baz=baj'],
