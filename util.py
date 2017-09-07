@@ -407,7 +407,12 @@ def extract_links(text):
   """
   if not text:
     return []
-  return uniquify(match.group() for match in _LINK_RE.finditer(text))
+
+  links = uniquify(match.group() for match in _LINK_RE.finditer(text))
+  # strip "outside" parens
+  links = [l[:-1] if l[-1] == ')' and '(' not in l else l
+           for l in links ]
+  return links
 
 
 def tokenize_links(text, skip_bare_cc_tlds=False):

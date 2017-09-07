@@ -169,7 +169,10 @@ class TemplateHandler(ModernHandler):
     for key, val in self.headers().items():
       self.response.headers[key] = val
 
-    vars = {'host': appengine_config.HOST}
+    vars = {
+      'host': appengine_config.HOST,
+      'host_uri': '%s://%s' % (appengine_config.SCHEME, appengine_config.HOST),
+    }
 
     # add query params. use a list for params with multiple values.
     for key in self.request.params:

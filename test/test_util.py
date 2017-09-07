@@ -291,9 +291,11 @@ class UtilTest(testutil.HandlerTest):
     self.assertEquals(['http://foo.com/bar?baz=baj'],
                       util.extract_links('http://foo.com/bar?baz=baj y'))
 
-    # preserve order
-    self.assertEquals(['http://%s' % c for c in 'a', 'b', 'c', 'd'],
-                      util.extract_links('http://a http://b http://c http://d'))
+    # trailing paren inside link vs outside
+    self.assertEquals(['http://example/inside_(parens)'],
+                      util.extract_links('http://example/inside_(parens)'))
+    self.assertEquals(['http://example/outside_parens'],
+                      util.extract_links('(http://example/outside_parens)'))
 
   def test_linkify(self):
     for unchanged in (
