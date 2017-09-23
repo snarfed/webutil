@@ -109,7 +109,11 @@ my foo: bar""", resp.body)
 
     self.mox.StubOutWithMock(template, 'render')
     filename = WebappTemplateHandler(self.request, self.response).template_file()
-    template.render(filename, {'host': 'localhost', 'foo': 'bar'}).AndReturn('')
+    template.render(filename, {
+      'host': 'localhost',
+      'host_uri': 'http://localhost',
+      'foo': 'bar',
+    }).AndReturn('')
     self.mox.ReplayAll()
     webapp2.WSGIApplication([('/', WebappTemplateHandler)]).get_response('/')
 
