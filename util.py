@@ -151,6 +151,13 @@ def get_list(dict, key):
           else [])
 
 
+def pop_list(dict, key):
+  """Like get_list(), but also removes the item."""
+  val = get_list(dict, key)
+  dict.pop(key, None)
+  return val
+
+
 def get_first(dict, key, default=None):
   """Returns the first element of a dict value.
 

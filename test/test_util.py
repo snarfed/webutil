@@ -112,6 +112,14 @@ class UtilTest(testutil.HandlerTest):
       ):
       self.assertEqual(expected, util.get_list(dict, 0))
 
+  def test_pop_list(self):
+    obj = {'a': 1}
+    self.assertEqual([1], util.pop_list(obj, 'a'))
+    self.assertEqual({}, obj)
+
+    self.assertEqual([], util.pop_list(obj, 'a'))
+    self.assertEqual({}, obj)
+
   def test_get_first(self):
     for dict, expected in (
         ({}, None),
