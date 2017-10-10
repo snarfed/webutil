@@ -105,146 +105,8 @@ class UrlopenResult(object):
         '\n'.join('%s: %s' % item for item in self.headers.items())))
 
 
-class TestCase(mox.MoxTestBase):
-  """Test case class with lots of extra helpers."""
-
-  def setUp(self):
-    super(TestCase, self).setUp()
-    for method in 'get', 'post':
-      self.mox.StubOutWithMock(requests, method, use_mock_anything=True)
-    self.stub_requests_head()
-
-    self.mox.StubOutWithMock(urllib2, 'urlopen')
-
-    # set time zone to UTC so that tests don't depend on local time zone
-    os.environ['TZ'] = 'UTC'
-
-  def stub_requests_head(self):
-    """Automatically return 200 to outgoing HEAD requests."""
-    def fake_head(url, **kwargs):
-      resp = requests.Response()
-      resp.url = url
-      if '.' in url or url.startswith('http'):
-        resp.headers['content-type'] = 'text/html; charset=UTF-8'
-        resp.status_code = 200
-      else:
-        resp.status_code = 404
-      return resp
-    self.mox.stubs.Set(requests, 'head', fake_head)
-
-    self._is_head_mocked = False  # expect_requests_head() sets this to True
-
-  def unstub_requests_head(self):
-    """Mock outgoing HEAD requests so they must be expected individually."""
-    if not self._is_head_mocked:
-      self.mox.StubOutWithMock(requests, 'head', use_mock_anything=True)
-      self._is_head_mocked = True
-
-  def expect_requests_head(self, *args, **kwargs):
-    self.unstub_requests_head()
-    return self._expect_requests_call(*args, method=requests.head, **kwargs)
-
-  def expect_requests_get(self, *args, **kwargs):
-    return self._expect_requests_call(*args, method=requests.get, **kwargs)
-
-  def expect_requests_post(self, *args, **kwargs):
-    return self._expect_requests_call(*args, method=requests.post, **kwargs)
-
-  def _expect_requests_call(self, url, response='', status_code=200,
-                            content_type='text/html', method=requests.get,
-                            redirected_url=None, response_headers=None,
-                            **kwargs):
-    """
-    Args:
-      redirected_url: string URL or sequence of string URLs for multiple redirects
-    """
-    resp = requests_response(
-      response, url=url, status=status_code, content_type=content_type,
-      redirected_url=redirected_url, headers=response_headers,
-      allow_redirects=kwargs.get('allow_redirects'))
-
-    if 'timeout' not in kwargs:
-      kwargs['timeout'] = appengine_config.HTTP_TIMEOUT
-    elif kwargs['timeout'] is None:
-      del kwargs['timeout']
-
-    if method is requests.head:
-      kwargs['allow_redirects'] = True
-
-    files = kwargs.get('files')
-    if files:
-      def check_files(actual):
-        self.assertEqual(actual.keys(), files.keys())
-        for name, expected in files.items():
-          self.assertEqual(expected, actual[name].read())
-        return True
-      kwargs['files'] = mox.Func(check_files)
-
-    call = method(url, **kwargs)
-    call.AndReturn(resp)
-    return call
-
-  def expect_urlopen(self, url, response=None, status=200, data=None,
-                     headers=None, response_headers={}, **kwargs):
-    """Stubs out :func:`urllib2.urlopen()` and sets up an expected call.
-
-    If status isn't 2xx, makes the expected call raise a
-    :class:`urllib2.HTTPError` instead of returning the response.
-
-    If data is set, url *must* be a :class:`urllib2.Request`.
-
-    If response is unset, returns the expected call.
-
-    Args:
-      url: string, :class:`re.RegexObject` or :class:`urllib2.Request` or
-        :class:`webob.request.Request`
-      response: string
-      status: int, HTTP response code
-      data: optional string POST body
-      headers: optional expected request header dict
-      response_headers: optional response header dict
-      kwargs: other keyword args, e.g. timeout
-    """
-    def check_request(req):
-      try:
-        req_url = req if isinstance(req, basestring) else req.get_full_url()
-        if isinstance(url, re._pattern_type):
-          self.assertRegexpMatches(req_url, url)
-        else:
-          self.assertEqual(url, req_url)
-
-        if isinstance(req, basestring):
-          assert not data, data
-          assert not headers, headers
-        else:
-          self.assertEqual(data, req.get_data())
-          if isinstance(headers, mox.Comparator):
-            self.assertTrue(headers.equals(req.header_items()))
-          elif headers is not None:
-            missing = set(headers.items()) - set(req.header_items())
-            assert not missing, 'Missing request headers: %s' % missing
-
-      except AssertionError:
-        traceback.print_exc()
-        return False
-
-      return True
-
-    if 'timeout' not in kwargs:
-      kwargs['timeout'] = appengine_config.HTTP_TIMEOUT
-
-    call = urllib2.urlopen(mox.Func(check_request), **kwargs)
-    if status / 100 != 2:
-      if response:
-        response = urllib2.addinfourl(StringIO.StringIO(response),
-                                      response_headers, url, status)
-      call.AndRaise(urllib2.HTTPError('url', status, 'message',
-                                      response_headers, response))
-    elif response is not None:
-      call.AndReturn(UrlopenResult(status, response, url=url,
-                                   headers=response_headers))
-
-    return call
+class Asserts(object):
+  """Test case mixin class with extra assert helpers."""
 
   def assert_entities_equal(self, a, b, ignore=frozenset(), keys_only=False,
                             in_order=False):
@@ -384,6 +246,148 @@ not found in:
       return [l for i, l in enumerate(lines)
               if not (ignore_blanks and l == '\n') and
                  (i <= 1 or not (lines[i - 1] == l == '\n'))]
+
+
+class TestCase(mox.MoxTestBase, Asserts):
+  """Test case class with lots of extra helpers."""
+
+  def setUp(self):
+    super(TestCase, self).setUp()
+    for method in 'get', 'post':
+      self.mox.StubOutWithMock(requests, method, use_mock_anything=True)
+    self.stub_requests_head()
+
+    self.mox.StubOutWithMock(urllib2, 'urlopen')
+
+    # set time zone to UTC so that tests don't depend on local time zone
+    os.environ['TZ'] = 'UTC'
+
+  def stub_requests_head(self):
+    """Automatically return 200 to outgoing HEAD requests."""
+    def fake_head(url, **kwargs):
+      resp = requests.Response()
+      resp.url = url
+      if '.' in url or url.startswith('http'):
+        resp.headers['content-type'] = 'text/html; charset=UTF-8'
+        resp.status_code = 200
+      else:
+        resp.status_code = 404
+      return resp
+    self.mox.stubs.Set(requests, 'head', fake_head)
+
+    self._is_head_mocked = False  # expect_requests_head() sets this to True
+
+  def unstub_requests_head(self):
+    """Mock outgoing HEAD requests so they must be expected individually."""
+    if not self._is_head_mocked:
+      self.mox.StubOutWithMock(requests, 'head', use_mock_anything=True)
+      self._is_head_mocked = True
+
+  def expect_requests_head(self, *args, **kwargs):
+    self.unstub_requests_head()
+    return self._expect_requests_call(*args, method=requests.head, **kwargs)
+
+  def expect_requests_get(self, *args, **kwargs):
+    return self._expect_requests_call(*args, method=requests.get, **kwargs)
+
+  def expect_requests_post(self, *args, **kwargs):
+    return self._expect_requests_call(*args, method=requests.post, **kwargs)
+
+  def _expect_requests_call(self, url, response='', status_code=200,
+                            content_type='text/html', method=requests.get,
+                            redirected_url=None, response_headers=None,
+                            **kwargs):
+    """
+    Args:
+      redirected_url: string URL or sequence of string URLs for multiple redirects
+    """
+    resp = requests_response(
+      response, url=url, status=status_code, content_type=content_type,
+      redirected_url=redirected_url, headers=response_headers,
+      allow_redirects=kwargs.get('allow_redirects'))
+
+    if 'timeout' not in kwargs:
+      kwargs['timeout'] = appengine_config.HTTP_TIMEOUT
+    elif kwargs['timeout'] is None:
+      del kwargs['timeout']
+
+    if method is requests.head:
+      kwargs['allow_redirects'] = True
+
+    files = kwargs.get('files')
+    if files:
+      def check_files(actual):
+        self.assertEqual(actual.keys(), files.keys())
+        for name, expected in files.items():
+          self.assertEqual(expected, actual[name].read())
+        return True
+      kwargs['files'] = mox.Func(check_files)
+
+    call = method(url, **kwargs)
+    call.AndReturn(resp)
+    return call
+
+  def expect_urlopen(self, url, response=None, status=200, data=None,
+                     headers=None, response_headers={}, **kwargs):
+    """Stubs out :func:`urllib2.urlopen()` and sets up an expected call.
+
+    If status isn't 2xx, makes the expected call raise a
+    :class:`urllib2.HTTPError` instead of returning the response.
+
+    If data is set, url *must* be a :class:`urllib2.Request`.
+
+    If response is unset, returns the expected call.
+
+    Args:
+      url: string, :class:`re.RegexObject` or :class:`urllib2.Request` or
+        :class:`webob.request.Request`
+      response: string
+      status: int, HTTP response code
+      data: optional string POST body
+      headers: optional expected request header dict
+      response_headers: optional response header dict
+      kwargs: other keyword args, e.g. timeout
+    """
+    def check_request(req):
+      try:
+        req_url = req if isinstance(req, basestring) else req.get_full_url()
+        if isinstance(url, re._pattern_type):
+          self.assertRegexpMatches(req_url, url)
+        else:
+          self.assertEqual(url, req_url)
+
+        if isinstance(req, basestring):
+          assert not data, data
+          assert not headers, headers
+        else:
+          self.assertEqual(data, req.get_data())
+          if isinstance(headers, mox.Comparator):
+            self.assertTrue(headers.equals(req.header_items()))
+          elif headers is not None:
+            missing = set(headers.items()) - set(req.header_items())
+            assert not missing, 'Missing request headers: %s' % missing
+
+      except AssertionError:
+        traceback.print_exc()
+        return False
+
+      return True
+
+    if 'timeout' not in kwargs:
+      kwargs['timeout'] = appengine_config.HTTP_TIMEOUT
+
+    call = urllib2.urlopen(mox.Func(check_request), **kwargs)
+    if status / 100 != 2:
+      if response:
+        response = urllib2.addinfourl(StringIO.StringIO(response),
+                                      response_headers, url, status)
+      call.AndRaise(urllib2.HTTPError('url', status, 'message',
+                                      response_headers, response))
+    elif response is not None:
+      call.AndReturn(UrlopenResult(status, response, url=url,
+                                   headers=response_headers))
+
+    return call
 
 
 class HandlerTest(TestCase):
