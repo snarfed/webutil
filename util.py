@@ -170,6 +170,11 @@ def get_first(dict, key, default=None):
   return val[0] if isinstance(val, (list, tuple)) else val
 
 
+def get_url(val):
+  """Returns val['url'] if val is a dict, otherwise val."""
+  return val.get('url') if isinstance(val, dict) else val
+
+
 def tag_uri(domain, name, year=None):
   """Returns a tag URI string for the given domain and name.
 
