@@ -725,7 +725,8 @@ def dedupe_urls(urls):
   """Normalizes and de-dupes http(s) URLs.
 
   Converts domain to lower case, adds trailing slash when path is empty, and
-  ignores scheme (http vs https), preferring https. Preserves order.
+  ignores scheme (http vs https), preferring https. Preserves order. Removes
+  Nones and blank strings.
 
   Domains are case insensitive, even modern domains with Unicode/punycode
   characters:
@@ -749,6 +750,9 @@ def dedupe_urls(urls):
   result = []
 
   for url in urls:
+    if not url:
+      continue
+
     p = urlparse.urlsplit(url)
     # normalize domain (hostname attr is lower case) and path
     norm = [p.scheme, p.hostname, p.path or '/', p.query, p.fragment]

@@ -240,15 +240,16 @@ class UtilTest(testutil.HandlerTest):
 
   def test_dedupe_urls(self):
     self.assertEquals([], util.dedupe_urls([]))
+    self.assertEquals([], util.dedupe_urls(['', None, '']))
     self.assertEquals(['http://foo/'], util.dedupe_urls(['http://foo']))
     self.assertEquals(['http://foo/'], util.dedupe_urls(['http://foo', 'http://foo']))
     self.assertEquals(['http://foo/'], util.dedupe_urls(['http://foo', 'http://foo/']))
     self.assertEquals(['https://foo/'], util.dedupe_urls([
       'https://foo', 'http://foo', 'https://foo/', 'http://foo/']))
     self.assertEquals(['https://foo/'],
-                      util.dedupe_urls(['http://foo', 'https://foo/']))
+                      util.dedupe_urls(['http://foo', '', 'https://foo/']))
     self.assertEquals(['http://foo/bar', 'http://foo/bar/'],
-                      util.dedupe_urls(['http://foo/bar', 'http://foo/bar/']))
+                      util.dedupe_urls(['http://foo/bar', 'http://foo/bar/', None, '']))
     self.assertEquals(['http://foo/'],
                       util.dedupe_urls(['http://foo', 'http://FOO/', 'http://FoO/']))
 
