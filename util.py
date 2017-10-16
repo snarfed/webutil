@@ -715,9 +715,14 @@ def add_query_params(url, params):
 
 
 def get_required_param(handler, name):
-  val = handler.request.get(name)
+  try:
+    val = handler.request.get(name)
+  except UnicodeDecodeError as e:
+    handler.abort(400, "Couldn't decode query parameters as UTF-8: %s" % e)
+
   if not val:
     handler.abort(400, 'Missing required parameter: %s' % name)
+
   return val
 
 

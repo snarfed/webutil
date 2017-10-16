@@ -527,11 +527,18 @@ class UtilTest(testutil.HandlerTest):
   def test_get_required_param(self):
     handler = webapp2.RequestHandler(webapp2.Request.blank('/?a=b'), None)
     self.assertEqual('b', util.get_required_param(handler, 'a'))
-    try:
+
+    with self.assertRaises(exc.HTTPException) as a:
       util.get_required_param(handler, 'c')
-      self.fail('Expected HTTPException')
-    except exc.HTTPException, e:
-      self.assertEqual(400, e.status_int)
+    self.assertEqual(400, a.exception.status_int)
+
+    # bad UTF-8 byte: %85 => 0x85. breaks webapp2's request.get() for all
+    # params, not just that one. :(
+    # https://console.cloud.google.com/errors/16507407472662214648
+    handler = webapp2.RequestHandler(webapp2.Request.blank('/?a=b&%85'), None)
+    with self.assertRaises(exc.HTTPException) as a:
+      util.get_required_param(handler, 'a')
+    self.assertEqual(400, a.exception.status_int)
 
   def test_if_changed(self):
     cache = util.CacheDict()
