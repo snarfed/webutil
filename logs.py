@@ -82,7 +82,7 @@ class LogHandler(ModernHandler):
       self.abort(400, "Couldn't convert start_time to float: %r" % start_time)
     start_time = float(start_time)
 
-    key = urllib.unquote(util.get_required_param(self, 'key'))
+    key = urllib.unquote_plus(util.get_required_param(self, 'key'))
     # the propagate task logs the poll task's URL, which includes the source
     # entity key as a query param. exclude that with this heuristic.
     key_re = re.compile('[^=]' + key)
@@ -90,7 +90,7 @@ class LogHandler(ModernHandler):
     self.response.headers['Content-Type'] = 'text/html; charset=utf-8'
 
     offset = None
-    for log in logservice.fetch(start_time=start_time, end_time=start_time + 120,
+    for log in logservice.fetch(start_time=start_time - 60, end_time=start_time + 120,
                                 offset=offset, include_app_logs=True,
                                 version_ids=self.VERSION_IDS):
       first_lines = '\n'.join([line.message.decode('utf-8') for line in
