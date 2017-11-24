@@ -63,6 +63,9 @@ except ImportError:
   urlfetch_errors = None
   apiproxy_errors = None
 
+EPOCH = datetime.datetime.utcfromtimestamp(0)
+EPOCH_ISO = EPOCH.isoformat()
+
 
 class Struct(object):
   """A generic class that initializes its attributes from constructor kwargs."""

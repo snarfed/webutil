@@ -3,6 +3,7 @@
 Includes classes for serving templates with common variables and XRD[S] and JRD
 files like host-meta and friends.
 """
+import calendar
 import json
 import logging
 import os
@@ -17,6 +18,15 @@ import jinja2
 import webapp2
 
 import util
+
+JINJA_ENV = jinja2.Environment(
+  loader=jinja2.FileSystemLoader(('.', '/')),
+  autoescape=True,
+)
+JINJA_ENV.globals.update({
+  'EPOCH': util.EPOCH,
+  'timestamp': lambda dt: calendar.timegm(dt.utctimetuple()),
+})
 
 
 def handle_exception(self, e, debug):
@@ -186,9 +196,8 @@ class TemplateHandler(ModernHandler):
     if self.USE_APPENGINE_WEBAPP:
       self.response.out.write(template.render(self.template_file(), vars))
     else:
-      env = jinja2.Environment(loader=jinja2.FileSystemLoader(('.', '/')),
-                               autoescape=True)
-      self.response.out.write(env.get_template(self.template_file()).render(**vars))
+      self.response.out.write(
+        JINJA_ENV.get_template(self.template_file()).render(**vars))
 
 
 class XrdOrJrdHandler(TemplateHandler):
