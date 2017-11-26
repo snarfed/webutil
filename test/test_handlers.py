@@ -15,6 +15,8 @@ import webapp2
 import handlers
 import testutil
 
+handlers.JINJA_ENV.loader.searchpath.append('/')
+
 
 class FakeTemplateHandler(handlers.TemplateHandler):
   def template_file(self):

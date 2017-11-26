@@ -20,7 +20,7 @@ import webapp2
 import util
 
 JINJA_ENV = jinja2.Environment(
-  loader=jinja2.FileSystemLoader(('.', '/')),
+  loader=jinja2.FileSystemLoader(('.', 'templates')),
   autoescape=True,
 )
 JINJA_ENV.globals.update({
