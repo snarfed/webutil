@@ -143,6 +143,14 @@ class UtilTest(testutil.HandlerTest):
       ):
       self.assertEqual(expected, util.get_url(val))
 
+    for val, expected in (
+        ({}, None),
+        ({'a': 'b'}, None),
+        ({'x': 'y'}, 'y'),
+        ({'x': {'url': 'foo'}}, 'foo'),
+      ):
+      self.assertEqual(expected, util.get_url(val, 'x'))
+
   def test_get_urls(self):
     for val, expected in (
         (None, []),

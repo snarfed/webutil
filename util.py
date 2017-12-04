@@ -173,8 +173,13 @@ def get_first(obj, key, default=None):
   return val[0] if isinstance(val, (list, tuple)) else val
 
 
-def get_url(val):
-  """Returns val['url'] if val is a dict, otherwise val."""
+def get_url(val, key=None):
+  """Returns val['url'] if val is a dict, otherwise val.
+
+  If key is not None, looks in val[key] instead of val.
+  """
+  if key is not None:
+    val = get_first(val, key)
   return val.get('url') if isinstance(val, dict) else val
 
 
