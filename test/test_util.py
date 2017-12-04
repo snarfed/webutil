@@ -143,6 +143,16 @@ class UtilTest(testutil.HandlerTest):
       ):
       self.assertEqual(expected, util.get_url(val))
 
+  def test_get_urls(self):
+    for val, expected in (
+        (None, []),
+        ({}, []),
+        ([], []),
+        ([None, 'asdf', {'url': 'qwert'}, {'foo': 'bar'}, ['baz']],
+         ['asdf', 'qwert', ['baz']]),
+    ):
+      self.assertEqual(expected, util.get_urls({'key': val}, 'key'))
+
   def test_favicon_for_url(self):
     for url in ('http://a.org/b/c?d=e&f=g', 'https://a.org/b/c', 'http://a.org/'):
       self.assertEqual('http://a.org/favicon.ico', util.favicon_for_url(url))

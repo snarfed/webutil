@@ -141,33 +141,33 @@ def uniquify(input):
   return collections.OrderedDict([x, 0] for x in input).keys()
 
 
-def get_list(dict, key):
+def get_list(obj, key):
   """Returns a value from a dict as a list.
 
   If the value is a list or tuple, it's converted to a list. If it's something
   else, it's returned as a single-element list. If the key doesn't exist,
   returns [].
   """
-  val = dict.get(key, [])
+  val = obj.get(key, [])
   return (list(val) if isinstance(val, (list, tuple, set))
           else [val] if val
           else [])
 
 
-def pop_list(dict, key):
+def pop_list(obj, key):
   """Like get_list(), but also removes the item."""
-  val = get_list(dict, key)
-  dict.pop(key, None)
+  val = get_list(obj, key)
+  obj.pop(key, None)
   return val
 
 
-def get_first(dict, key, default=None):
+def get_first(obj, key, default=None):
   """Returns the first element of a dict value.
 
   If the value is a list or tuple, returns the first value. If it's something
   else, returns the value itself. If the key doesn't exist, returns None.
   """
-  val = dict.get(key)
+  val = obj.get(key)
   if not val:
     return default
   return val[0] if isinstance(val, (list, tuple)) else val
@@ -176,6 +176,12 @@ def get_first(dict, key, default=None):
 def get_url(val):
   """Returns val['url'] if val is a dict, otherwise val."""
   return val.get('url') if isinstance(val, dict) else val
+
+
+def get_urls(obj, key):
+  """Returns elem['url'] if dict, otherwise elem, for each elem in obj[key]."""
+  return trim_nulls([elem.get('url') if isinstance(elem, dict) else elem
+                     for elem in get_list(obj, key)])
 
 
 def tag_uri(domain, name, year=None):
