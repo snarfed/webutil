@@ -183,10 +183,12 @@ def get_url(val, key=None):
   return val.get('url') if isinstance(val, dict) else val
 
 
-def get_urls(obj, key):
-  """Returns elem['url'] if dict, otherwise elem, for each elem in obj[key]."""
-  return trim_nulls([elem.get('url') if isinstance(elem, dict) else elem
-                     for elem in get_list(obj, key)])
+def get_urls(obj, key, inner_key=None):
+  """Returns elem['url'] if dict, otherwise elem, for each elem in obj[key].
+
+  If inner_key is provided, the returned values are elem[inner_key]['url'].
+  """
+  return dedupe_urls(get_url(elem, key=inner_key) for elem in get_list(obj, key))
 
 
 def tag_uri(domain, name, year=None):

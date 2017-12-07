@@ -156,10 +156,13 @@ class UtilTest(testutil.HandlerTest):
         (None, []),
         ({}, []),
         ([], []),
-        ([None, 'asdf', {'url': 'qwert'}, {'foo': 'bar'}, ['baz']],
-         ['asdf', 'qwert', ['baz']]),
+        ([None, 'asdf', {'url': 'qwert'}, {'foo': 'bar'}, {}],
+         ['asdf', 'qwert']),
     ):
       self.assertEqual(expected, util.get_urls({'key': val}, 'key'))
+
+    self.assertEqual(['bar'], util.get_urls(
+      {'outer': [{'url': 'foo'}, {'inner': {'url': 'bar'}}]}, 'outer', 'inner'))
 
   def test_favicon_for_url(self):
     for url in ('http://a.org/b/c?d=e&f=g', 'https://a.org/b/c', 'http://a.org/'):
