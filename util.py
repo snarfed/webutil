@@ -1027,6 +1027,8 @@ def interpret_http_exception(exception):
         'user must be an administrator of the page' in message or
         'user is enrolled in a blocking, logged-in checkpoint' in message or
         'access token belongs to a Page that has been deleted.' in message or
+        # this one below comes with HTTP 400, but actually seems to be transient.
+        # 'Cannot call API on behalf of this user' in message or
         'Permissions error' == message
        )) or
       (type == 'FacebookApiException' and 'Permissions error' in message) or
