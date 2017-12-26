@@ -42,7 +42,7 @@ def sanitize(msg):
   return SANITIZE_RE.sub(r'\1...', msg)
 
 
-def maybe_link(when, key, link_class=''):
+def maybe_link(when, key, time_class='dt-updated', link_class=''):
   """Returns an HTML snippet with a timestamp and maybe a log page link.
 
   Example:
@@ -62,16 +62,17 @@ def maybe_link(when, key, link_class=''):
   Args:
     when: datetime
     key: ndb.Key
+    time_class: string, optional class value for the <time> tag
     link_class: string, optional class value for the <a> tag (if generated)
 
   Returns: string HTML
   """
-  time = '<time class="dt-updated" datetime="%s" title="%s">%s</time>' % (
-    when.isoformat(), when.ctime(), humanize.naturaltime(when))
+  time = '<time class="%s" datetime="%s" title="%s">%s</time>' % (
+    time_class, when.isoformat(), when.ctime(), humanize.naturaltime(when))
 
   if datetime.datetime.now() - when < MAX_LOG_AGE:
-    return '<a href="/log?start_time=%s&key=%s" class="%s">%s</a>' % (
-      calendar.timegm(when.utctimetuple()), key.urlsafe(), link_class, time)
+    return '<a class="%s" href="/log?start_time=%s&key=%s">%s</a>' % (
+      link_class, calendar.timegm(when.utctimetuple()), key.urlsafe(), time)
 
   return time
 
