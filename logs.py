@@ -1,6 +1,6 @@
 """A handler that exposes App Engine app logs to users.
 """
-
+import calendar
 import cgi
 import datetime
 import logging
@@ -10,6 +10,7 @@ import urllib
 import appengine_config
 from google.appengine.api import logservice
 from google.appengine.ext import ndb
+import humanize
 import webapp2
 
 from handlers import ModernHandler
@@ -24,6 +25,7 @@ LEVELS = {
   logservice.LOG_LEVEL_CRITICAL: 'F',
   }
 
+MAX_LOG_AGE = datetime.timedelta(days=30)
 
 SANITIZE_RE = re.compile(r"""
   ((?:access|api|oauth)?[ _]?
@@ -38,6 +40,40 @@ SANITIZE_RE = re.compile(r"""
 def sanitize(msg):
   """Sanitizes access tokens and Authorization headers."""
   return SANITIZE_RE.sub(r'\1...', msg)
+
+
+def maybe_link(when, key, link_class=''):
+  """Returns an HTML snippet with a timestamp and maybe a log page link.
+
+  Example:
+
+  <a href="/log?start_time=1513904267&key=aglz..." class="u-bridgy-log">
+    <time class="dt-updated" datetime="2017-12-22T00:57:47.222060"
+            title="Fri Dec 22 00:57:47 2017">
+      3 days ago
+    </time>
+  </a>
+
+  The <a> tag is only included if the timestamp is 30 days old or less, since
+  Stackdriver's basic tier doesn't store logs older than that:
+    https://cloud.google.com/monitoring/accounts/tiers#logs_ingestion
+    https://github.com/snarfed/bridgy/issues/767
+
+  Args:
+    when: datetime
+    key: ndb.Key
+    link_class: string, optional class value for the <a> tag (if generated)
+
+  Returns: string HTML
+  """
+  time = '<time class="dt-updated" datetime="%s" title="%s">%s</time>' % (
+    when.isoformat(), when.ctime(), humanize.naturaltime(when))
+
+  if datetime.datetime.now() - when < MAX_LOG_AGE:
+    return '<a href="/log?start_time=%s&key=%s" class="%s">%s</a>' % (
+      calendar.timegm(when.utctimetuple()), key.urlsafe(), link_class, time)
+
+  return time
 
 
 # datastore string keys are url-safe-base64 of, say, at least 32(ish) chars.
