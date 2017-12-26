@@ -13,7 +13,6 @@ from google.appengine.ext import ndb
 import humanize
 import webapp2
 
-from handlers import ModernHandler
 import util
 
 
@@ -40,6 +39,17 @@ SANITIZE_RE = re.compile(r"""
 def sanitize(msg):
   """Sanitizes access tokens and Authorization headers."""
   return SANITIZE_RE.sub(r'\1...', msg)
+
+
+def url(when, key):
+  """Returns the relative URL (no scheme or host) to a log page.
+
+  Args:
+    when: datetime
+    key: ndb.Key
+  """
+  return 'log?start_time=%s&key=%s' % (
+    calendar.timegm(when.utctimetuple()), key.urlsafe())
 
 
 def maybe_link(when, key, time_class='dt-updated', link_class=''):
@@ -72,8 +82,7 @@ def maybe_link(when, key, time_class='dt-updated', link_class=''):
 
   now = datetime.datetime.now()
   if now > when > now - MAX_LOG_AGE:
-    return '<a class="%s" href="/log?start_time=%s&key=%s">%s</a>' % (
-      link_class, calendar.timegm(when.utctimetuple()), key.urlsafe(), time)
+    return '<a class="%s" href="/%s">%s</a>' % (link_class, url(when, key), time)
 
   return time
 
@@ -101,7 +110,7 @@ def linkify_datastore_keys(msg):
   return DATASTORE_KEY_RE.sub(linkify_key, msg)
 
 
-class LogHandler(ModernHandler):
+class LogHandler(webapp2.RequestHandler):
   """Searches for and renders the app logs for a single task queue request.
 
   Class attributes:

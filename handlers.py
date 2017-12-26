@@ -17,6 +17,7 @@ from google.appengine.api import memcache
 import jinja2
 import webapp2
 
+import logs
 import util
 
 JINJA_ENV = jinja2.Environment(
@@ -25,6 +26,7 @@ JINJA_ENV = jinja2.Environment(
 )
 JINJA_ENV.globals.update({
   'EPOCH': util.EPOCH,
+  'logs': logs,
   'timestamp': lambda dt: calendar.timegm(dt.utctimetuple()),
 })
 
