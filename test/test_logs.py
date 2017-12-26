@@ -18,9 +18,14 @@ class LogsTest(mox.MoxTestBase):
     self.assertRegexpMatches(actual, expected)
 
     self.mox.StubOutWithMock(logs, 'MAX_LOG_AGE')
-    logs.MAX_LOG_AGE = datetime.timedelta(days=999999)
+    logs.MAX_LOG_AGE = datetime.timedelta(days=99999)
 
     self.assertEqual(
       '<a class="bar" href="/log?start_time=172800&key=%s">%s</a>' % (
         key.urlsafe(), actual),
       logs.maybe_link(when, key, time_class='foo', link_class='bar'))
+
+  def test_maybe_link_future(self):
+    when = datetime.datetime.now() + datetime.timedelta(minutes=1)
+    got = logs.maybe_link(when, ndb.Key('Foo', 123))
+    self.assertFalse(got.startswith('<a'), got)

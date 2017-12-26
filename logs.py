@@ -70,7 +70,8 @@ def maybe_link(when, key, time_class='dt-updated', link_class=''):
   time = '<time class="%s" datetime="%s" title="%s">%s</time>' % (
     time_class, when.isoformat(), when.ctime(), humanize.naturaltime(when))
 
-  if datetime.datetime.now() - when < MAX_LOG_AGE:
+  now = datetime.datetime.now()
+  if now > when > now - MAX_LOG_AGE:
     return '<a class="%s" href="/log?start_time=%s&key=%s">%s</a>' % (
       link_class, calendar.timegm(when.utctimetuple()), key.urlsafe(), time)
 
