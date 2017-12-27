@@ -1,8 +1,5 @@
 """Misc utilities.
 """
-
-__author__ = ['Ryan Barrett <webutil@ryanb.org>']
-
 import calendar
 import collections
 import contextlib

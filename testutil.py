@@ -1,8 +1,5 @@
 """Unit test utilities.
 """
-
-__author__ = ['Ryan Barrett <webutil@ryanb.org>']
-
 import base64
 import datetime
 import difflib

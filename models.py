@@ -1,8 +1,5 @@
 """App Engine datastore model base classes and utilites.
 """
-
-__author__ = ['Ryan Barrett <webutil@ryanb.org>']
-
 import functools
 
 from google.appengine.ext import db

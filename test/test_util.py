@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 """Unit tests for util.py.
 """
-
-__author__ = ['Ryan Barrett <webutil@ryanb.org>']
-
 import datetime
 import httplib
 import json

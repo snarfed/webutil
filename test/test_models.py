@@ -1,8 +1,5 @@
 """Unit tests for models.py.
 """
-
-__author__ = ['Ryan Barrett <webutil@ryanb.org>']
-
 from google.appengine.ext import db
 from google.appengine.ext import ndb
 
