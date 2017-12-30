@@ -1034,8 +1034,11 @@ def interpret_http_exception(exception):
     ):
     code = '401'
 
-  if code == '401' and error.get('is_transient'):
-    code = orig_code if orig_code != '401' else '402'
+  if error.get('is_transient'):
+    if code == '401':
+      code = orig_code if orig_code != '401' else '402'
+    else:
+      code = '503'
 
   if (code == '400' and type == 'OAuthException' and
       ('Page request limit reached' in message or

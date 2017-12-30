@@ -751,13 +751,6 @@ class UtilTest(testutil.HandlerTest):
 
     # HTTPErrors that *shouldn't* become 401s
     for body in (
-      # facebook is_transient, https://github.com/snarfed/bridgy/issues/450
-      {'error': {
-        'message': 'An unexpected error has occurred. Please retry your request later.',
-        'type': 'OAuthException',
-        'is_transient': True,
-        'code': 2,
-      }},
       # is_transient should override messages that imply auth failure
       {'error': {
         'message': 'The token provided is invalid.',
@@ -776,12 +769,26 @@ class UtilTest(testutil.HandlerTest):
         'code' : 100,
         'type' : 'OAuthException',
       }},
-      ):
+    ):
       for code, expected in (400, 400), (500, 502):
         got_code, got_body = ihc(urllib2.HTTPError(
           'url', code, 'BAD REQUEST', {}, StringIO.StringIO(json.dumps(body))))
         self.assertEquals(str(expected), got_code, (code, got_code, body))
         self.assert_equals(body, json.loads(got_body), body)
+
+    # facebook temporarily unavailable with is_transient
+    # https://github.com/snarfed/bridgy/issues/450
+    fb_transient = json.dumps({'error': {
+      'message' : '(#2) Service temporarily unavailable',
+      # also seen:
+      # 'message': 'An unexpected error has occurred. Please retry your request later.',
+      'code' : 2,
+      'type' : 'OAuthException',
+      'is_transient': True,
+    }})
+    for code in (400, 500):
+      self.assertEquals(('503', fb_transient), ihc(urllib2.HTTPError(
+        'url', code, 'BAD REQUEST', {}, StringIO.StringIO(fb_transient))))
 
     # make sure we handle non-facebook JSON bodies ok
     wordpress_rest_error = json.dumps(
