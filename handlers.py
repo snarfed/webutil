@@ -5,6 +5,7 @@ files like host-meta and friends.
 """
 from __future__ import absolute_import
 from future import standard_library
+
 import calendar
 import json
 import logging

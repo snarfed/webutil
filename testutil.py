@@ -4,9 +4,10 @@ from __future__ import absolute_import
 from __future__ import division
 from future import standard_library
 standard_library.install_aliases()
+from builtins import object
 from builtins import zip
 from past.builtins import basestring
-from builtins import object
+
 import base64
 import datetime
 import difflib
@@ -22,7 +23,11 @@ import traceback
 import urllib.request, urllib.error, urllib.parse
 import urllib.parse
 
-from . import appengine_config
+try:
+  from appengine_config import HTTP_TIMEOUT
+except (ImportError, ValueError):
+  HTTP_TIMEOUT = 15
+
 import requests
 import webapp2
 
@@ -87,7 +92,7 @@ def requests_response(body='', url=None, status=200, content_type=None,
 
 
 class UrlopenResult(object):
-  """A fake :func:`urllib2.urlopen()` or :func:`urlfetch.fetch()` result object.
+  """A fake :func:`urllib.request.urlopen()` or :func:`urlfetch.fetch()` result object.
   """
   def __init__(self, status_code, content, url=None, headers={}):
     self.status_code = status_code
@@ -262,7 +267,7 @@ class TestCase(mox.MoxTestBase, Asserts):
       self.mox.StubOutWithMock(requests, method, use_mock_anything=True)
     self.stub_requests_head()
 
-    self.mox.StubOutWithMock(urllib2, 'urlopen')
+    self.mox.StubOutWithMock(urllib.request, 'urlopen')
 
     # set time zone to UTC so that tests don't depend on local time zone
     os.environ['TZ'] = 'UTC'
@@ -312,7 +317,7 @@ class TestCase(mox.MoxTestBase, Asserts):
       allow_redirects=kwargs.get('allow_redirects'))
 
     if 'timeout' not in kwargs:
-      kwargs['timeout'] = appengine_config.HTTP_TIMEOUT
+      kwargs['timeout'] = HTTP_TIMEOUT
     elif kwargs['timeout'] is None:
       del kwargs['timeout']
 
@@ -334,17 +339,17 @@ class TestCase(mox.MoxTestBase, Asserts):
 
   def expect_urlopen(self, url, response=None, status=200, data=None,
                      headers=None, response_headers={}, **kwargs):
-    """Stubs out :func:`urllib2.urlopen()` and sets up an expected call.
+    """Stubs out :func:`urllib.request.urlopen()` and sets up an expected call.
 
     If status isn't 2xx, makes the expected call raise a
-    :class:`urllib2.HTTPError` instead of returning the response.
+    :class:`urllib.error.HTTPError` instead of returning the response.
 
-    If data is set, url *must* be a :class:`urllib2.Request`.
+    If data is set, url *must* be a :class:`urllib.request.Request`.
 
     If response is unset, returns the expected call.
 
     Args:
-      url: string, :class:`re.RegexObject` or :class:`urllib2.Request` or
+      url: string, :class:`re.RegexObject` or :class:`urllib.request.Request` or
         :class:`webob.request.Request`
       response: string
       status: int, HTTP response code
@@ -379,15 +384,15 @@ class TestCase(mox.MoxTestBase, Asserts):
       return True
 
     if 'timeout' not in kwargs:
-      kwargs['timeout'] = appengine_config.HTTP_TIMEOUT
+      kwargs['timeout'] = HTTP_TIMEOUT
 
     call = urllib.request.urlopen(mox.Func(check_request), **kwargs)
     if status // 100 != 2:
       if response:
-        response = urllib2.addinfourl(StringIO.StringIO(response),
-                                      response_headers, url, status)
+        response = urllib.request.addinfourl(io.StringIO(response),
+                                             response_headers, url, status)
       call.AndRaise(urllib.error.HTTPError('url', status, 'message',
-                                      response_headers, response))
+                                           response_headers, response))
     elif response is not None:
       call.AndReturn(UrlopenResult(status, response, url=url,
                                    headers=response_headers))

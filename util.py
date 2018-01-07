@@ -4,11 +4,12 @@ from __future__ import absolute_import
 from __future__ import division
 from future import standard_library
 standard_library.install_aliases()
-from builtins import str
+from builtins import object
 from builtins import range
+from builtins import str
 from past.builtins import basestring
 from past.utils import old_div
-from builtins import object
+
 import calendar
 import collections
 import contextlib
@@ -59,10 +60,10 @@ except ImportError:
   exc = None
 
 try:
-  from .appengine_config import HTTP_TIMEOUT
+  from appengine_config import HTTP_TIMEOUT
   from google.appengine.api import urlfetch_errors
   from google.appengine.runtime import apiproxy_errors
-except ImportError:
+except (ImportError, ValueError):
   HTTP_TIMEOUT = 15
   urlfetch_errors = None
   apiproxy_errors = None
@@ -347,10 +348,16 @@ def domain_or_parent_in(input, domains):
   return False
 
 def update_scheme(url, handler):
-  """Returns a modified string url with the current request's scheme.
+  """Returns a modified URL with the current request's scheme.
 
   Useful for converting URLs to https if and only if the current request itself
   is being served over https.
+
+  Args:
+    url: string
+    handler: :class:`webapp2.RequestHandler`
+
+  Returns: string, url
   """
   # Instagram can't serve images over SSL, so switch to their S3 or Akamai URLs,
   # which can.
@@ -361,7 +368,7 @@ def update_scheme(url, handler):
   url = re.sub(r'^http://photos-\w\.(ak\.)instagram\.com',
                'http://igcdn-photos-e-a.akamaihd.net', url)
   return urllib.parse.urlunparse((handler.request.scheme,) +
-                             urllib.parse.urlparse(url)[1:])
+                                 urllib.parse.urlparse(url)[1:])
 
 
 def schemeless(url, slashes=True):
@@ -407,15 +414,17 @@ def clean_url(url):
   Returns:
     string, the cleaned url, or None if it can't be parsed
   """
+  if not url:
+    return url
+
   utm_params = set(('utm_campaign', 'utm_content', 'utm_medium', 'utm_source',
                     'utm_term'))
   try:
     parts = list(urllib.parse.urlparse(url))
   except (AttributeError, TypeError, ValueError) as e:
-    logging.info('%s: %s', e, url)
     return None
 
-  query = urllib.parse.unquote_plus(parts[4].encode('utf-8'))
+  query = urllib.parse.unquote_plus(parts[4])
   params = [(name, value) for name, value in urllib.parse.parse_qsl(query)
             if name not in utm_params
             and not (name == 'source' and value.startswith('rss-'))]
@@ -604,7 +613,7 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
     if max_length is None:
       max_length = host_len + 15
     try:
-      text = urllib.parse.unquote_plus(str(text)).decode('utf-8')
+      text = urllib.parse.unquote_plus(str(text))
     except ValueError:
       pass
 
@@ -762,12 +771,12 @@ def add_query_params(url, params):
   # convert to list so we can modify later
   parsed = list(urllib.parse.urlparse(url))
   # query params are in index 4
-  params = set((k, str(v).encode('utf-8')) for k, v in params)
-  parsed[4] += ('&' if parsed[4] else '') + urllib.parse.urlencode(list(params))
+  params = [(k, str(v).encode('utf-8')) for k, v in params]
+  parsed[4] += ('&' if parsed[4] else '') + urllib.parse.urlencode(params)
   updated = urllib.parse.urlunparse(parsed)
 
   if is_request:
-    return urllib.request.Request(updated, data=req.get_data(), headers=req.headers)
+    return urllib.request.Request(updated, data=req.data, headers=req.headers)
   else:
     return updated
 
@@ -813,8 +822,10 @@ def dedupe_urls(urls):
   result = []
 
   for url in urls:
-    p = urllib.parse.urlsplit(url)
+    if not url:
+      continue
 
+    p = urllib.parse.urlsplit(url)
     # normalize domain (hostname attr is lower case) and path
     norm = [p.scheme, p.hostname, p.path or '/', p.query, p.fragment]
 
@@ -985,6 +996,7 @@ def interpret_http_exception(exception):
         # store a copy inside the exception because e.fp.seek(0) to reset isn't
         # always available.
         e.body = body
+        body = body.decode('utf-8')
     except AttributeError as ae:
       if not body:
         body = e.reason
@@ -1004,7 +1016,7 @@ def interpret_http_exception(exception):
 
   elif apiclient and isinstance(e, apiclient.errors.HttpError):
     code = e.resp.status
-    body = e.content
+    body = e.content.decode('utf-8')
 
   elif AccessTokenRefreshError and isinstance(e, AccessTokenRefreshError):
     body = str(e)
@@ -1122,7 +1134,9 @@ def is_connection_failure(exception):
   types = [
       http.client.ImproperConnectionState,
       http.client.NotConnected,
-      socket.error,  # base class for all socket exceptions, including socket.timeout
+      # this used to be socket.error, but python 3.3 changed it to be an alias
+      # of OSError, so i narrowed this to socket.timeout.
+      socket.timeout,
   ]
   if apiproxy_errors:
     types += [
@@ -1203,7 +1217,7 @@ def load_file_lines(file):
   items = set()
 
   for line in file:
-    val = line.decode('utf-8').strip()
+    val = line.strip()
     if val and not val.startswith('#'):
       items.add(val)
 
@@ -1444,7 +1458,7 @@ class WideUnicode(str):
   http://stackoverflow.com/questions/35404144/correctly-extract-emojis-from-a-unicode-string
   """
   def __init__(self, *args, **kwargs):
-    super(WideUnicode, self).__init__(*args, **kwargs)
+    super(WideUnicode, self).__init__()
     # use UTF-32LE to avoid a byte order marker at the beginning of the string
     self.__utf32le = str(self).encode('utf-32le')
 
@@ -1459,13 +1473,11 @@ class WideUnicode(str):
         raise IndexError()
       key = slice(key, key + 1)
 
-    if key.stop is None:
-      key.stop = length
-
+    start = key.start or 0
+    stop = length if key.stop is None else key.stop
     assert key.step is None
 
-    return WideUnicode(self.__utf32le[key.start * 4:key.stop * 4]
-                       .decode('utf-32le'))
+    return WideUnicode(self.__utf32le[start * 4:stop * 4].decode('utf-32le'))
 
   def __getslice__(self, i, j):
     return self.__getitem__(slice(i, j))
