@@ -3,6 +3,8 @@
 Includes classes for serving templates with common variables and XRD[S] and JRD
 files like host-meta and friends.
 """
+from __future__ import absolute_import
+from future import standard_library
 import calendar
 import json
 import logging

@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 """Unit tests for util.py.
 """
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
 import datetime
 import http.client
 import json
@@ -443,8 +447,7 @@ class UtilTest(testutil.HandlerTest):
     # unquote URL escape chars and decode UTF-8 in link text
     expected = '<a href="http://x/ben-werdm%C3%BCller">x/ben-werdmüller</a>'
     url = 'http://x/ben-werdm%C3%BCller'
-    for type in str, unicode:
-      self.assertEquals(expected, pl(type(url)))
+    self.assertEquals(expected, pl(str(url)))
 
     # pass through unicode chars gracefully(ish)
     self.assertEquals('<a href="http://x/ben-werdmüller">x/ben-werdmüller</a>',
@@ -480,7 +483,7 @@ class UtilTest(testutil.HandlerTest):
       ('2012-07-23T05:54:49.123-13:00', -780, 123000),
     ):
       dt = util.parse_iso8601(val)
-      self.assertEqual(datetime.datetime(2012, 07, 23, 5, 54, 49, usecs),
+      self.assertEqual(datetime.datetime(2012, 7, 23, 5, 54, 49, usecs),
                        dt.replace(tzinfo=None))
       if offset is not None:
         offset = datetime.timedelta(minutes=offset)
@@ -820,7 +823,7 @@ class UtilTest(testutil.HandlerTest):
       'is_transient': True,
     }})
     for code in (400, 500):
-      self.assertEquals(('503', fb_transient), ihc(urllib2.HTTPError(
+      self.assertEquals(('503', fb_transient), ihc(urllib.error.HTTPError(
         'url', code, 'BAD REQUEST', {}, StringIO.StringIO(fb_transient))))
 
     # make sure we handle non-facebook JSON bodies ok
@@ -1041,7 +1044,7 @@ class UtilTest(testutil.HandlerTest):
         ({'foo': 'bar', 'baz': None}, '{"foo":"bar"}'),
         ({'b': 1, 'a': 2}, '{"a":2,"b":1}'),
     ):
-      self.assert_equals(str, urllib.unquote(util.encode_oauth_state(obj)))
+      self.assert_equals(str, urllib.parse.unquote(util.encode_oauth_state(obj)))
       self.assert_equals(obj, util.decode_oauth_state(str))
       self.assert_equals(obj, util.decode_oauth_state(util.encode_oauth_state(obj)))
-      self.assert_equals(str, urllib.unquote(util.encode_oauth_state(util.decode_oauth_state(str))))
+      self.assert_equals(str, urllib.parse.unquote(util.encode_oauth_state(util.decode_oauth_state(str))))

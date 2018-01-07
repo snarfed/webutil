@@ -1,5 +1,12 @@
 """Unit test utilities.
 """
+from __future__ import absolute_import
+from __future__ import division
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
+from past.builtins import basestring
+from builtins import object
 import base64
 import datetime
 import difflib
@@ -9,7 +16,7 @@ from mox3 import mox
 import pprint
 import re
 import os
-import rfc822
+import email
 import io
 import traceback
 import urllib.request, urllib.error, urllib.parse
@@ -98,7 +105,7 @@ class UrlopenResult(object):
     return self.url
 
   def info(self):
-    return rfc822.Message(io.StringIO(
+    return email.message.Message(io.StringIO(
         '\n'.join('%s: %s' % item for item in list(self.headers.items()))))
 
 
@@ -315,7 +322,7 @@ class TestCase(mox.MoxTestBase, Asserts):
     files = kwargs.get('files')
     if files:
       def check_files(actual):
-        self.assertEqual(actual.keys(), files.keys())
+        self.assertEqual(list(actual.keys()), list(files.keys()))
         for name, expected in files.items():
           self.assertEqual(expected, actual[name].read())
         return True
@@ -374,12 +381,12 @@ class TestCase(mox.MoxTestBase, Asserts):
     if 'timeout' not in kwargs:
       kwargs['timeout'] = appengine_config.HTTP_TIMEOUT
 
-    call = urllib2.urlopen(mox.Func(check_request), **kwargs)
-    if status / 100 != 2:
+    call = urllib.request.urlopen(mox.Func(check_request), **kwargs)
+    if status // 100 != 2:
       if response:
         response = urllib2.addinfourl(StringIO.StringIO(response),
                                       response_headers, url, status)
-      call.AndRaise(urllib2.HTTPError('url', status, 'message',
+      call.AndRaise(urllib.error.HTTPError('url', status, 'message',
                                       response_headers, response))
     elif response is not None:
       call.AndReturn(UrlopenResult(status, response, url=url,

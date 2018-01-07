@@ -1,5 +1,14 @@
 """Misc utilities.
 """
+from __future__ import absolute_import
+from __future__ import division
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
+from past.builtins import basestring
+from past.utils import old_div
+from builtins import object
 import calendar
 import collections
 import contextlib
@@ -595,7 +604,7 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
     if max_length is None:
       max_length = host_len + 15
     try:
-      text = urllib.unquote_plus(str(text)).decode('utf-8')
+      text = urllib.parse.unquote_plus(str(text)).decode('utf-8')
     except ValueError:
       pass
 
@@ -703,7 +712,7 @@ def to_utc_timestamp(input):
 
   timetuple = list(input.timetuple())
   # timetuple() usually strips microsecond
-  timetuple[5] = float(int(timetuple[5])) + float(input.microsecond) / 1000000
+  timetuple[5] += input.microsecond / 1000000
   return calendar.timegm(timetuple)
 
 
@@ -841,8 +850,8 @@ def encode_oauth_state(obj):
   logging.debug('encoding state "%s"' % obj)
   # pass in custom separators to cut down on whitespace, and sort keys for
   # unit test consistency
-  return urllib.quote_plus(json.dumps(trim_nulls(obj), separators=(',', ':'),
-                                      sort_keys=True))
+  return urllib.parse.quote_plus(json.dumps(trim_nulls(obj), separators=(',', ':'),
+                                            sort_keys=True))
 
 
 def decode_oauth_state(state):
@@ -858,7 +867,7 @@ def decode_oauth_state(state):
 
   logging.debug('decoding state "%s"' % state)
   try:
-    obj = json.loads(urllib.unquote_plus(state)) if state else {}
+    obj = json.loads(urllib.parse.unquote_plus(state)) if state else {}
   except ValueError:
     logging.exception('Invalid value for state parameter: %s' % state)
     raise exc.HTTPBadRequest('Invalid value for state parameter: %s' % state)
@@ -998,7 +1007,7 @@ def interpret_http_exception(exception):
     body = e.content
 
   elif AccessTokenRefreshError and isinstance(e, AccessTokenRefreshError):
-    body = unicode(e)
+    body = str(e)
     if body.startswith('invalid_grant'):
       code = '401'
     elif body.startswith('internal_failure'):
@@ -1087,7 +1096,7 @@ def interpret_http_exception(exception):
   elif is_connection_failure(e):
     code = '504'
     if not body:
-      body = unicode(e)
+      body = str(e)
 
   if orig_code != code:
     logging.info('Converting code %s to %s', orig_code, code)
@@ -1134,7 +1143,7 @@ def is_connection_failure(exception):
   if urllib3:
     types += [urllib3.exceptions.HTTPError]
 
-  msg = unicode(exception)
+  msg = str(exception)
   if (isinstance(exception, tuple(types)) or
       (isinstance(exception, urllib.error.URLError) and
        isinstance(exception.reason, socket.error)) or
@@ -1398,7 +1407,7 @@ class UrlCanonicalizer(object):
     return url
 
 
-class WideUnicode(unicode):
+class WideUnicode(str):
   """String class with consistent indexing and len() on narrow *and* wide Python.
 
   PEP 261 describes that Python 2 builds come in "narrow" and "wide" flavors.
@@ -1437,10 +1446,10 @@ class WideUnicode(unicode):
   def __init__(self, *args, **kwargs):
     super(WideUnicode, self).__init__(*args, **kwargs)
     # use UTF-32LE to avoid a byte order marker at the beginning of the string
-    self.__utf32le = unicode(self).encode('utf-32le')
+    self.__utf32le = str(self).encode('utf-32le')
 
   def __len__(self):
-    return len(self.__utf32le) / 4
+    return len(self.__utf32le) // 4
 
   def __getitem__(self, key):
     length = len(self)

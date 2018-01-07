@@ -1,11 +1,13 @@
 """Unit tests for handlers.py.
 """
 
+from future import standard_library
+standard_library.install_aliases()
 import datetime
 import os
 import socket
 import traceback
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 from google.appengine.api import memcache
 from google.appengine.ext.webapp import template

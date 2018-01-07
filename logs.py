@@ -1,19 +1,22 @@
 """A handler that exposes App Engine app logs to users.
 """
+from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
 import calendar
 import cgi
 import datetime
 import logging
 import re
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
-import appengine_config
+from . import appengine_config
 from google.appengine.api import logservice
 from google.appengine.ext import ndb
 import humanize
 import webapp2
 
-import util
+from . import util
 
 
 LEVELS = {
@@ -97,7 +100,7 @@ def linkify_datastore_keys(msg):
   def linkify_key(match):
     try:
       key = ndb.Key(urlsafe=match.group(1))
-      tokens = [(kind, '%s:%s' % ('id' if isinstance(id, (int, long)) else 'name', id))
+      tokens = [(kind, '%s:%s' % ('id' if isinstance(id, int) else 'name', id))
                 for kind, id in key.pairs()]
       key_str = '|'.join('%d/%s|%d/%s' % (len(kind), kind, len(id), id)
                          for kind, id in tokens)
@@ -129,7 +132,7 @@ class LogHandler(webapp2.RequestHandler):
       self.abort(400, "Couldn't convert start_time to float: %r" % start_time)
     start_time = float(start_time)
 
-    key = urllib.unquote_plus(util.get_required_param(self, 'key'))
+    key = urllib.parse.unquote_plus(util.get_required_param(self, 'key'))
     # the propagate task logs the poll task's URL, which includes the source
     # entity key as a query param. exclude that with this heuristic.
     key_re = re.compile('[^=]' + key)
