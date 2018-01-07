@@ -5,7 +5,7 @@ import datetime
 import difflib
 import json
 import logging
-import mox
+from mox3 import mox
 import pprint
 import re
 import os

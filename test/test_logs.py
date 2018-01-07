@@ -2,7 +2,7 @@
 import datetime
 
 from google.appengine.ext import ndb
-import mox
+from mox3 import mox
 
 import logs
 
