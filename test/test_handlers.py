@@ -24,7 +24,7 @@ import testutil
 handlers.JINJA_ENV.loader.searchpath.append('/')
 
 
-class HandlerTest(TestCase):
+class HandlerTest(testutil.TestCase):
   """Base test class for webapp2 request handlers.
 
   Uses App Engine's testbed to set up API stubs:
@@ -101,7 +101,7 @@ class HandlersTest(HandlerTest):
     self.assertEquals('HTTP Error 408: foo bar', resp.body)
 
     # network failure
-    Handler.err = socket.error('foo bar')
+    Handler.err = socket.timeout('foo bar')
     resp = app.get_response('/')
     self.assertEquals(504, resp.status_int)
     self.assertEquals('Upstream server request failed: foo bar', resp.body)

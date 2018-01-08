@@ -13,14 +13,14 @@ import os
 import urllib.request, urllib.error, urllib.parse
 import urllib.parse
 
-from . import appengine_config
+import appengine_config
 
 from google.appengine.ext.webapp import template
 from google.appengine.api import memcache
 import jinja2
 import webapp2
 
-from . import logs, util
+import logs, util
 
 JINJA_ENV = jinja2.Environment(
   loader=jinja2.FileSystemLoader(('.', 'templates')),

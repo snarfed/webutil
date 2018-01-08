@@ -22,9 +22,9 @@ import datetime
 import heapq
 import os
 
-from . import appengine_config
+import appengine_config
 from google.appengine.api import runtime
-from . import handlers
+import handlers
 import threading
 import webapp2
 

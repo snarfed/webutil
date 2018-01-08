@@ -11,13 +11,13 @@ import logging
 import re
 import urllib.request, urllib.parse, urllib.error
 
-from . import appengine_config
+import appengine_config
 from google.appengine.api import logservice
 from google.appengine.ext import ndb
 import humanize
 import webapp2
 
-from . import util
+import util
 
 
 LEVELS = {
