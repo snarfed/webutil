@@ -4,10 +4,10 @@ from google.appengine.ext import db
 from google.appengine.ext import ndb
 
 from models import StringIdModel, KeyNameModel, SingleEGModel
-import testutil
+from test_handlers import HandlerTest
 
 
-class StringIdModelTest(testutil.HandlerTest):
+class StringIdModelTest(HandlerTest):
 
   def test_put(self):
     self.assertEqual(ndb.Key('StringIdModel', 'x'),
@@ -17,7 +17,7 @@ class StringIdModelTest(testutil.HandlerTest):
     self.assertRaises(AssertionError, StringIdModel(id=1).put)
 
 
-class KeyNameModelTest(testutil.HandlerTest):
+class KeyNameModelTest(HandlerTest):
 
   def test_constructor(self):
     # with key name is ok
@@ -29,7 +29,7 @@ class KeyNameModelTest(testutil.HandlerTest):
     self.assertRaises(AssertionError, KeyNameModel)
 
 
-class SingleEGModelTest(testutil.HandlerTest):
+class SingleEGModelTest(HandlerTest):
 
   class Foo(SingleEGModel):
     pass
