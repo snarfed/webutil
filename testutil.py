@@ -92,7 +92,7 @@ class UrlopenResult(object):
   """
   def __init__(self, status_code, content, url=None, headers={}):
     self.status_code = status_code
-    self.content = io.StringIO(content)
+    self.content = io.StringIO(str(content))
     self.url = url
     self.headers = headers
 
@@ -391,7 +391,7 @@ class TestCase(mox.MoxTestBase, Asserts):
     call = urllib.request.urlopen(mox.Func(check_request), **kwargs)
     if status // 100 != 2:
       if response:
-        response = urllib.request.addinfourl(io.StringIO(response),
+        response = urllib.request.addinfourl(io.StringIO(str(response)),
                                              response_headers, url, status)
       call.AndRaise(urllib.error.HTTPError('url', status, 'message',
                                            response_headers, response))

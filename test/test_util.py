@@ -3,10 +3,10 @@
 
 Supports Python 3. Should not depend on App Engine API or SDK packages.
 """
+from __future__ import unicode_literals
 from future import standard_library
 standard_library.install_aliases()
-from builtins import str
-from builtins import range
+from builtins import range, str
 
 import datetime
 import http.client
@@ -515,7 +515,7 @@ class UtilTest(testutil.TestCase):
       ('not a timestamp!', 'not a timestamp!'),
       (1349588757, '2012-10-07T05:45:57+00:00'),
       ('1349588757', '2012-10-07T05:45:57+00:00'),
-      ):
+    ):
       self.assertEqual(expected, util.maybe_timestamp_to_rfc3339(input))
 
   def test_to_utc_timestamp(self):
@@ -674,12 +674,13 @@ class UtilTest(testutil.TestCase):
         requests.HTTPError(response=util.Struct(status_code='429', text='my body'))))
 
     # facebook page rate limiting
-    body = json.dumps({'error': {
+    json_str = lambda obj: io.StringIO(str(json.dumps(obj)))
+    body = {'error': {
       'type': 'OAuthException',
       'code': 32,
       'message': '(#32) Page request limited reached',
-    }})
-    code, _ = ihc(urllib.error.HTTPError('url', 400, '', {}, io.StringIO(body)))
+    }}
+    code, _ = ihc(urllib.error.HTTPError('url', 400, '', {}, json_str(body)))
     self.assertEqual('429', code)
 
     # fake gdata.client.RequestError since gdata isn't a dependency
@@ -790,7 +791,7 @@ class UtilTest(testutil.TestCase):
       ):
       for code in 400, 500:
         got_code, got_body = ihc(urllib.error.HTTPError(
-          'url', code, 'BAD REQUEST', {}, io.StringIO(json.dumps(body))))
+          'url', code, 'BAD REQUEST', {}, json_str(body)))
         self.assertEqual('401', got_code, (got_code, body))
         self.assert_equals(body, json.loads(got_body), body)
 
@@ -817,29 +818,34 @@ class UtilTest(testutil.TestCase):
     ):
       for code, expected in (400, 400), (500, 502):
         got_code, got_body = ihc(urllib.error.HTTPError(
-          'url', code, 'BAD REQUEST', {}, io.StringIO(json.dumps(body))))
+          'url', code, 'BAD REQUEST', {}, json_str(body)))
         self.assertEqual(str(expected), got_code, (code, got_code, body))
         self.assert_equals(body, json.loads(got_body), body)
 
     # facebook temporarily unavailable with is_transient
     # https://github.com/snarfed/bridgy/issues/450
-    fb_transient = json.dumps({'error': {
+    fb_transient = {'error': {
       'message' : '(#2) Service temporarily unavailable',
       # also seen:
       # 'message': 'An unexpected error has occurred. Please retry your request later.',
       'code' : 2,
       'type' : 'OAuthException',
       'is_transient': True,
-    }})
+    }}
     for code in (400, 500):
-      self.assertEqual(('503', fb_transient), ihc(urllib.error.HTTPError(
-        'url', code, 'BAD REQUEST', {}, io.StringIO(fb_transient))))
+      body = json_str(fb_transient)
+      self.assertEqual(
+        ('503', body.getvalue()),
+        ihc(urllib.error.HTTPError('url', code, 'BAD REQUEST', {}, body)))
 
     # make sure we handle non-facebook JSON bodies ok
-    wordpress_rest_error = json.dumps(
-      {'error': 'unauthorized', 'message': 'Comments on this post are closed'})
-    self.assertEqual(('402', wordpress_rest_error), ihc(urllib.error.HTTPError(
-      'url', 402, 'BAD REQUEST', {}, io.StringIO(wordpress_rest_error))))
+    wordpress_rest_error = json_str({
+      'error': 'unauthorized',
+      'message': 'Comments on this post are closed',
+    })
+    self.assertEqual(
+      ('402', wordpress_rest_error.getvalue()),
+      ihc(urllib.error.HTTPError('url', 402, 'BAD REQUEST', {}, wordpress_rest_error)))
 
     # upstream connection failures are converted to 504
     self.assertEqual(('504', 'foo bar'), ihc(socket.timeout('foo bar')))

@@ -2,15 +2,12 @@
 
 Supports Python 3. Should not depend on App Engine API or SDK packages.
 """
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, unicode_literals
 from future import standard_library
 standard_library.install_aliases()
-from builtins import object
-from builtins import range
-from builtins import str
+from future.utils import bytes_to_native_str
+from builtins import object, range, str
 from past.builtins import basestring
-from past.utils import old_div
 
 import calendar
 import collections
@@ -72,6 +69,7 @@ except (ImportError, ValueError):
 
 EPOCH = datetime.datetime.utcfromtimestamp(0)
 EPOCH_ISO = EPOCH.isoformat()
+T = bytes_to_native_str(b'T')  # for isoformat()
 
 
 class Struct(object):
@@ -700,7 +698,7 @@ def maybe_iso8601_to_rfc3339(input):
   http://www.rfc-editor.org/rfc/rfc3339.txt
   """
   try:
-    return parse_iso8601(input).isoformat('T')
+    return parse_iso8601(input).isoformat(T)
   except (AssertionError, ValueError, TypeError):
     return input
 
@@ -711,7 +709,7 @@ def maybe_timestamp_to_rfc3339(input):
   Assumes UNIX timestamps are always UTC. (They're generally supposed to be.)
   """
   try:
-    return datetime.datetime.utcfromtimestamp(int(input)).replace(tzinfo=UTC).isoformat('T')
+    return datetime.datetime.utcfromtimestamp(int(input)).replace(tzinfo=UTC).isoformat(T)
   except (ValueError, TypeError):
     return input
 
@@ -786,7 +784,7 @@ def add_query_params(url, params):
 def get_required_param(handler, name):
   try:
     val = handler.request.get(name)
-  except UnicodeDecodeError as e:
+  except (UnicodeDecodeError, UnicodeEncodeError) as e:
     handler.abort(400, "Couldn't decode query parameters as UTF-8: %s" % e)
 
   if not val:
