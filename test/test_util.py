@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """Unit tests for util.py.
+
+Supports Python 3. Should not depend on App Engine API or SDK packages.
 """
 from future import standard_library
 standard_library.install_aliases()

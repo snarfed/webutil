@@ -1,4 +1,6 @@
 """Unit test utilities.
+
+Supports Python 3. Should not depend on App Engine API or SDK packages.
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -126,12 +128,14 @@ class Asserts(object):
       keys_only: boolean, if True only compare keys
       in_order: boolean. If False, all entities must have keys.
     """
-    if not isinstance(a, (list, tuple, db.Query, ndb.Query)):
+    # all the __class__.__name__ hacks below are so we avoid importing db or ndb
+    # from the app engine SDK, since this file needs to support Python 3.
+    if not (isinstance(a, (list, tuple) or a.__class__.__name__ == 'Query')):
       a = [a]
-    if not isinstance(b, (list, tuple, db.Query, ndb.Query)):
+    if not (isinstance(b, (list, tuple) or b.__class__.__name__ == 'Query')):
       b = [b]
 
-    key_fn = lambda e: e.key if isinstance(e, ndb.Model) else e.key()
+    key_fn = lambda e: e.key if e.__class__.__name__ == 'Model' else e.key()
     if not in_order:
       a = list(sorted(a, key=key_fn))
       b = list(sorted(b, key=key_fn))
@@ -139,16 +143,20 @@ class Asserts(object):
     self.assertEqual(len(a), len(b),
                      'Different lengths:\n expected %s\n actual %s' % (a, b))
 
-    flat_key = lambda e: e.key.flat() if isinstance(e, ndb.Model) else e.key().to_path()
+    flat_key = lambda e: (e.key.flat() if e.__class__.__name__ == 'Model'
+                          else e.key().to_path())
     for x, y in zip(a, b):
       try:
         self.assertEqual(flat_key(x), flat_key(y))
-      except (db.BadKeyError, db.NotSavedError):
-        if keys_only:
+      except Exception as err:
+        if err.__class__.__name__ in ('BadKeyError', 'NotSavedError'):
+          if keys_only:
+            raise
+        else:
           raise
 
       def props(e):
-        all = e.to_dict() if isinstance(e, ndb.Model) else e.properties()
+        all = e.to_dict() if e.__class__.__name__ == 'Model' else e.properties()
         return {k: v for k, v in list(all.items()) if k not in ignore}
 
       if not keys_only:

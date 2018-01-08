@@ -1,4 +1,6 @@
 """Misc utilities.
+
+Supports Python 3. Should not depend on App Engine API or SDK packages.
 """
 from __future__ import absolute_import
 from __future__ import division
