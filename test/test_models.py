@@ -4,7 +4,7 @@ from google.appengine.ext import db
 from google.appengine.ext import ndb
 
 from models import StringIdModel, KeyNameModel, SingleEGModel
-from test_handlers import HandlerTest
+from testutil_appengine import HandlerTest
 
 
 class StringIdModelTest(HandlerTest):
