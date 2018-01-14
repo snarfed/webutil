@@ -991,13 +991,13 @@ def interpret_http_exception(exception):
   elif isinstance(e, urllib.error.HTTPError):
     code = e.code
     try:
-      body = e.read() or getattr(e, 'body')
+      body = e.read() or e.body
       if body:
         # store a copy inside the exception because e.fp.seek(0) to reset isn't
         # always available.
         e.body = body
         body = body.decode('utf-8')
-    except AttributeError as ae:
+    except (AttributeError, KeyError) as ake:
       if not body:
         body = e.reason
 
@@ -1230,7 +1230,7 @@ def urlopen(url_or_req, *args, **kwargs):
 
   if isinstance(url_or_req, urllib.request.Request):
     if data is None:
-      data = url_or_req.get_data()
+      data = url_or_req.data
     url = url_or_req.get_full_url()
   else:
     url = url_or_req
@@ -1315,7 +1315,7 @@ def follow_redirects(url, cache=None, fail_cache_time_secs = 60 * 60 * 24,  # a 
     cache_time = fail_cache_time_secs
 
   content_type = resolved.headers.get('content-type')
-  if not content_type:
+  if not content_type and resolved.url:
     type, _ = mimetypes.guess_type(resolved.url)
     resolved.headers['content-type'] = type or 'text/html'
 

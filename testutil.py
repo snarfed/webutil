@@ -2,12 +2,10 @@
 
 Supports Python 3. Should not depend on App Engine API or SDK packages.
 """
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, unicode_literals
 from future import standard_library
 standard_library.install_aliases()
-from builtins import object
-from builtins import zip
+from builtins import object, str, zip
 from past.builtins import basestring
 
 import base64
@@ -106,8 +104,8 @@ class UrlopenResult(object):
     return self.url
 
   def info(self):
-    return email.message.Message(io.StringIO(
-        '\n'.join('%s: %s' % item for item in list(self.headers.items()))))
+    return email.message_from_string(
+        '\n'.join('%s: %s' % item for item in self.headers.items()))
 
 
 class Asserts(object):
@@ -198,10 +196,13 @@ Actual value:
       elif isinstance(expected, dict) and isinstance(actual, dict):
         for key in set(expected.keys()) | set(actual.keys()):
           self._assert_equals(expected.get(key), actual.get(key), in_order=in_order)
-      elif isinstance(expected, (list, tuple)) and isinstance(actual, (list, tuple)):
+      elif (isinstance(expected, (list, tuple, set)) and
+            isinstance(actual, (list, tuple, set))):
         if not in_order:
-          expected = sorted(list(expected))
-          actual = sorted(list(actual))
+          # use custom key because Python 3 dicts are not comparable :/
+          to_json = lambda x: None if x is None else json.dumps(x, sort_keys=True)
+          expected = sorted(expected, key=to_json)
+          actual = sorted(actual, key=to_json)
         self.assertEqual(len(expected), len(actual),
                          'Different lengths:\n expected %s\n actual %s' %
                          (len(expected), len(actual)))
@@ -372,7 +373,7 @@ class TestCase(mox.MoxTestBase, Asserts):
           assert not data, data
           assert not headers, headers
         else:
-          self.assertEqual(data, req.get_data())
+          self.assertEqual(data, req.data)
           if isinstance(headers, mox.Comparator):
             self.assertTrue(headers.equals(req.header_items()))
           elif headers is not None:
