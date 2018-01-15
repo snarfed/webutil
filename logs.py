@@ -1,6 +1,5 @@
 """A handler that exposes App Engine app logs to users.
 """
-from __future__ import absolute_import
 from future import standard_library
 standard_library.install_aliases()
 
