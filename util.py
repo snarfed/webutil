@@ -999,7 +999,7 @@ def interpret_http_exception(exception):
         body = body.decode('utf-8')
     except (AttributeError, KeyError) as ake:
       if not body:
-        body = e.reason
+        body = str(e.reason)
 
     # yes, flickr returns 400s when they're down. kinda ridiculous. fix that.
     if (code == '418' or
@@ -1008,7 +1008,7 @@ def interpret_http_exception(exception):
       code = '504'
 
   elif isinstance(e, urllib.error.URLError):
-    body = e.reason
+    body = str(e.reason)
 
   elif requests and isinstance(e, requests.HTTPError):
     code = e.response.status_code
@@ -1034,7 +1034,7 @@ def interpret_http_exception(exception):
     code = str(code)
   orig_code = code
   if code or body:
-    logging.warning('Error %s, response body: %s', code, body)
+    logging.warning('Error %s, response body: %s', code, repr(body))
 
   # silo-specific error_types that should disable the source.
   #

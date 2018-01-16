@@ -847,6 +847,12 @@ class UtilTest(testutil.TestCase):
       ('402', wordpress_rest_error.getvalue()),
       ihc(urllib.error.HTTPError('url', 402, 'BAD REQUEST', {}, wordpress_rest_error)))
 
+    # HTTPError.reason can be an exception as well as a string
+    err = socket.error(-1, 'foo bar')
+    self.assertEqual(
+      ('504', '[Errno -1] foo bar'),
+      ihc(urllib.error.HTTPError('url', None, err, {}, None)))
+
     # upstream connection failures are converted to 504
     self.assertEqual(('504', 'foo bar'), ihc(socket.timeout('foo bar')))
 
