@@ -479,8 +479,8 @@ class UtilTest(testutil.HandlerTest):
       (None, None),
       ('', ''),
       ('not a timestamp!', 'not a timestamp!'),
-      (1349588757, '2012-10-07T05:45:57'),
-      ('1349588757', '2012-10-07T05:45:57'),
+      (1349588757, '2012-10-07T05:45:57+00:00'),
+      ('1349588757', '2012-10-07T05:45:57+00:00'),
       ):
       self.assertEqual(expected, util.maybe_timestamp_to_rfc3339(input))
 

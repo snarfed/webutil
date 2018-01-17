@@ -659,9 +659,12 @@ def maybe_iso8601_to_rfc3339(input):
 
 
 def maybe_timestamp_to_rfc3339(input):
-  """Tries to convert a string or int UNIX timestamp to RFC 3339."""
+  """Tries to convert a string or int UNIX timestamp to RFC 3339.
+
+  Assumes UNIX timestamps are always UTC. (They're generally supposed to be.)
+  """
   try:
-    return datetime.datetime.fromtimestamp(int(input)).isoformat('T')
+    return datetime.datetime.utcfromtimestamp(int(input)).replace(tzinfo=UTC).isoformat('T')
   except (ValueError, TypeError):
     return input
 
