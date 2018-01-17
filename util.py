@@ -638,7 +638,12 @@ def parse_iso8601(val):
     val = val[:-1]
     tz = UTC
 
-  return datetime.datetime.strptime(val, '%Y-%m-%d %H:%M:%S').replace(tzinfo=tz)
+  # fractional seconds are optional. add them if they're not already there to
+  # make strptime parsing below easier.
+  if '.' not in val:
+    val += '.0'
+
+  return datetime.datetime.strptime(val, '%Y-%m-%d %H:%M:%S.%f').replace(tzinfo=tz)
 
 
 def maybe_iso8601_to_rfc3339(input):
