@@ -603,7 +603,9 @@ class SimpleTzinfo(datetime.tzinfo):
 UTC = SimpleTzinfo()
 
 
-def parse_iso8601(str):
+TIMEZONE_OFFSET_RE = re.compile(r'[+-]\d{2}:?\d{2}$')
+
+def parse_iso8601(val):
   """Parses an ISO 8601 or RFC 3339 date/time string and returns a datetime.
 
   Time zone designator is optional. If present, the returned datetime will be
@@ -618,21 +620,25 @@ def parse_iso8601(str):
   # grr, this would be way easier if strptime supported %z, but evidently that
   # was only added in python 3.2.
   # http://stackoverflow.com/questions/9959778/is-there-a-wildcard-format-directive-for-strptime
-  try:
-    base, zone = re.match('(.{19})([+-]\d{2}:?\d{2})?', str).groups()
-  except AttributeError, e:
-    raise ValueError(e)
+  assert val
 
+  val = val.replace('T', ' ')
   tz = None
-  if zone:
-    zone = zone.replace(':', '')
-    tz = SimpleTzinfo()
-    tz.offset = (datetime.datetime.strptime(zone[1:], '%H%M') -
-                 datetime.datetime.strptime('', ''))
-    if zone[0] == '-':
-      tz.offset = -tz.offset
+  zone = TIMEZONE_OFFSET_RE.search(val)
 
-  return datetime.datetime.strptime(base, '%Y-%m-%dT%H:%M:%S').replace(tzinfo=tz)
+  if zone:
+    offset = zone.group()
+    val = val[:-len(offset)]
+    tz = SimpleTzinfo()
+    tz.offset = (datetime.datetime.strptime(offset[1:].replace(':', ''), '%H%M') -
+                 datetime.datetime.strptime('', ''))
+    if offset[0] == '-':
+      tz.offset = -tz.offset
+  elif val[-1] == 'Z':
+    val = val[:-1]
+    tz = UTC
+
+  return datetime.datetime.strptime(val, '%Y-%m-%d %H:%M:%S').replace(tzinfo=tz)
 
 
 def maybe_iso8601_to_rfc3339(input):
@@ -648,7 +654,7 @@ def maybe_iso8601_to_rfc3339(input):
   """
   try:
     return parse_iso8601(input).isoformat('T')
-  except (ValueError, TypeError):
+  except (AssertionError, ValueError, TypeError):
     return input
 
 
