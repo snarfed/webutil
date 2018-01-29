@@ -247,6 +247,7 @@ not found in:
 
 class TestCase(mox.MoxTestBase, Asserts):
   """Test case class with lots of extra helpers."""
+  maxDiff = None
 
   def setUp(self):
     super(TestCase, self).setUp()

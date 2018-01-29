@@ -1043,7 +1043,9 @@ def interpret_http_exception(exception):
         'Permissions error' == message
        )) or
       (type == 'FacebookApiException' and 'Permissions error' in message) or
-      (err_code in (102, 190) and err_subcode in (458, 459, 460, 463, 490)) or
+      # https://developers.facebook.com/docs/graph-api/using-graph-api#errorcodes
+      # https://developers.facebook.com/docs/graph-api/using-graph-api#errorsubcodes
+      (err_code in (102, 190) and err_subcode in (458, 459, 460, 463, 467, 490)) or
       (err_code == 326 and 'this account is temporarily locked' in message)
     ):
     code = '401'
