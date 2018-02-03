@@ -1235,6 +1235,10 @@ def urlopen(url_or_req, *args, **kwargs):
   else:
     url = url_or_req
 
+  if url_or_req.__class__.__module__ == 'urllib2':
+    # convert python 2 urllib2.Request to python 3 urllib.request.Request
+    url_or_req = urllib.request.Request(url, data=data, headers=url_or_req.headers)
+
   logging.info('urlopen %s %s %s', 'GET' if data is None else 'POST', url,
                _prune(kwargs))
   kwargs.setdefault('timeout', HTTP_TIMEOUT)
