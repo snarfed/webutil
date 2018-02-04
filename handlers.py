@@ -10,7 +10,7 @@ import calendar
 import json
 import logging
 import os
-import urllib.request, urllib.error, urllib.parse
+import urllib.parse
 
 import appengine_config
 

@@ -3,6 +3,11 @@
 Supports Python 3. Should not depend on App Engine API or SDK packages.
 """
 from __future__ import absolute_import, division, unicode_literals
+# Future's default urllib backport based on the http library doesn't work in App
+# Engine's dev_appserver, probably because it doesn't support SSL. Use this
+# urllib2-based one instead. http://python-future.org/imports.html#aliased-imports
+from future.moves.urllib.request import urlopen as urllib_urlopen
+from future.moves.urllib import error as urllib_error
 from future import standard_library
 standard_library.install_aliases()
 from future.utils import bytes_to_native_str
@@ -23,7 +28,7 @@ import numbers
 import os
 import re
 import socket
-import urllib.error, urllib.parse, urllib.request
+import urllib.parse, urllib.request
 
 # These are used in interpret_http_exception() and is_connection_failure(). They
 # use dependencies that we may or may not have, so degrade gracefully if they're
@@ -988,7 +993,7 @@ def interpret_http_exception(exception):
     code = e.code
     body = e.plain_body({})
 
-  elif isinstance(e, urllib.error.HTTPError):
+  elif isinstance(e, urllib_error.HTTPError):
     code = e.code
     try:
       body = e.read() or e.body
@@ -1007,7 +1012,7 @@ def interpret_http_exception(exception):
          'Sorry, the Flickr API service is not currently available' in body)):
       code = '504'
 
-  elif isinstance(e, urllib.error.URLError):
+  elif isinstance(e, urllib_error.URLError):
     body = str(e.reason)
 
   elif requests and isinstance(e, requests.HTTPError):
@@ -1159,7 +1164,7 @@ def is_connection_failure(exception):
 
   msg = str(exception)
   if (isinstance(exception, tuple(types)) or
-      (isinstance(exception, urllib.error.URLError) and
+      (isinstance(exception, urllib_error.URLError) and
        isinstance(exception.reason, socket.error)) or
       (isinstance(exception, http.client.HTTPException) and
        'Deadline exceeded' in msg) or
@@ -1228,7 +1233,7 @@ def urlopen(url_or_req, *args, **kwargs):
   """Wraps urllib2.urlopen and logs the HTTP method and URL."""
   data = kwargs.get('data')
 
-  if isinstance(url_or_req, urllib.request.Request):
+  if url_or_req.__class__.__name__ == 'Request':
     if data is None:
       data = url_or_req.data
     url = url_or_req.get_full_url()
@@ -1242,7 +1247,7 @@ def urlopen(url_or_req, *args, **kwargs):
   logging.info('urlopen %s %s %s', 'GET' if data is None else 'POST', url,
                _prune(kwargs))
   kwargs.setdefault('timeout', HTTP_TIMEOUT)
-  return urllib.request.urlopen(url_or_req, *args, **kwargs)
+  return urllib_urlopen(url_or_req, *args, **kwargs)
 
 
 def requests_fn(fn):

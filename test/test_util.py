@@ -5,6 +5,8 @@ Supports Python 3. Should not depend on App Engine API or SDK packages.
 """
 from __future__ import unicode_literals
 from future import standard_library
+from future.moves.urllib.request import urlopen as urllib_urlopen
+from future.moves.urllib import error as urllib_error
 standard_library.install_aliases()
 from builtins import range, str
 
@@ -13,8 +15,7 @@ import http.client
 import json
 import socket
 import io
-import urllib.request, urllib.error, urllib.parse
-import urllib.parse
+import urllib.parse, urllib.request
 
 import apiclient.errors
 import httplib2
@@ -662,13 +663,13 @@ class UtilTest(testutil.TestCase):
         apiclient.errors.HttpError(httplib2.Response({'status': 429}), b'my body')))
 
     # rate limiting
-    ex = urllib.error.HTTPError('url', 429, 'msg', {}, io.StringIO('my body'))
+    ex = urllib_error.HTTPError('url', 429, 'msg', {}, io.StringIO('my body'))
     self.assertFalse(util.is_connection_failure(ex))
     self.assertEqual(('429', 'my body'), ihc(ex))
     # check that it works multiple times even though read() doesn't.
     self.assertEqual(('429', 'my body'), ihc(ex))
 
-    self.assertEqual((None, 'foo bar'), ihc(urllib.error.URLError('foo bar')))
+    self.assertEqual((None, 'foo bar'), ihc(urllib_error.URLError('foo bar')))
 
     self.assertEqual(('429', 'my body'), ihc(
         requests.HTTPError(response=util.Struct(status_code='429', text='my body'))))
@@ -680,7 +681,7 @@ class UtilTest(testutil.TestCase):
       'code': 32,
       'message': '(#32) Page request limited reached',
     }}
-    code, _ = ihc(urllib.error.HTTPError('url', 400, '', {}, json_str(body)))
+    code, _ = ihc(urllib_error.HTTPError('url', 400, '', {}, json_str(body)))
     self.assertEqual('429', code)
 
     # fake gdata.client.RequestError since gdata isn't a dependency
@@ -705,12 +706,12 @@ class UtilTest(testutil.TestCase):
     msg = 'message=Sorry, the Flickr API service is not currently available., flickr code=0'
     self.assertEqual(
       ('504', msg),
-      ihc(urllib.error.HTTPError('url', '400', msg, {}, io.StringIO())))
+      ihc(urllib_error.HTTPError('url', '400', msg, {}, io.StringIO())))
 
     # https://console.cloud.google.com/errors/13299057966731352169?project=brid-gy
     self.assertEqual(
       ('504', 'Unknown'),
-      ihc(urllib.error.HTTPError('url', '418', 'Unknown', {}, io.StringIO())))
+      ihc(urllib_error.HTTPError('url', '418', 'Unknown', {}, io.StringIO())))
 
     # auth failures as HTTPErrors that should become 401s
     for body in (
@@ -790,7 +791,7 @@ class UtilTest(testutil.TestCase):
       }]},
       ):
       for code in 400, 500:
-        got_code, got_body = ihc(urllib.error.HTTPError(
+        got_code, got_body = ihc(urllib_error.HTTPError(
           'url', code, 'BAD REQUEST', {}, json_str(body)))
         self.assertEqual('401', got_code, (got_code, body))
         self.assert_equals(body, json.loads(got_body), body)
@@ -817,7 +818,7 @@ class UtilTest(testutil.TestCase):
       }},
     ):
       for code, expected in (400, 400), (500, 502):
-        got_code, got_body = ihc(urllib.error.HTTPError(
+        got_code, got_body = ihc(urllib_error.HTTPError(
           'url', code, 'BAD REQUEST', {}, json_str(body)))
         self.assertEqual(str(expected), got_code, (code, got_code, body))
         self.assert_equals(body, json.loads(got_body), body)
@@ -836,7 +837,7 @@ class UtilTest(testutil.TestCase):
       body = json_str(fb_transient)
       self.assertEqual(
         ('503', body.getvalue()),
-        ihc(urllib.error.HTTPError('url', code, 'BAD REQUEST', {}, body)))
+        ihc(urllib_error.HTTPError('url', code, 'BAD REQUEST', {}, body)))
 
     # make sure we handle non-facebook JSON bodies ok
     wordpress_rest_error = json_str({
@@ -845,13 +846,13 @@ class UtilTest(testutil.TestCase):
     })
     self.assertEqual(
       ('402', wordpress_rest_error.getvalue()),
-      ihc(urllib.error.HTTPError('url', 402, 'BAD REQUEST', {}, wordpress_rest_error)))
+      ihc(urllib_error.HTTPError('url', 402, 'BAD REQUEST', {}, wordpress_rest_error)))
 
     # HTTPError.reason can be an exception as well as a string
     err = socket.error(-1, 'foo bar')
     self.assertEqual(
       ('504', '[Errno -1] foo bar'),
-      ihc(urllib.error.HTTPError('url', None, err, {}, None)))
+      ihc(urllib_error.HTTPError('url', None, err, {}, None)))
 
     # upstream connection failures are converted to 504
     self.assertEqual(('504', 'foo bar'), ihc(socket.timeout('foo bar')))
@@ -871,15 +872,15 @@ class UtilTest(testutil.TestCase):
   def test_is_connection_failure(self):
     for e in (socket.timeout(), requests.ConnectionError(),
               http.client.NotConnected(),
-              urllib.error.URLError(socket.gaierror('foo bar')),
+              urllib_error.URLError(socket.gaierror('foo bar')),
               urllib3.exceptions.TimeoutError(),
               Exception('Connection closed unexpectedly by server at URL: ...'),
     ):
       assert util.is_connection_failure(e), e
 
     for e in (None, 3, 'asdf', IOError(), http.client.HTTPException('unknown'),
-              urllib.error.URLError('asdf'),
-              urllib.error.HTTPError('url', 403, 'msg', {}, None),
+              urllib_error.URLError('asdf'),
+              urllib_error.HTTPError('url', 403, 'msg', {}, None),
               ):
       assert not util.is_connection_failure(e), repr(e)
 

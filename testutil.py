@@ -4,6 +4,7 @@ Supports Python 3. Should not depend on App Engine API or SDK packages.
 """
 from __future__ import absolute_import, division, unicode_literals
 from future import standard_library
+from future.moves.urllib import error as urllib_error
 standard_library.install_aliases()
 from builtins import object, str, zip
 from past.builtins import basestring
@@ -20,7 +21,7 @@ import os
 import email
 import io
 import traceback
-import urllib.request, urllib.error, urllib.parse
+import urllib.parse, urllib.request
 
 try:
   from appengine_config import HTTP_TIMEOUT
@@ -270,7 +271,7 @@ class TestCase(mox.MoxTestBase, Asserts):
       self.mox.StubOutWithMock(requests, method, use_mock_anything=True)
     self.stub_requests_head()
 
-    self.mox.StubOutWithMock(urllib.request, 'urlopen')
+    self.mox.StubOutWithMock(util, 'urllib_urlopen')
 
     # set time zone to UTC so that tests don't depend on local time zone
     os.environ['TZ'] = 'UTC'
@@ -389,12 +390,12 @@ class TestCase(mox.MoxTestBase, Asserts):
     if 'timeout' not in kwargs:
       kwargs['timeout'] = HTTP_TIMEOUT
 
-    call = urllib.request.urlopen(mox.Func(check_request), **kwargs)
+    call = util.urllib_urlopen(mox.Func(check_request), **kwargs)
     if status // 100 != 2:
       if response:
         response = urllib.request.addinfourl(io.StringIO(str(response)),
                                              response_headers, url, status)
-      call.AndRaise(urllib.error.HTTPError('url', status, 'message',
+      call.AndRaise(urllib_error.HTTPError('url', status, 'message',
                                            response_headers, response))
     elif response is not None:
       call.AndReturn(UrlopenResult(status, response, url=url,
