@@ -5,6 +5,7 @@ files like host-meta and friends.
 """
 from future import standard_library
 standard_library.install_aliases()
+from future.utils import native_str
 
 import calendar
 import json
@@ -81,7 +82,8 @@ def redirect(from_domain, to_domain):
       # not using self.request.host because it includes port
       if parts[1] in from_domain:  # netloc
         parts[1] = to_domain
-        return self.redirect(urllib.parse.urlunparse(parts), permanent=True)
+        return self.redirect(native_str(urllib.parse.urlunparse(parts)),
+                             permanent=True)
       else:
         return method(self, *args, **kwargs)
 
