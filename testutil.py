@@ -28,6 +28,7 @@ try:
 except (ImportError, ValueError):
   HTTP_TIMEOUT = 15
 
+from oauth_dropins.webutil import util
 import requests
 import webapp2
 
