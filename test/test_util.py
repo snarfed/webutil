@@ -971,10 +971,13 @@ class UtilTest(testutil.TestCase):
     check('http://fa.ke/123', 'https://fa.ke/123', scheme='http')
     check('https://fa.ke/123', 'http://fa.ke/123', domain='fa.ke')
     check(None, 'http://fa.ke/123', domain='a.bc')
+    check('https://fa.ke/post', native_str('http://www.fa.ke/post'))
+    check('https://fa.ke/post', 'http://www.fa.ke/post', domain=native_str('fa.ke'))
 
     check('https://www.fa.ke/123', 'https://fa.ke/123', subdomain='www')
     check('https://foo.fa.ke/123', 'https://www.fa.ke/123', subdomain='foo')
     check('https://foo.fa.ke/123', 'https://foo.fa.ke/123', subdomain='bar')
+    check('https://www.fa.ke/123', 'https://fa.ke/123', subdomain=native_str('www'))
 
     check('https://fa.ke/123?x=y', 'http://fa.ke/123?x=y', query=True)
     check('https://fa.ke/123', 'http://fa.ke/123?x=y#abc', query=False)

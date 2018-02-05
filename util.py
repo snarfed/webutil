@@ -10,7 +10,7 @@ from future.moves.urllib.request import urlopen as urllib_urlopen
 from future.moves.urllib import error as urllib_error
 from future import standard_library
 standard_library.install_aliases()
-from future.utils import bytes_to_native_str
+from future.utils import bytes_to_native_str, native_str
 from builtins import object, range, str
 from past.builtins import basestring
 
@@ -1373,9 +1373,9 @@ class UrlCanonicalizer(object):
         redirects (default True)
       headers: passed through to the requests.head call for following redirects
     """
-    self.scheme = scheme
-    self.domain = domain
-    self.subdomain = subdomain
+    self.scheme = self.to_unicode(scheme)
+    self.domain = self.to_unicode(domain)
+    self.subdomain = self.to_unicode(subdomain)
     self.approve = re.compile(approve) if approve else None
     self.reject = re.compile(reject) if reject else None
     self.query = query
@@ -1384,12 +1384,17 @@ class UrlCanonicalizer(object):
     self.redirects = redirects
     self.headers = headers
 
+  @staticmethod
+  def to_unicode(val):
+    return val.decode('utf-8') if isinstance(val, native_str) else val
+
   def __call__(self, url, redirects=None):
     """Canonicalizes a string URL.
 
     Returns the canonical form of a string URL, or None if it can't be
     canonicalized, ie it's in the blacklist or its domain doesn't match.
     """
+    url = self.to_unicode(url)
     if self.approve and self.approve.match(url):
       return url
     elif self.reject and self.reject.match(url):
@@ -1400,7 +1405,7 @@ class UrlCanonicalizer(object):
     if not domain:
       return None
     elif self.domain and not (domain == self.domain or
-                            domain.endswith('.' + self.domain)):
+                              domain.endswith('.' + self.domain)):
       return None
     if domain.startswith('www.'):
       domain = domain[4:]
