@@ -1222,6 +1222,7 @@ def load_file_lines(file):
   items = set()
 
   for line in file:
+    assert isinstance(line, str), "Use future's builtins.open, not Python 2's!"
     val = line.strip()
     if val and not val.startswith('#'):
       items.add(val)

@@ -8,6 +8,7 @@ from future import standard_library
 from future.moves.urllib.request import urlopen as urllib_urlopen
 from future.moves.urllib import error as urllib_error
 standard_library.install_aliases()
+from future.utils import bytes_to_native_str, native_str
 from builtins import range, str
 
 import datetime
@@ -1013,6 +1014,7 @@ class UtilTest(testutil.TestCase):
       ((), '\n\n'),
       ((), '   \n# asdf\n	\n# qwert\n'),
       (('asdf', 'qwert'), '# header\nasdf\n\nqwert\n\nqwert\n  # comment\n  asdf  '),
+      (('zzang.kr', '›.ws'), 'zzang.kr\n›.ws'),
     ):
       self.assert_equals(set(expected),
                          util.load_file_lines(io.StringIO(contents)))
