@@ -117,6 +117,29 @@ class UtilTest(testutil.HandlerTest):
     self.assertEqual([], util.pop_list(obj, 'a'))
     self.assertEqual({}, obj)
 
+  def test_encode(self):
+    coffee = u'☕'
+    coffee_utf8 = coffee.encode('utf-8')
+
+    for expected, input in (
+        (None, None),
+        (1.23, 1.23),
+        (True, True),
+        ('xyz', 'xyz'),
+        ('xyz', u'xyz'),
+        (coffee_utf8, coffee),
+        ([], []),
+        ((), ()),
+        ({}, {}),
+        (set(), set()),
+        ([1, coffee_utf8], [1, coffee]),
+        ({coffee_utf8: 1, 2: coffee_utf8, 3: [4, set((coffee_utf8,))]},
+         {coffee: 1, 2: coffee, 3: [4, set((coffee,))]}),
+        (set((coffee_utf8,)), set((coffee,))),
+        (('xyz', [coffee_utf8], 'abc'), ('xyz', [coffee], 'abc')),
+    ):
+      self.assertEqual(expected, util.encode(input))
+
   def test_get_first(self):
     for dict, expected in (
         ({}, None),

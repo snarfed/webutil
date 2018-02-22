@@ -158,6 +158,30 @@ def pop_list(obj, key):
   return val
 
 
+def encode(obj, encoding='utf-8'):
+  """Character encodes all unicode strings in a collection, recursively.
+
+  Args:
+    obj: list, tuple, dict, set, or primitive
+    encoding: string character encoding
+
+  Returns:
+    sequence or dict version of obj with all unicode strings encoded
+  """
+  if isinstance(obj, unicode):
+    return obj.encode(encoding)
+  elif isinstance(obj, tuple):
+    return tuple(encode(v) for v in obj)
+  elif isinstance(obj, list):
+    return [encode(v) for v in obj]
+  elif isinstance(obj, set):
+    return {encode(v) for v in obj}
+  elif isinstance(obj, dict):
+    return {encode(k): encode(v) for k, v in obj.items()}
+  else:
+    return obj
+
+
 def get_first(obj, key, default=None):
   """Returns the first element of a dict value.
 
