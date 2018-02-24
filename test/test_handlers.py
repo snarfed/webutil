@@ -143,9 +143,16 @@ my foo: bar""", resp.body)
     self.assertEquals(204, resp.status_int)
     self.assertEquals('got http://localhost/?x', resp.body)
 
+    # fetches with ?cache=false shouldn't use the cache
+    resp = app.get_response('/?x&cache=false')
+    resp = app.get_response('/?x&cache=false')
+    self.assertEquals(3, Handler.calls)
+    self.assertEquals(204, resp.status_int)
+    self.assertEquals('got http://localhost/?x&cache=false', resp.body)
+
     # a different URL shouldn't be cached
     resp = app.get_response('/?y')
-    self.assertEquals(2, Handler.calls)
+    self.assertEquals(4, Handler.calls)
     self.assertEquals(204, resp.status_int)
     self.assertEquals('got http://localhost/?y', resp.body)
 

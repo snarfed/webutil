@@ -99,19 +99,22 @@ def memcache_response(expiration):
       return method
 
     def wrapper(self, *args, **kwargs):
-      cache_key = 'memcache_response %s' % self.request.url
-      cached = memcache.get(cache_key)
-      if cached:
-        logging.info('Serving cached response %r', cache_key)
-        return cached
+      cache = self.request.get('cache', '').lower() != 'false'
+      if cache:
+        cache_key = 'memcache_response %s' % self.request.url
+        cached = memcache.get(cache_key)
+        if cached:
+          logging.info('Serving cached response %r', cache_key)
+          return cached
 
       resp = method(self, *args, **kwargs)
 
-      logging.info('Caching response in %r', cache_key)
-      try:
-        memcache.set(cache_key, resp or self.response, expiration.total_seconds())
-      except ValueError:
-        logging.warning('Response is too big for memcache!')
+      if cache and not cached:
+        logging.info('Caching response in %r', cache_key)
+        try:
+          memcache.set(cache_key, resp or self.response, expiration.total_seconds())
+        except ValueError:
+          logging.warning('Response is too big for memcache!')
 
     return wrapper
 
