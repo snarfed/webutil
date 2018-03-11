@@ -12,6 +12,7 @@ from future import standard_library
 standard_library.install_aliases()
 from future.utils import bytes_to_native_str, native_str
 from builtins import object, range, str
+import past.builtins
 from past.builtins import basestring
 
 import calendar
@@ -181,7 +182,7 @@ def encode(obj, encoding='utf-8'):
   Returns:
     sequence or dict version of obj with all unicode strings encoded
   """
-  if isinstance(obj, unicode):
+  if isinstance(obj, str):
     return obj.encode(encoding)
   elif isinstance(obj, tuple):
     return tuple(encode(v) for v in obj)
@@ -1386,7 +1387,7 @@ class UrlCanonicalizer(object):
 
   @staticmethod
   def to_unicode(val):
-    return val.decode('utf-8') if isinstance(val, native_str) else val
+    return val.decode('utf-8') if isinstance(val, (bytes, past.builtins.str)) else val
 
   def __call__(self, url, redirects=None):
     """Canonicalizes a string URL.

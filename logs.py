@@ -25,7 +25,7 @@ LEVELS = {
   logservice.LOG_LEVEL_WARNING:  'W',
   logservice.LOG_LEVEL_ERROR:    'E',
   logservice.LOG_LEVEL_CRITICAL: 'F',
-  }
+}
 
 MAX_LOG_AGE = datetime.timedelta(days=30)
 

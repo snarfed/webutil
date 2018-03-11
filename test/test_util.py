@@ -133,8 +133,8 @@ class UtilTest(testutil.TestCase):
         (None, None),
         (1.23, 1.23),
         (True, True),
-        ('xyz', 'xyz'),
-        ('xyz', u'xyz'),
+        (b'xyz', 'xyz'),
+        (b'xyz', u'xyz'),
         (coffee_utf8, coffee),
         ([], []),
         ((), ()),
@@ -144,7 +144,7 @@ class UtilTest(testutil.TestCase):
         ({coffee_utf8: 1, 2: coffee_utf8, 3: [4, set((coffee_utf8,))]},
          {coffee: 1, 2: coffee, 3: [4, set((coffee,))]}),
         (set((coffee_utf8,)), set((coffee,))),
-        (('xyz', [coffee_utf8], 'abc'), ('xyz', [coffee], 'abc')),
+        ((b'xyz', [coffee_utf8], b'abc'), ('xyz', [coffee], 'abc')),
     ):
       self.assertEqual(expected, util.encode(input))
 
