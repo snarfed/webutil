@@ -329,6 +329,16 @@ class TestCase(mox.MoxTestBase, Asserts):
     if method is requests.head:
       kwargs['allow_redirects'] = True
 
+    headers = kwargs.get('headers')
+    if headers and not isinstance(headers, mox.Comparator):
+      def check_headers(actual):
+        missing = set(headers.items()) - set(actual.items())
+        assert not missing, 'Missing request headers: %s\n(Got %s, %s)' % (
+          missing, set(actual.items()), set(headers.items()))
+        return True
+      kwargs['headers'] = mox.Func(check_headers)
+
+
     files = kwargs.get('files')
     if files:
       def check_files(actual):
