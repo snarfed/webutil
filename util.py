@@ -107,7 +107,7 @@ def to_xml(value):
     if not value:
       return ''
     elems = []
-    for key, vals in list(value.items()):
+    for key, vals in sorted(value.items()):
       if not isinstance(vals, (list, tuple)):
         vals = [vals]
       elems.extend('<%s>%s</%s>' % (key, to_xml(val), key) for val in vals)
