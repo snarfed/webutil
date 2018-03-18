@@ -121,33 +121,29 @@ class Asserts(object):
     have populated keys, that their keys are equal too.
 
     Args:
-      a: :class:`db.Model` or :class:`ndb.Model` instances or
-        lists of instances
+      a: :class:`ndb.Model` instances or lists of instances
       b: same
       ignore: sequence of strings, property names not to compare
       keys_only: boolean, if True only compare keys
       in_order: boolean. If False, all entities must have keys.
     """
-    # all the __class__.__name__ hacks below are so we avoid importing db or ndb
+    # all the __class__.__name__ hacks below are so we avoid importing ndb
     # from the app engine SDK, since this file needs to support Python 3.
     if not (isinstance(a, (list, tuple) or a.__class__.__name__ == 'Query')):
       a = [a]
     if not (isinstance(b, (list, tuple) or b.__class__.__name__ == 'Query')):
       b = [b]
 
-    key_fn = lambda e: e.key if e.__class__.__name__ == 'Model' else e.key()
     if not in_order:
-      a = list(sorted(a, key=key_fn))
-      b = list(sorted(b, key=key_fn))
+      a = list(sorted(a, key=lambda e: e.key))
+      b = list(sorted(b, key=lambda e: e.key))
 
     self.assertEqual(len(a), len(b),
                      'Different lengths:\n expected %s\n actual %s' % (a, b))
 
-    flat_key = lambda e: (e.key.flat() if e.__class__.__name__ == 'Model'
-                          else e.key().to_path())
     for x, y in zip(a, b):
       try:
-        self.assertEqual(flat_key(x), flat_key(y))
+        self.assertEqual(x.key.flat(), y.key.flat())
       except Exception as err:
         if err.__class__.__name__ in ('BadKeyError', 'NotSavedError'):
           if keys_only:
@@ -156,11 +152,11 @@ class Asserts(object):
           raise
 
       def props(e):
-        all = e.to_dict() if e.__class__.__name__ == 'Model' else e.properties()
+        all = e.to_dict()
         return {k: v for k, v in list(all.items()) if k not in ignore}
 
       if not keys_only:
-        self.assert_equals(props(x), props(y), flat_key(x))
+        self.assert_equals(props(x), props(y), x.key.flat())
 
   def entity_keys(self, entities):
     """Returns a list of keys for a list of entities.
@@ -202,9 +198,14 @@ Actual value:
             isinstance(actual, (list, tuple, set))):
         if not in_order:
           # use custom key because Python 3 dicts are not comparable :/
-          to_json = lambda x: None if x is None else json.dumps(x, sort_keys=True)
-          expected = sorted(expected, key=to_json)
-          actual = sorted(actual, key=to_json)
+          def hash_or_json(x):
+            try:
+              return hash(x)
+            except TypeError:
+              return json.dumps(x, sort_keys=True)
+          expected = sorted(expected, key=hash_or_json)
+          actual = sorted(actual, key=hash_or_json)
+
         self.assertEqual(len(expected), len(actual),
                          'Different lengths:\n expected %s\n actual %s' %
                          (len(expected), len(actual)))

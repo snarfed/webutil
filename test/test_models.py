@@ -49,20 +49,20 @@ class SingleEGModelTest(HandlerTest):
   def test_get_by_id(self):
     foo = self.Foo()
     key = foo.save()
-    self.assert_entities_equal(foo, self.Foo.get_by_id(key.id()))
+    self.assert_equals(key, self.Foo.get_by_id(key.id()).key())
 
     got = self.Foo.get_by_id(key.id(), parent=self.Foo.shared_parent_key())
-    self.assert_entities_equal(foo, got)
+    self.assert_equals(foo.key(), got.key())
 
     self.assertRaises(AssertionError, self.Foo.get_by_id, key.id(), parent=foo)
 
   def test_get_by_key_name(self):
     foo = self.Foo(key_name='foo')
     foo.save()
-    self.assert_entities_equal(foo, self.Foo.get_by_key_name('foo'))
+    self.assert_equals(foo.key(), self.Foo.get_by_key_name('foo').key())
 
     got = self.Foo.get_by_key_name('foo', parent=self.Foo.shared_parent_key())
-    self.assert_entities_equal(foo, got)
+    self.assert_equals(foo.key(), got.key())
 
     self.assertRaises(AssertionError, self.Foo.get_by_key_name, 'foo', parent=foo)
 
@@ -72,11 +72,11 @@ class SingleEGModelTest(HandlerTest):
 
     # exists
     got = self.Foo.get_or_insert(key_name='my name')
-    self.assert_entities_equal(foo, got)
+    self.assert_equals(foo.key(), got.key())
 
     got = self.Foo.get_or_insert(key_name='my name',
                                  parent=self.Foo.shared_parent_key())
-    self.assert_entities_equal(foo, got)
+    self.assert_equals(foo.key(), got.key())
 
     self.assertRaises(AssertionError, self.Foo.get_or_insert,
                       key_name='my name', parent=foo)
