@@ -9,7 +9,7 @@ from future.moves.urllib.request import urlopen as urllib_urlopen
 from future.moves.urllib import error as urllib_error
 standard_library.install_aliases()
 from future.types.newstr import newstr
-from future.utils import bytes_to_native_str, native_str
+from future.utils import binary_type, bytes_to_native_str, native_str
 from builtins import range, str
 
 import datetime
