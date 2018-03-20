@@ -373,7 +373,7 @@ def update_scheme(url, handler):
                'http://distillery.s3.amazonaws.com', url)
   url = re.sub(r'^http://photos-\w\.(ak\.)instagram\.com',
                'http://igcdn-photos-e-a.akamaihd.net', url)
-  return urllib.parse.urlunparse((handler.request.scheme,) +
+  return urllib.parse.urlunparse((unicode(handler.request.scheme),) +
                                  urllib.parse.urlparse(url)[1:])
 
 
@@ -851,7 +851,7 @@ def dedupe_urls(urls):
 
 
 def encode_oauth_state(obj):
-  """The Ostate parameter is passed to various source authorization
+  """The state parameter is passed to various source authorization
   endpoints and returned in a callback. This encodes a JSON object
   so that it can be safely included as a query string parameter.
 

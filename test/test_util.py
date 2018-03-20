@@ -8,6 +8,7 @@ from future import standard_library
 from future.moves.urllib.request import urlopen as urllib_urlopen
 from future.moves.urllib import error as urllib_error
 standard_library.install_aliases()
+from future.types.newstr import newstr
 from future.utils import bytes_to_native_str, native_str
 from builtins import range, str
 
@@ -234,6 +235,10 @@ class UtilTest(testutil.TestCase):
     for orig in 'http', 'https':
       for new in 'http', 'https':
         handler.request.scheme = new
+        updated = util.update_scheme(orig + '://foo', handler)
+        self.assertEqual(new + '://foo', updated)
+
+        handler.request.scheme = newstr(new)
         updated = util.update_scheme(orig + '://foo', handler)
         self.assertEqual(new + '://foo', updated)
 
