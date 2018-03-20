@@ -1,12 +1,32 @@
 """App Engine datastore model base classes and utilites.
 """
+from future.types.newstr import newstr
+
 import functools
 
 from google.appengine.ext import db
 from google.appengine.ext import ndb
 
 
-class StringIdModel(ndb.Model):
+class FutureModel(ndb.Model):
+  """An ndb model mixin that converts future newstr values to Python 2 unicode.
+
+  ...since App Engine's protobuf library chokes on them:
+
+  File ".../google/appengine/ext/remote_api/remote_api_stub.py", line 256, in _MakeRealSyncCall
+    raise pickle.loads(response_pb.exception())
+  RuntimeError: ProtocolBufferDecodeError('truncated',)
+  """
+
+  def put(self, *args, **kwargs):
+    for name, val in self.to_dict().items():
+      if isinstance(val, newstr):
+        setattr(self, name, unicode(val))
+
+    return super(FutureModel, self).put(*args, **kwargs)
+
+
+class StringIdModel(FutureModel):
   """An ndb model class that requires a string id."""
 
   def put(self, *args, **kwargs):

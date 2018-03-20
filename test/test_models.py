@@ -1,10 +1,38 @@
 """Unit tests for models.py.
 """
+from future.types.newstr import newstr
+
 from google.appengine.ext import db
 from google.appengine.ext import ndb
 
-from models import StringIdModel, KeyNameModel, SingleEGModel
+from models import FutureModel, KeyNameModel, SingleEGModel, StringIdModel
 from testutil_appengine import HandlerTest
+
+
+class FutureModelTest(HandlerTest):
+
+  def test_put(self):
+    """
+    newstr property values only seem to fail put() in dev_appserver, not in the
+    local testbed, so this test isn't actually useful right now. ah well. :/
+    """
+    class MyModel(FutureModel):
+      a_str = ndb.StringProperty()
+      a_uni = ndb.StringProperty()
+      a_newstr = ndb.StringProperty()
+      a_null = ndb.StringProperty()
+      a_float = ndb.FloatProperty()
+
+    obj = MyModel(a_str=str('x'), a_uni=unicode('x'), a_newstr=newstr('x'),
+                  a_float=1.23)
+    key = obj.put()
+    got = key.get()
+    self.assertEqual('x', got.a_str)
+    self.assertEqual('x', got.a_uni)
+    self.assertEqual('x', got.a_newstr)
+    self.assertEqual(unicode, got.a_newstr.__class__)
+    self.assertEqual(1.23, got.a_float)
+    self.assertIsNone(got.a_null)
 
 
 class StringIdModelTest(HandlerTest):

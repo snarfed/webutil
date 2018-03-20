@@ -10,7 +10,7 @@ from future.moves.urllib.request import urlopen as urllib_urlopen
 from future.moves.urllib import error as urllib_error
 from future import standard_library
 standard_library.install_aliases()
-from future.utils import bytes_to_native_str
+from future.utils import bytes_to_native_str, native_str
 from builtins import object, range, str
 import past.builtins
 from past.builtins import basestring
@@ -1299,7 +1299,7 @@ def follow_redirects(url, cache=None, fail_cache_time_secs = 60 * 60 * 24,  # a 
   """
   if cache is not None:
     cache_key = 'R ' + url
-    resolved = cache.get(cache_key)
+    resolved = cache.get(native_str(cache_key))
     if resolved is not None:
       return resolved
 
