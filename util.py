@@ -778,7 +778,7 @@ def add_query_params(url, params):
   parsed = list(urllib.parse.urlparse(url))
   # query params are in index 4
   params = [(k, str(v).encode('utf-8')) for k, v in params]
-  parsed[4] += ('&' if parsed[4] else '') + urllib.parse.urlencode(params)
+  parsed[4] += native_str(('&' if parsed[4] else '') + urllib.parse.urlencode(params))
   updated = urllib.parse.urlunparse(parsed)
 
   if is_request:
