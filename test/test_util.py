@@ -9,7 +9,7 @@ from future.moves.urllib.request import urlopen as urllib_urlopen
 from future.moves.urllib import error as urllib_error
 standard_library.install_aliases()
 from future.types.newstr import newstr
-from future.utils import binary_type, bytes_to_native_str, native_str
+from future.utils import binary_type, bytes_to_native_str, PY3, native_str, text_type
 from builtins import range, str
 
 import datetime
@@ -29,6 +29,7 @@ from webob import exc
 
 import testutil
 import util
+from unittest import skipIf
 
 
 class UtilTest(testutil.TestCase):
@@ -290,6 +291,23 @@ class UtilTest(testutil.TestCase):
                                      '&source=rss----12b80d28f892---4'))
     self.assertEqual('http://foo?source=not-rss',
                      util.clean_url('http://foo?&source=not-rss'))
+
+  @skipIf(PY3, "This tests a bug fix in future's backported urllib.parse.")
+  def test_clean_url_mixed_string_types(self):
+    url = 'http://foo?x=y#z'
+    for cls in str, newstr, binary_type, text_type:
+      self.assertEqual(url, util.clean_url(cls(url)), cls)
+
+  @skipIf(PY3, "This tests a bug fix in future's backported urllib.parse.")
+  def test_future_urlunparse_mixed_string_types(self):
+    """This tests an open PR for future that fixes a bug in urllib.parse.
+
+    https://github.com/PythonCharmers/python-future/pull/331
+    https://github.com/PythonCharmers/python-future/issues/273
+    """
+    for cls in str, newstr, binary_type, text_type:
+      self.assertEqual('http://foo/bar', urllib.parse.urlunparse(
+        ('http', 'foo', cls('/bar'), '', '', '')))
 
   def test_dedupe_urls(self):
     self.assertEqual([], util.dedupe_urls([]))

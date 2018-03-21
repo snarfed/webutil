@@ -10,7 +10,7 @@ from future.moves.urllib.request import urlopen as urllib_urlopen
 from future.moves.urllib import error as urllib_error
 from future import standard_library
 standard_library.install_aliases()
-from future.utils import bytes_to_native_str, native_str, text_type
+from future.utils import bytes_to_native_str, text_type
 from builtins import object, range, str
 import past.builtins
 from past.builtins import basestring
@@ -373,7 +373,7 @@ def update_scheme(url, handler):
                'http://distillery.s3.amazonaws.com', url)
   url = re.sub(r'^http://photos-\w\.(ak\.)instagram\.com',
                'http://igcdn-photos-e-a.akamaihd.net', url)
-  return urllib.parse.urlunparse((text_type(handler.request.scheme),) +
+  return urllib.parse.urlunparse((handler.request.scheme,) +
                                  urllib.parse.urlparse(url)[1:])
 
 
@@ -778,7 +778,7 @@ def add_query_params(url, params):
   parsed = list(urllib.parse.urlparse(url))
   # query params are in index 4
   params = [(k, str(v).encode('utf-8')) for k, v in params]
-  parsed[4] += native_str(('&' if parsed[4] else '') + urllib.parse.urlencode(params))
+  parsed[4] += ('&' if parsed[4] else '') + urllib.parse.urlencode(params)
   updated = urllib.parse.urlunparse(parsed)
 
   if is_request:
