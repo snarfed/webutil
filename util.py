@@ -10,7 +10,7 @@ from future.moves.urllib.request import urlopen as urllib_urlopen
 from future.moves.urllib import error as urllib_error
 from future import standard_library
 standard_library.install_aliases()
-from future.utils import bytes_to_native_str, text_type
+from future.utils import bytes_to_native_str, PY2, text_type
 from builtins import object, range, str
 import past.builtins
 from past.builtins import basestring
@@ -1140,10 +1140,12 @@ def is_connection_failure(exception):
   types = [
       http.client.ImproperConnectionState,
       http.client.NotConnected,
-      # this used to be socket.error, but python 3.3 changed it to be an alias
-      # of OSError, so i narrowed this to socket.timeout.
       socket.timeout,
   ]
+  # socket.error is its own thing in python 2, but python 3.3 changed it to be
+  # an alias of OSError.
+  if PY2:
+    types.append(socket.error)
   if apiproxy_errors:
     types += [
       apiproxy_errors.CancelledError,
