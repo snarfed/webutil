@@ -1427,7 +1427,7 @@ class UrlCanonicalizer(object):
 
     new_url = urllib.parse.urlunparse((scheme, domain, path, '', query, fragment))
     if new_url != url:
-      return self(new_url)  # recheck approve/reject
+      return self(new_url, redirects=redirects)  # recheck approve/reject
 
     if redirects or (redirects is None and self.redirects):
       resp = follow_redirects(url, headers=self.headers)
