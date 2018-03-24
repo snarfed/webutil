@@ -55,7 +55,7 @@ try:
 except ImportError:
   if requests:
     try:
-      from requests .packages import urllib3
+      from requests.packages import urllib3
     except ImportError:
       urllib3 = None
 
