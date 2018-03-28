@@ -5,11 +5,10 @@ Supports Python 3. Should not depend on App Engine API or SDK packages.
 """
 from __future__ import unicode_literals
 from future import standard_library
-from future.moves.urllib.request import urlopen as urllib_urlopen
 from future.moves.urllib import error as urllib_error
 standard_library.install_aliases()
 from future.types.newstr import newstr
-from future.utils import binary_type, bytes_to_native_str, PY2, PY3, native_str, text_type
+from future.utils import binary_type, PY2, PY3, native_str, text_type
 from builtins import range, str
 
 import datetime
@@ -887,6 +886,8 @@ class UtilTest(testutil.TestCase):
       x = 1
       raise exc.HTTPNotFound()
       x = 2
+
+    self.assertEqual(1, x)
 
     for exc_cls in AssertionError, exc.HTTPInternalServerError:
       with self.assertRaises(exc_cls):

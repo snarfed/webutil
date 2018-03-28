@@ -2,8 +2,6 @@
 import os
 
 from google.appengine.datastore import datastore_stub_util
-from google.appengine.ext import db
-from google.appengine.ext import ndb
 from google.appengine.ext import testbed
 import webapp2
 

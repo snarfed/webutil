@@ -13,7 +13,6 @@ import base64
 import datetime
 import difflib
 import json
-import logging
 from mox3 import mox
 import pprint
 import re
@@ -30,7 +29,6 @@ except (ImportError, ValueError):
 
 from oauth_dropins.webutil import util
 import requests
-import webapp2
 
 
 def get_task_params(task):

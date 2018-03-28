@@ -427,7 +427,7 @@ def clean_url(url):
                     'utm_term'))
   try:
     parts = list(urllib.parse.urlparse(url))
-  except (AttributeError, TypeError, ValueError) as e:
+  except (AttributeError, TypeError, ValueError):
     return None
 
   query = urllib.parse.unquote_plus(parts[4])
@@ -1003,7 +1003,7 @@ def interpret_http_exception(exception):
         # always available.
         e.body = body
         body = body.decode('utf-8')
-    except (AttributeError, KeyError) as ake:
+    except (AttributeError, KeyError):
       if not body:
         body = str(e.reason)
 

@@ -11,11 +11,9 @@ import traceback
 
 from google.appengine.api import memcache
 from google.appengine.ext.webapp import template
-import jinja2
 import webapp2
 
 import handlers
-import testutil
 from testutil_appengine import HandlerTest
 
 handlers.JINJA_ENV.loader.searchpath.append('/')
