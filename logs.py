@@ -117,9 +117,12 @@ class LogHandler(webapp2.RequestHandler):
   """Searches for and renders the app logs for a single task queue request.
 
   Class attributes:
-    VERSION_IDS: optional list of App Engine app versions to search. If unset,
-    defaults to just the current version!
+    MODULE_VERSIONS: optional list of (module, version) tuples to search.
+      Overrides VERFSION_IDS.
+    VERSION_IDS: optional list of current module versions to search. If unset,
+      defaults to just the current version!
   """
+  MODULE_VERSIONS = None
   VERSION_IDS = None
 
   def get(self):
@@ -140,9 +143,19 @@ class LogHandler(webapp2.RequestHandler):
     self.response.headers['Content-Type'] = 'text/html; charset=utf-8'
 
     offset = None
-    for log in logservice.fetch(start_time=start_time - 60, end_time=start_time + 120,
-                                offset=offset, include_app_logs=True,
-                                version_ids=self.VERSION_IDS):
+    kwargs = {
+      'start_time': start_time - 60,
+      'end_time': start_time + 120,
+      'offset': offset,
+      'include_app_logs': True,
+    }
+    if self.MODULE_VERSIONS:
+      kwargs['module_versions'] = self.MODULE_VERSIONS
+    if self.VERSION_IDS:
+      kwargs['version_ids'] = self.VERSION_IDS
+
+    logging.info('Fetching logs with %s', kwargs)
+    for log in logservice.fetch(**kwargs):
       first_lines = '\n'.join([line.message.decode('utf-8') for line in
                                log.app_logs[:min(10, len(log.app_logs))]])
       if log.app_logs and key_re.search(first_lines):
