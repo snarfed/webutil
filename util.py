@@ -970,6 +970,25 @@ def is_base64(arg):
   return isinstance(arg, str) and re.match('^[a-zA-Z0-9_=-]*$', arg)
 
 
+def sniff_json_or_form_encoded(value):
+  """Detects whether value is JSON or form-encoded, parses and returns it.
+
+  Args:
+    value: string
+
+  Returns: dict if form-encoded; dict or list if JSON; otherwise string
+  """
+  if not value:
+    return {}
+  elif value[0] in ('{', '['):
+    return json.loads(value)
+  elif '=' in value:
+    return {k: v[0] if len(v) == 1 else v
+            for k, v in urllib.parse.parse_qs(value).items()}
+  else:
+    return json.loads(value)
+
+
 def interpret_http_exception(exception):
   """Extracts the status code and response from different HTTP exception types.
 

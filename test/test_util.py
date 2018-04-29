@@ -1102,3 +1102,17 @@ class UtilTest(testutil.TestCase):
       self.assert_equals(obj, util.decode_oauth_state(str))
       self.assert_equals(obj, util.decode_oauth_state(util.encode_oauth_state(obj)))
       self.assert_equals(str, urllib.parse.unquote(util.encode_oauth_state(util.decode_oauth_state(str))))
+
+  def test_sniff_json_or_form_encoded(self):
+    for expected, input in (
+      ({'a': 1, 'b': 2}, '{"a":1,"b":2}'),
+      ({'a': '1', 'b': '2'}, 'a=1&b=2'),
+      ({'a': '1', 'b': '2'}, '&a=1&b=2&'),
+      ({'a': 'x'}, 'a=x'),
+      (['a', 'b'], '["a", "b"]'),
+      (['a', {'b': 3}], '["a", {"b": 3}]'),
+      ({}, '{}'),
+      ({}, ''),
+      (False, 'false'),
+    ):
+      self.assert_equals(expected, util.sniff_json_or_form_encoded(input), input)

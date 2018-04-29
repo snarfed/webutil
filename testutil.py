@@ -5,6 +5,7 @@ Supports Python 3. Should not depend on App Engine API or SDK packages.
 from __future__ import absolute_import, division, unicode_literals
 from future import standard_library
 from future.moves.urllib import error as urllib_error
+from future.utils import native_str
 standard_library.install_aliases()
 from builtins import object, str, zip
 from past.builtins import basestring
@@ -198,7 +199,7 @@ Actual value:
           # use custom key because Python 3 dicts are not comparable :/
           def hash_or_json(x):
             try:
-              return hash(x)
+              return native_str(hash(x))
             except TypeError:
               return json.dumps(x, sort_keys=True)
           expected = sorted(expected, key=hash_or_json)
