@@ -1,0 +1,20 @@
+# Commonly used configuration in App Engine app.yaml files.
+# Include with e.g.:
+#
+#   includes:
+#     webutil/app.common.yaml
+#
+# https://cloud.google.com/appengine/docs/standard/python/config/appref#Python_app_yaml_Includes
+
+builtins:
+- remote_api: on
+- appstats: on
+
+skip_files:
+- ^(.*/)?.*\.(c|cc|cpp|h|o|py[co]|so)$
+- ^(.*/)?.*/RCS/.*
+- ^(.*/)?\.git.*
+- ^(.*/)?.*\.bak$
+- ^(.*/)?(\.?coverage|debian|docs?|examples?|l|pydocs?|python3|ref|samples?|TAGS|tests?)/.*
+- ^local/lib/python2.7/site-packages/setuptools/script\ \(dev\)\.tmpl$
+- ^local/lib/python2.7/site-packages/lxml$
