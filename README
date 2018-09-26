@@ -1,4 +1,0 @@
-Common utilities and handler code for Python webapps. Mostly App Engine
-specific, but the util module doesn't depend on App Engine.
-
-This library is in the public domain.
