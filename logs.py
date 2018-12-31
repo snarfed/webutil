@@ -8,6 +8,7 @@ import cgi
 import datetime
 import logging
 import re
+import time
 import urllib.request, urllib.parse, urllib.error
 
 import appengine_config
@@ -28,6 +29,8 @@ LEVELS = {
 }
 
 MAX_LOG_AGE = datetime.timedelta(days=30)
+# App Engine's launch, roughly
+MIN_START_TIME = time.mktime(datetime.datetime(2008, 4, 1).timetuple())
 
 SANITIZE_RE = re.compile(r"""
   ((?:access|api|oauth)?[ _]?
@@ -133,7 +136,10 @@ class LogHandler(webapp2.RequestHandler):
     start_time = util.get_required_param(self, 'start_time')
     if not util.is_float(start_time):
       self.abort(400, "Couldn't convert start_time to float: %r" % start_time)
+
     start_time = float(start_time)
+    if start_time < MIN_START_TIME:
+      self.abort(400, "start_time must be >= %s" % MIN_START_TIME)
 
     key = urllib.parse.unquote_plus(util.get_required_param(self, 'key'))
     # the propagate task logs the poll task's URL, which includes the source
