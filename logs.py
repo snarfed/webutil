@@ -163,7 +163,7 @@ class LogHandler(webapp2.RequestHandler):
     logging.info('Fetching logs with %s', kwargs)
     for log in logservice.fetch(**kwargs):
       first_lines = '\n'.join([line.message.decode('utf-8') for line in
-                               log.app_logs[:min(10, len(log.app_logs))]])
+                               log.app_logs[:min(50, len(log.app_logs))]])
       if log.app_logs and key_re.search(first_lines):
         # found it! render and return
         self.response.out.write("""\
