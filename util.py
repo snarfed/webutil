@@ -459,9 +459,14 @@ def base_url(url):
 #
 # more complicated alternative:
 # http://stackoverflow.com/questions/720113#comment23297770_2102648
+#
+# list of TLDs:
+# https://en.wikipedia.org/wiki/List_of_Internet_top-level_domains#ICANN-era_generic_top-level_domains
+#
+# TODO: support internationalized/emoji TLDs
 _SCHEME_RE = r'\b(?:[a-z]{3,9}:/{1,3})'
-_HOST_RE = r'(?:[a-z0-9\-.])+(?::\d{2,6})?'
-_DOMAIN_RE = r'(?:[a-z0-9\-]+\.)+[a-z]{2,4}(?::\d{2,6})?'
+_HOST_RE =   r'(?:[a-z0-9\-.])+(?::\d{2,6})?'
+_DOMAIN_RE = r'(?:[a-z0-9\-]+\.)+[a-z0-9\-]{2,}(?::\d{2,6})?'
 _PATH_QUERY_RE = r'(?:(?:/[\w/.\-_~.;:%?@$#&()=+]*)|\b)'
 _LINK_RE = re.compile(
   _SCHEME_RE + _HOST_RE + _PATH_QUERY_RE,  # scheme required

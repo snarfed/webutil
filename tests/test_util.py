@@ -394,13 +394,12 @@ class UtilTest(testutil.TestCase):
     for unchanged in (
         '',
         'x.c',
-        'x.computer',
         'asdf qwert',
         'X <a class="x" href="http://foo.com" >xyz</a> Y',
         '<a href="http://foo.com"  class="x">xyz</a> Y',
         "X <a href='http://foo.com' />",
         'asdf <a href="http://foo.com">foo</a> qwert ',
-        # only a-z0-9 allowed in domain names
+        # TODO: support unicode chars
         'http://aÇb.com'):
       self.assertEqual(unchanged, util.linkify(unchanged))
 
@@ -409,6 +408,7 @@ class UtilTest(testutil.TestCase):
         ('<a href="http://foo.com/">http://foo.com/</a>', 'http://foo.com/'),
         ('<a href="http://foo.com/y">http://foo.com/y</a>', 'http://foo.com/y'),
         ('<a href="http://www.foo">www.foo</a>', 'www.foo'),
+        ('<a href="http://x.computer">x.computer</a>', 'x.computer'),
         ('<a href="http://www.foo:80">www.foo:80</a>', 'www.foo:80'),
         ('<a href="http://www.foo:80/x">www.foo:80/x</a>', 'www.foo:80/x'),
         ('asdf <a href="http://foo.com">http://foo.com</a> qwert <a class="x" href="http://foo.com" >xyz</a>',
