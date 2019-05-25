@@ -141,10 +141,13 @@ class Asserts(object):
                      'Different lengths:\n expected %s\n actual %s' % (a, b))
 
     for x, y in zip(a, b):
+      x_key = None
       try:
-        self.assertEqual(x.key.flat(), y.key.flat())
+        x_key = x.key.flat()
+        self.assertEqual(x_key, y.key.flat())
       except Exception as err:
-        if err.__class__.__name__ in ('BadKeyError', 'NotSavedError'):
+        if err.__class__.__name__ in ('BadKeyError', 'NotSavedError',
+                                      'AttributeError'):
           if keys_only:
             raise
         else:
@@ -155,7 +158,7 @@ class Asserts(object):
         return {k: v for k, v in list(all.items()) if k not in ignore}
 
       if not keys_only:
-        self.assert_equals(props(x), props(y), x.key.flat())
+        self.assert_equals(props(x), props(y), x_key)
 
   def entity_keys(self, entities):
     """Returns a list of keys for a list of entities.
