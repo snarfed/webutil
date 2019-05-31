@@ -792,6 +792,38 @@ def add_query_params(url, params):
     return updated
 
 
+def remove_query_param(url, param):
+  """Removes query parameter(s) from a URL. Decodes URL escapes and UTF-8.
+
+  If the query parameter is not present in the URL, the URL is returned
+  unchanged, and the returned value is None.
+
+  If the query parameter is present multiple times, *only the last value is
+  returned*.
+
+  Args:
+    url: string URL
+    param: string name of query parameter to remove
+
+  Returns:
+    (string URL without the given param, string param value)
+  """
+  # convert to list so we can modify later
+  parsed = list(urllib.parse.urlparse(url))
+
+  # query params are in index 4
+  removed = None
+  rest = []
+  for name, val in urllib.parse.parse_qsl(parsed[4], keep_blank_values=True):
+    if name == param:
+      removed = val
+    else:
+      rest.append((name, val))
+
+  parsed[4] = urllib.parse.urlencode(rest)
+  url = urllib.parse.urlunparse(parsed)
+  return url, removed
+
 def get_required_param(handler, name):
   try:
     val = handler.request.get(name)

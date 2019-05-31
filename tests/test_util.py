@@ -607,6 +607,20 @@ class UtilTest(testutil.TestCase):
         self.assertEqual('x', key)
         self.assertEqual('Ryan Çelik', val)
 
+  def test_remove_query_param(self):
+    for input, expected, param, val in (
+      ('http://a.com', 'http://a.com', 'x', None),
+      ('http://a.com?x=', 'http://a.com', 'x', ''),
+      ('http://a.com?x=', 'http://a.com?x=', 'u', None),
+      ('http://a.com?x=y', 'http://a.com', 'x', 'y'),
+      ('http://a.com?x=y&u=v', 'http://a.com?u=v', 'x', 'y'),
+      ('http://a.com?x=y&u=v', 'http://a.com?x=y', 'u', 'v'),
+      ('http://a.com?x=y&x=z', 'http://a.com', 'x', 'z'),
+      ('http://a.com?x=y&x=z', 'http://a.com?x=y&x=z', 'u', None),
+      ('http://a.com?x=R+%C3%87', 'http://a.com', 'x', 'R Ç'),
+    ):
+      self.assertEqual((expected, val), util.remove_query_param(input, param))
+
   def test_get_required_param(self):
     handler = webapp2.RequestHandler(webapp2.Request.blank('/?a=b'), None)
     self.assertEqual('b', util.get_required_param(handler, 'a'))
