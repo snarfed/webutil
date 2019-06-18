@@ -105,10 +105,11 @@ def linkify_datastore_keys(msg):
       key = ndb.Key(urlsafe=match.group(1))
       tokens = [(kind, '%s:%s' % ('id' if isinstance(id, int) else 'name', id))
                 for kind, id in key.pairs()]
-      key_str = '|'.join('%d/%s|%d/%s' % (len(kind), kind, len(id), id)
-                         for kind, id in tokens)
-      return "'<a title='%s' href='https://console.developers.google.com/datastore/editentity?project=%s&kind=%s&queryType=GQLQuery&queryText&key=0/|%s'>%s...</a>'" % (
-        match.group(1), appengine_config.APP_ID, key.kind(), key_str, match.group(2))
+      key_str = '0/|' + '|'.join('%d/%s|%d/%s' % (len(kind), kind, len(id), id)
+                                 for kind, id in tokens)
+      key_quoted = urllib.parse.quote(urllib.parse.quote(key_str), safe=True)
+      return "'<a title='%s' href='https://console.cloud.google.com/datastore/entities;kind=%s;ns=__$DEFAULT$__/edit;key=%s?project=%s'>%s...</a>'" % (
+        match.group(1), key.kind(), key_quoted, appengine_config.APP_ID, match.group(2))
     except BaseException:
       logging.debug("Couldn't linkify candidate datastore key.", exc_info=True)
       return msg
