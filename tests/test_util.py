@@ -400,7 +400,8 @@ class UtilTest(testutil.TestCase):
         "X <a href='http://foo.com' />",
         'asdf <a href="http://foo.com">foo</a> qwert ',
         # TODO: support unicode chars
-        'http://aÇb.com'):
+        'http://aÇb.com',
+        'http://a<b>.com'):
       self.assertEqual(unchanged, util.linkify(unchanged))
 
     for expected, input in (
@@ -458,6 +459,11 @@ class UtilTest(testutil.TestCase):
     self.assertEqual('<a href="http://foo">foo</a>', pl('http://foo', text=''))
     self.assertEqual('<a href="http://foo">biff</a>',
                       pl('http://foo', text='biff'))
+
+    self.assertEqual('<a href="http://%3Ca%3Eb">&lt;a&gt;b</a>',
+                     pl('http://<a>b'))
+    self.assertEqual('<a href="http://%3Ca%3Eb">d&lt;e</a>',
+                      pl('http://<a>b', text='d<e'))
 
     # default text max length is full domain plus 14 chars
     self.assertEqual(

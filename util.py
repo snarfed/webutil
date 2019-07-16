@@ -30,6 +30,7 @@ import os
 import re
 import socket
 import urllib.parse, urllib.request
+from xml.sax import saxutils
 
 # These are used in interpret_http_exception() and is_connection_failure(). They
 # use dependencies that we may or may not have, so degrade gracefully if they're
@@ -636,7 +637,12 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
   attr_str = (''.join('%s="%s" ' % (attr, val) for attr, val in list(attrs.items()))
               if attrs else '')
   target = 'target="_blank" ' if new_tab else ''
-  return ('<a %s%shref="%s">%s</a>' % (attr_str, target, url, text))
+  return ('<a %s%shref="%s">%s</a>' %
+          (attr_str, target,
+           # not using urllib.parse.quote because it quotes a ton of chars we
+           # want to pass through, including most unicode chars
+           url.replace('<', '%3C').replace('>', '%3E'),
+           saxutils.escape(text)))
 
 
 class SimpleTzinfo(datetime.tzinfo):
