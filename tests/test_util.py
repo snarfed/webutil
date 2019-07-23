@@ -465,6 +465,11 @@ class UtilTest(testutil.TestCase):
     self.assertEqual('<a href="http://%3Ca%3Eb">d&lt;e</a>',
                       pl('http://<a>b', text='d<e'))
 
+    self.assertEqual('<a href="http://foo">foo <span class="glyphicon glyphicon-bar"></span></a>',
+                     pl('http://foo', glyphicon='bar'))
+    self.assertEqual('<a href="http://%3Ca%3Eb">&lt;a&gt;b <span class="glyphicon glyphicon-bar"></span></a>',
+                     pl('http://<a>b', glyphicon='bar'))
+
     # default text max length is full domain plus 14 chars
     self.assertEqual(
       '<a href="http://foo/bar/baz/baj/XY">foo/bar/baz/baj/XY</a>',

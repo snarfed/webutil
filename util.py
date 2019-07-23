@@ -632,8 +632,10 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
   if max_length and len(text) > max_length:
     text = text[:max_length] + '...'
 
+  escaped_text = saxutils.escape(text)
   if glyphicon is not None:
-    text += ' <span class="glyphicon glyphicon-%s"></span>' % glyphicon
+    escaped_text += ' <span class="glyphicon glyphicon-%s"></span>' % glyphicon
+
   attr_str = (''.join('%s="%s" ' % (attr, val) for attr, val in list(attrs.items()))
               if attrs else '')
   target = 'target="_blank" ' if new_tab else ''
@@ -642,7 +644,7 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
            # not using urllib.parse.quote because it quotes a ton of chars we
            # want to pass through, including most unicode chars
            url.replace('<', '%3C').replace('>', '%3E'),
-           saxutils.escape(text)))
+           escaped_text))
 
 
 class SimpleTzinfo(datetime.tzinfo):
