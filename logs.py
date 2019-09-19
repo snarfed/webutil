@@ -184,8 +184,6 @@ class LogHandler(webapp2.RequestHandler):
         self.response.out.write('</body>\n</html>')
         return
 
-      offset = log.offset
-
     self.response.out.write('No log found!')
 
 
