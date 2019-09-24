@@ -7,13 +7,14 @@ from __future__ import absolute_import, division, unicode_literals
 # Engine's dev_appserver, probably because it doesn't support SSL. Use this
 # urllib2-based one instead. http://python-future.org/imports.html#aliased-imports
 from future.moves.urllib.request import urlopen as urllib_urlopen
-from future.moves.urllib import error as urllib_error
+from future.moves.urllib import error as urllib_error_py2
 from future import standard_library
 standard_library.install_aliases()
 from future.utils import bytes_to_native_str, PY2, text_type
 from builtins import object, range, str
 import past.builtins
 from past.builtins import basestring
+import urllib.error as urllib_error_py3
 
 import calendar
 import collections
@@ -1058,7 +1059,7 @@ def interpret_http_exception(exception):
     code = e.code
     body = e.plain_body({})
 
-  elif isinstance(e, urllib_error.HTTPError):
+  elif isinstance(e, (urllib_error_py2.HTTPError, urllib_error_py3.HTTPError)):
     code = e.code
     try:
       body = e.read() or e.body
@@ -1077,7 +1078,7 @@ def interpret_http_exception(exception):
          'Sorry, the Flickr API service is not currently available' in body)):
       code = '504'
 
-  elif isinstance(e, urllib_error.URLError):
+  elif isinstance(e, (urllib_error_py2.URLError, urllib_error_py3.URLError)):
     body = str(e.reason)
 
   elif requests and isinstance(e, requests.HTTPError):
@@ -1231,7 +1232,7 @@ def is_connection_failure(exception):
 
   msg = str(exception)
   if (isinstance(exception, tuple(types)) or
-      (isinstance(exception, urllib_error.URLError) and
+      (isinstance(exception, (urllib_error_py2.URLError, urllib_error_py3.URLError)) and
        isinstance(exception.reason, socket.error)) or
       (isinstance(exception, http.client.HTTPException) and
        'Deadline exceeded' in msg) or
