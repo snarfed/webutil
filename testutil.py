@@ -47,7 +47,8 @@ def get_task_eta(task):
 
 
 def requests_response(body='', url=None, status=200, content_type=None,
-                      redirected_url=None, headers=None, allow_redirects=None):
+                      redirected_url=None, headers=None, allow_redirects=None,
+                      encoding=None):
     """
     Args:
       redirected_url: string URL or sequence of string URLs for multiple redirects
@@ -61,7 +62,8 @@ def requests_response(body='', url=None, status=200, content_type=None,
 
     resp._text = body
     resp._content = body.encode('utf-8') if isinstance(body, str) else body
-    resp.encoding = 'utf-8'
+    resp.raw = io.StringIO()  # not implemented but needed for close()
+    resp.encoding = encoding if encoding is not None else 'utf-8'
 
     resp.url = url
     if redirected_url is not None:
@@ -259,10 +261,10 @@ not found in:
 
   @staticmethod
   def _normalize_lines(val, ignore_blanks=False):
-      lines = [l.strip() + '\n' for l in val.splitlines(True)]
-      return [l for i, l in enumerate(lines)
-              if not (ignore_blanks and l == '\n') and
-                 (i <= 1 or not (lines[i - 1] == l == '\n'))]
+    lines = [l.strip() + '\n' for l in val.splitlines(True)]
+    return [l for i, l in enumerate(lines)
+            if not (ignore_blanks and l == '\n') and
+               (i <= 1 or not (lines[i - 1] == l == '\n'))]
 
 
 class TestCase(mox.MoxTestBase, Asserts):
@@ -322,12 +324,18 @@ class TestCase(mox.MoxTestBase, Asserts):
     resp = requests_response(
       response, url=url, status=status_code, content_type=content_type,
       redirected_url=redirected_url, headers=response_headers,
-      allow_redirects=kwargs.get('allow_redirects'))
+      allow_redirects=kwargs.get('allow_redirects'),
+      encoding=kwargs.pop('encoding', None))
 
     if 'timeout' not in kwargs:
       kwargs['timeout'] = HTTP_TIMEOUT
     elif kwargs['timeout'] is None:
       del kwargs['timeout']
+
+    if 'stream' not in kwargs:
+      kwargs['stream'] = True
+    elif kwargs['stream'] == None:
+      del kwargs['stream']
 
     if method is requests.head:
       kwargs['allow_redirects'] = True

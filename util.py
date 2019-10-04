@@ -10,7 +10,7 @@ from future.moves.urllib.request import urlopen as urllib_urlopen
 from future.moves.urllib import error as urllib_error_py2
 from future import standard_library
 standard_library.install_aliases()
-from future.utils import bytes_to_native_str, PY2, text_type
+from future.utils import bytes_to_native_str, native_str, PY2, text_type
 from builtins import object, range, str
 import past.builtins
 from past.builtins import basestring
@@ -67,17 +67,34 @@ except ImportError:
   exc = None
 
 try:
-  from appengine_config import HTTP_TIMEOUT
+  from appengine_config import app_identity, HTTP_TIMEOUT
   from google.appengine.api import urlfetch_errors
   from google.appengine.runtime import apiproxy_errors
 except (ImportError, ValueError):
   HTTP_TIMEOUT = 15
-  urlfetch_errors = None
-  apiproxy_errors = None
+  app_identity = urlfetch_errors = apiproxy_errors = None
+
+# Used in parse_html() and friends.
+try:
+  import bs4
+except ImportError:
+  bs4 = None
+
+try:
+  import mf2py
+except ImportError:
+  mf2py = None
 
 EPOCH = datetime.datetime.utcfromtimestamp(0)
 EPOCH_ISO = EPOCH.isoformat()
 T = bytes_to_native_str(b'T')  # for isoformat()
+
+# Average HTML page size as of 2015-10-15 is 56K, so this is very generous and
+# conservative.
+# http://www.sitepoint.com/average-page-weight-increases-15-2014/
+# http://httparchive.org/interesting.php#bytesperpage
+MAX_HTTP_RESPONSE_SIZE = 1000000  # 1MB
+HTTP_RESPONSE_TOO_BIG_STATUS_CODE = 422  # Unprocessable Entity
 
 
 class Struct(object):
@@ -1320,12 +1337,60 @@ def urlopen(url_or_req, *args, **kwargs):
 
 
 def requests_fn(fn):
-  """Wraps requests.* and logs the HTTP method and URL."""
+  """Wraps requests.* and logs the HTTP method and URL.
+
+  Args:
+    fn: 'get', 'head', or 'post'
+    gateway: boolean, whether this is in a HTTP gateway request handler context.
+      If True, errors will be raised as appropriate webob HTTP exceptions.
+      Specifically, malformed URLs result in :class:`exc.HTTPBadRequest`
+      (HTTP 400), connection failures and HTTP 4xx and 5xx result in
+      :class:`exc.HTTPBadGateway` (HTTP 502).
+  """
   def call(url, *args, **kwargs):
     logging.info('requests.%s %s %s', fn, url, _prune(kwargs))
+
+    gateway = kwargs.pop('gateway', None)
     kwargs.setdefault('timeout', HTTP_TIMEOUT)
-    # use getattr so that stubbing out with mox still works
-    return getattr(requests, fn)(url, *args, **kwargs)
+    # stream to short circuit on too-long response bodies (below)
+    kwargs.setdefault('stream', True)
+
+    try:
+      # use getattr so that stubbing out with mox still works
+      resp = getattr(requests, fn)(url, *args, **kwargs)
+      if gateway:
+        resp.raise_for_status()
+    except (ValueError, requests.URLRequired) as e:
+      if gateway:
+        msg = 'Bad URL %s: %s' % (url, e)
+        logging.warning(msg, exc_info=True)
+        raise exc.HTTPBadRequest(msg)
+      raise
+    except requests.RequestException as e:
+      if gateway:
+        logging.warning(url, exc_info=True)
+        raise exc.HTTPBadGateway(str(e))
+      raise
+
+    if url != resp.url:
+      logging.info('Redirected to %s', resp.url)
+
+    # check response size
+    length = resp.headers.get('Content-Length')
+    if is_int(length):
+      length = int(length)
+    else:
+      length = len(resp.text)
+    if length > MAX_HTTP_RESPONSE_SIZE:
+      resp.close()
+      resp.status_code = HTTP_RESPONSE_TOO_BIG_STATUS_CODE
+      resp._text = ('Content-Length %s is larger than our limit %s.' %
+                    (length, MAX_HTTP_RESPONSE_SIZE))
+      resp._content = native_str(resp._text)
+      if gateway:
+        resp.raise_for_status()
+
+    return resp
 
   return call
 
@@ -1373,16 +1438,13 @@ def follow_redirects(url, cache=None, fail_cache_time_secs = 60 * 60 * 24,  # a 
   # can't use urllib2 since it uses GET on redirect requests, even if i specify
   # HEAD for the initial request.
   # http://stackoverflow.com/questions/9967632
+  cache_time = fail_cache_time_secs
   try:
     # default scheme to http
     parsed = urllib.parse.urlparse(url)
     if not parsed.scheme:
       url = 'http://' + url
     resolved = requests_head(url, allow_redirects=True, **kwargs)
-    resolved.raise_for_status()
-    if resolved.url != url:
-      logging.debug('Resolved %s to %s', url, resolved.url)
-    cache_time = 0  # forever
   except AssertionError:
     raise
   except BaseException as e:
@@ -1390,12 +1452,21 @@ def follow_redirects(url, cache=None, fail_cache_time_secs = 60 * 60 * 24,  # a 
     resolved = requests.Response()
     resolved.url = url
     resolved.status_code = 499  # not standard. i made this up.
-    cache_time = fail_cache_time_secs
+
+  try:
+    resolved.raise_for_status()
+    if resolved.url != url:
+      logging.debug('Resolved %s to %s', url, resolved.url)
+    cache_time = 0  # forever
+  except BaseException as e:
+    logging.warning("Couldn't resolve URL %s : %s", url, e)
 
   content_type = resolved.headers.get('content-type')
-  if not content_type and resolved.url:
-    type, _ = mimetypes.guess_type(resolved.url)
-    resolved.headers['content-type'] = type or 'text/html'
+  if (not resolved.ok or
+      not content_type):  # Content-Type of error response isn't useful
+    if resolved.url:
+      type, _ = mimetypes.guess_type(resolved.url)
+      resolved.headers['content-type'] = type or 'text/html'
 
   refresh = resolved.headers.get('refresh')
   if refresh:
@@ -1564,3 +1635,90 @@ class WideUnicode(str):
 
   def __getslice__(self, i, j):
     return self.__getitem__(slice(i, j))
+
+
+def parse_html(input, **kwargs):
+  """Parses an HTML string with BeautifulSoup.
+
+  http://www.crummy.com/software/BeautifulSoup/bs4/doc/#specifying-the-parser-to-use
+
+  lxml is a native module, so we don't bundle and deploy it to App Engine.
+  Instead, we use App Engine's version by declaring it in app.yaml.
+  https://cloud.google.com/appengine/docs/standard/python/tools/built-in-libraries-27
+
+  We pin App Engine's version in requirements.freeze.txt and tell BeautifulSoup
+  to use lxml explicitly to ensure we use the same parser and version in prod
+  and locally, since we've been bit by at least one meaningful difference
+  between lxml and e.g. html5lib: lxml includes the contents of <noscript> tags,
+  html5lib omits them. :(
+  https://github.com/snarfed/bridgy/issues/798#issuecomment-370508015
+
+  Args:
+    input: unicode HTML string or :class:`requests.Response`
+    kwargs: passed through to :class:`bs4.BeautifulSoup` constructor
+
+  Returns: :class:`bs4.BeautifulSoup`
+  """
+  if isinstance(input, requests.Response):
+    # The original HTTP 1.1 spec (RFC 2616, 1999) said to default HTML charset
+    # to ISO-8859-1 if it's not explicitly provided in Content-Type. RFC 7231
+    # (2014) removed that default: https://tools.ietf.org/html/rfc7231#appendix-B
+    #
+    # requests is working on incorporating that change, but hasn't shippet it yet.
+    # https://github.com/psf/requests/issues/2086
+    #
+    # so, if charset isn't explicitly provided, pass on the raw bytes and let
+    # BS4/UnicodeDammit figure it out from <meta charset> tag or anything else.
+    # https://github.com/snarfed/granary/issues/171
+    content_type = input.headers.get('content-type', '')
+    input = input.text if 'charset' in content_type else input.content
+
+  args = []
+  if app_identity:
+    # we're on App Engine; use lxml explicitly since it's built in
+    args = ['lxml']
+
+  return bs4.BeautifulSoup(input, *args, **kwargs)
+
+
+def parse_mf2(input, url=None):
+  """Parses microformats2 out of HTML.
+
+  Currently uses mf2py.
+
+  Args:
+    input: unicode HTML string, :class:`bs4.BeautifulSoup`, or
+      :class:`requests.Response`
+    url: optional unicode string, URL of the input page, used as the base for
+      relative URLs
+
+  Returns: dict, parsed mf2 data
+  """
+  if isinstance(input, requests.Response) and not url:
+    url = input.url
+
+  if not isinstance(input, bs4.BeautifulSoup):
+    input = parse_html(input)
+
+  return mf2py.parse(url=url, doc=input, img_with_alt=True)
+
+
+def fetch_mf2(url, get_fn=requests_get, gateway=False, **kwargs):
+  """Fetches an HTML page over HTTP, parses it, and returns its microformats2.
+
+  Args:
+    url: unicode string
+    get_fn: callable matching :func:`requests.get`'s signature, for the HTTP fetch
+    gateway: boolean; see :func:`requests_fn`
+    **kwargs: passed through to :func:`requests.get`
+
+  Returns: dict, parsed mf2 data. Includes the final URL of the parsed document
+    (after redirects) in the top-level `url` field.
+  """
+  resp = get_fn(url, gateway=gateway, **kwargs)
+  resp.raise_for_status()
+
+  mf2 = parse_mf2(resp)
+  assert 'url' not in mf2
+  mf2['url'] = resp.url
+  return mf2
