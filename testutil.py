@@ -31,6 +31,9 @@ except (ImportError, ValueError):
 from oauth_dropins.webutil import util
 import requests
 
+RE_TYPE = (re.Pattern if hasattr(re, 'Pattern')  # python >=3.7
+           else re._pattern_type)                # python <3.7
+
 
 def get_task_params(task):
   """Parses a task's POST body and returns the query params in a dict.
@@ -192,7 +195,7 @@ Actual value:
     key = None
 
     try:
-      if isinstance(expected, re._pattern_type):
+      if isinstance(expected, RE_TYPE):
         if not re.match(expected, actual):
           self.fail("%r doesn't match %s" % (expected, actual))
       elif isinstance(expected, dict) and isinstance(actual, dict):
@@ -387,7 +390,7 @@ class TestCase(mox.MoxTestBase, Asserts):
     def check_request(req):
       try:
         req_url = req if isinstance(req, basestring) else req.get_full_url()
-        if isinstance(url, re._pattern_type):
+        if isinstance(url, RE_TYPE):
           self.assertRegexpMatches(req_url, url)
         else:
           self.assertEqual(url, req_url)
