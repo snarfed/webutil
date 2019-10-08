@@ -23,7 +23,6 @@ import base64
 import datetime
 import http.client
 import inspect
-import json
 import logging
 import mimetypes
 import numbers
@@ -32,6 +31,11 @@ import re
 import socket
 import urllib.parse, urllib.request
 from xml.sax import saxutils
+
+try:
+  import ujson as json
+except ImportError:
+  import json
 
 # These are used in interpret_http_exception() and is_connection_failure(). They
 # use dependencies that we may or may not have, so degrade gracefully if they're
@@ -928,10 +932,7 @@ def encode_oauth_state(obj):
     raise TypeError('Expected dict, got %s' % obj.__class__)
 
   logging.debug('encoding state "%s"' % obj)
-  # pass in custom separators to cut down on whitespace, and sort keys for
-  # unit test consistency
-  return urllib.parse.quote_plus(json.dumps(trim_nulls(obj), separators=(',', ':'),
-                                            sort_keys=True))
+  return urllib.parse.quote_plus(json.dumps(trim_nulls(obj), sort_keys=True))
 
 
 def decode_oauth_state(state):

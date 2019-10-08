@@ -8,7 +8,6 @@ standard_library.install_aliases()
 from future.utils import native_str
 
 import calendar
-import json
 import logging
 import os
 import urllib.parse
@@ -18,6 +17,7 @@ import appengine_config
 from google.appengine.ext.webapp import template
 from google.appengine.api import memcache
 import jinja2
+import ujson as json
 import webapp2
 
 import logs

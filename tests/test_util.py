@@ -14,7 +14,6 @@ import urllib.error as urllib_error_py3
 
 import datetime
 import http.client
-import json
 import socket
 import io
 import urllib.parse, urllib.request
@@ -23,6 +22,7 @@ import apiclient.errors
 import httplib2
 from oauth2client.client import AccessTokenRefreshError
 import requests
+import ujson as json
 import urllib3
 import webapp2
 from webob import exc

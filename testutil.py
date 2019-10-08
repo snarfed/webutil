@@ -13,7 +13,6 @@ from past.builtins import basestring
 import base64
 import datetime
 import difflib
-import json
 from mox3 import mox
 import pprint
 import re
@@ -30,6 +29,7 @@ except (ImportError, ValueError):
 
 from oauth_dropins.webutil import util
 import requests
+import ujson as json
 
 RE_TYPE = (re.Pattern if hasattr(re, 'Pattern')  # python >=3.7
            else re._pattern_type)                # python <3.7
