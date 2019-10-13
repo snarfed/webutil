@@ -65,7 +65,7 @@ def requests_response(body='', url=None, status=200, content_type=None,
 
     resp._text = body
     resp._content = body.encode('utf-8') if isinstance(body, str) else body
-    resp.raw = io.StringIO()  # not implemented but needed for close()
+    resp.raw = io.BytesIO(resp._content)  # needed for close()
     resp.encoding = encoding if encoding is not None else 'utf-8'
 
     resp.url = url
