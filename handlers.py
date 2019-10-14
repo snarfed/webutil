@@ -17,11 +17,11 @@ import appengine_config
 from google.appengine.ext.webapp import template
 from google.appengine.api import memcache
 import jinja2
-import ujson as json
 import webapp2
 
 import logs
 import util
+from util import json_dumps, json_loads
 
 JINJA_ENV = jinja2.Environment(
   loader=jinja2.FileSystemLoader(('.', 'templates')),
@@ -233,7 +233,7 @@ class XrdOrJrdHandler(TemplateHandler):
     for key, val in self.headers().items():
       self.response.headers[key] = val
 
-    self.response.write(json.dumps(self.template_vars(*args, **kwargs), indent=2))
+    self.response.write(json_dumps(self.template_vars(*args, **kwargs), indent=2))
 
   def content_type(self):
     return ('application/json; charset=utf-8' if self.is_jrd()

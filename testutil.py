@@ -27,9 +27,10 @@ try:
 except (ImportError, ValueError):
   HTTP_TIMEOUT = 15
 
-from oauth_dropins.webutil import util
 import requests
-import ujson as json
+
+from oauth_dropins.webutil import util
+from oauth_dropins.webutil.util import json_dumps, json_loads
 
 RE_TYPE = (re.Pattern if hasattr(re, 'Pattern')  # python >=3.7
            else re._pattern_type)                # python <3.7
@@ -59,7 +60,7 @@ def requests_response(body='', url=None, status=200, content_type=None,
     resp = requests.Response()
 
     if isinstance(body, (dict, list)):
-      body = json.dumps(body, indent=2)
+      body = json_dumps(body, indent=2)
       if content_type is None:
         content_type = 'application/json'
 
@@ -209,7 +210,7 @@ Actual value:
             try:
               return native_str(hash(x))
             except TypeError:
-              return json.dumps(x, sort_keys=True)
+              return json_dumps(x, sort_keys=True)
           expected = sorted(expected, key=hash_or_json)
           actual = sorted(actual, key=hash_or_json)
 

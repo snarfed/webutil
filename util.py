@@ -33,8 +33,10 @@ import urllib.parse, urllib.request
 from xml.sax import saxutils
 
 try:
-  import ujson as json
+  import ujson
+  json = ujson
 except ImportError:
+  ujson = None
   import json
 
 # These are used in interpret_http_exception() and is_connection_failure(). They
@@ -932,7 +934,7 @@ def encode_oauth_state(obj):
     raise TypeError('Expected dict, got %s' % obj.__class__)
 
   logging.debug('encoding state "%s"' % obj)
-  return urllib.parse.quote_plus(json.dumps(trim_nulls(obj), sort_keys=True))
+  return urllib.parse.quote_plus(json_dumps(trim_nulls(obj), sort_keys=True))
 
 
 def decode_oauth_state(state):
@@ -948,7 +950,7 @@ def decode_oauth_state(state):
 
   logging.debug('decoding state "%s"' % state)
   try:
-    obj = json.loads(urllib.parse.unquote_plus(state)) if state else {}
+    obj = json_loads(urllib.parse.unquote_plus(state)) if state else {}
   except ValueError:
     logging.exception('Invalid value for state parameter: %s' % state)
     raise exc.HTTPBadRequest('Invalid value for state parameter: %s' % state)
@@ -1045,12 +1047,12 @@ def sniff_json_or_form_encoded(value):
   if not value:
     return {}
   elif value[0] in ('{', '['):
-    return json.loads(value)
+    return json_loads(value)
   elif '=' in value:
     return {k: v[0] if len(v) == 1 else v
             for k, v in urllib.parse.parse_qs(value).items()}
   else:
-    return json.loads(value)
+    return json_loads(value)
 
 
 def interpret_http_exception(exception):
@@ -1138,7 +1140,7 @@ def interpret_http_exception(exception):
   error = {}
   if body:
     try:
-      body_json = json.loads(body)
+      body_json = json_loads(body)
       error = body_json.get('error', {})
       if not isinstance(error, dict):
         error = {'message': repr(error)}
@@ -1256,7 +1258,7 @@ def is_connection_failure(exception):
        'Deadline exceeded' in msg) or
       'Connection closed unexpectedly' in msg  # tweepy.TweepError
      ):
-    # TODO: exc_info might not be for exception, e.g. if the json.loads() in
+    # TODO: exc_info might not be for exception, e.g. if the json_loads() in
     # interpret_http_exception() fails. need to pass through the whole
     # sys.exc_info() tuple here, not just the exception object.
     logging.info('Connection failure: %s' % exception, exc_info=True)
@@ -1314,6 +1316,19 @@ def load_file_lines(file):
       items.add(val)
 
   return items
+
+
+def json_loads(*args, **kwargs):
+  """Wrapper around :func:`json.loads` that centralizes our JSON handling."""
+  return json.loads(*args, **kwargs)
+
+
+def json_dumps(*args, **kwargs):
+  """Wrapper around :func:`json.dumps` that centralizes our JSON handling."""
+  if ujson:
+    kwargs.setdefault('escape_forward_slashes', False)
+
+  return json.dumps(*args, **kwargs)
 
 
 def urlopen(url_or_req, *args, **kwargs):

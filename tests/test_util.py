@@ -22,13 +22,13 @@ import apiclient.errors
 import httplib2
 from oauth2client.client import AccessTokenRefreshError
 import requests
-import ujson as json
 import urllib3
 import webapp2
 from webob import exc
 
 import testutil
 import util
+from util import json_dumps, json_loads
 from unittest import skipIf
 
 
@@ -732,7 +732,7 @@ class UtilTest(testutil.TestCase):
         requests.HTTPError(response=util.Struct(status_code='429', text='my body'))))
 
     # facebook page rate limiting
-    json_str = lambda obj: io.StringIO(str(json.dumps(obj)))
+    json_str = lambda obj: io.StringIO(str(json_dumps(obj)))
     body = {'error': {
       'type': 'OAuthException',
       'code': 32,
@@ -848,7 +848,7 @@ class UtilTest(testutil.TestCase):
         got_code, got_body = ihc(HTTPError(
           'url', code, 'BAD REQUEST', {}, json_str(body)))
         self.assertEqual('401', got_code, (got_code, body))
-        self.assert_equals(body, json.loads(got_body), body)
+        self.assert_equals(body, json_loads(got_body), body)
 
     # HTTPErrors that *shouldn't* become 401s
     for body in (
@@ -875,7 +875,7 @@ class UtilTest(testutil.TestCase):
         got_code, got_body = ihc(HTTPError(
           'url', code, 'BAD REQUEST', {}, json_str(body)))
         self.assertEqual(str(expected), got_code, (code, got_code, body))
-        self.assert_equals(body, json.loads(got_body), body)
+        self.assert_equals(body, json_loads(got_body), body)
 
     # facebook temporarily unavailable with is_transient
     # https://github.com/snarfed/bridgy/issues/450
