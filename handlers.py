@@ -133,7 +133,7 @@ class ModernHandler(webapp2.RequestHandler):
       'Access-Control-Allow-Origin': '*',
       # see https://content-security-policy.com/
       'Content-Security-Policy':
-        "script-src https: localhost:8080 'unsafe-inline'; "
+        "script-src https: localhost:8080 my.dev.com:8080 'unsafe-inline'; "
         "frame-ancestors 'self'; "
         "report-uri /csp-report; ",
       # 16070400 seconds is 6 months

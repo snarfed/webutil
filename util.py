@@ -933,7 +933,7 @@ def encode_oauth_state(obj):
   if not isinstance(obj, dict):
     raise TypeError('Expected dict, got %s' % obj.__class__)
 
-  logging.debug('encoding state "%s"' % obj)
+  logging.debug('encoding state %r', obj)
   return urllib.parse.quote_plus(json_dumps(trim_nulls(obj), sort_keys=True))
 
 
@@ -948,7 +948,7 @@ def decode_oauth_state(state):
   if not isinstance(state, basestring) and state is not None:
     raise TypeError('Expected basestring, got %s' % state.__class__)
 
-  logging.debug('decoding state "%s"' % state)
+  logging.debug('decoding state %r', state)
   try:
     obj = json_loads(urllib.parse.unquote_plus(state)) if state else {}
   except ValueError:
