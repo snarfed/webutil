@@ -1155,3 +1155,61 @@ class UtilTest(testutil.TestCase):
       (False, 'false'),
     ):
       self.assert_equals(expected, util.sniff_json_or_form_encoded(input), input)
+
+  def test_requests_post_with_redirects_no_redirect(self):
+    self.expect_requests_post('http://xyz', 'abc', allow_redirects=False)
+    self.mox.ReplayAll()
+    resp = util.requests_post_with_redirects('http://xyz')
+    self.assert_equals('abc', resp.text)
+
+  def test_requests_post_with_redirects_two_redirects(self):
+    self.expect_requests_post(
+      'http://first', allow_redirects=False, status_code=302,
+      response_headers={'Location': 'https://second'})
+    self.expect_requests_post(
+      'https://second', allow_redirects=False, status_code=301,
+      response_headers={'Location': 'https://third'})
+    self.expect_requests_post('https://third', 'abc', allow_redirects=False)
+    self.mox.ReplayAll()
+
+    resp = util.requests_post_with_redirects('http://first')
+    self.assert_equals('abc', resp.text)
+    self.assert_equals('https://third', resp.url)
+
+  def test_requests_post_with_redirects_error(self):
+    self.expect_requests_post('http://first', 'abc', allow_redirects=False,
+                              status_code=400)
+    self.mox.ReplayAll()
+
+    with self.assertRaises(requests.HTTPError) as e:
+      resp = util.requests_post_with_redirects('http://first')
+
+    self.assert_equals('abc', e.exception.response.text)
+    self.assert_equals(400, e.exception.response.status_code)
+
+  def test_requests_post_with_redirects_redirect_then_error(self):
+    self.expect_requests_post('http://ok', allow_redirects=False, status_code=302,
+                              response_headers={'Location': 'https://bad'})
+    self.expect_requests_post('https://bad', 'abc', allow_redirects=False,
+                              status_code=400)
+    self.mox.ReplayAll()
+
+    with self.assertRaises(requests.HTTPError) as e:
+      resp = util.requests_post_with_redirects('http://ok')
+
+    self.assert_equals('abc', e.exception.response.text)
+    self.assert_equals(400, e.exception.response.status_code)
+
+  def test_requests_post_with_redirects_too_many_redirects(self):
+    for i in range(requests.models.DEFAULT_REDIRECT_LIMIT):
+      self.expect_requests_post(
+        'http://xyz', 'abc', allow_redirects=False, status_code=302,
+        response_headers={'Location': 'http://xyz'})
+    self.mox.ReplayAll()
+
+    with self.assertRaises(requests.TooManyRedirects) as e:
+      resp = util.requests_post_with_redirects('http://xyz')
+
+    self.assert_equals('abc', e.exception.response.text)
+    self.assert_equals(302, e.exception.response.status_code)
+    self.assert_equals('http://xyz', e.exception.response.headers['Location'])

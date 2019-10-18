@@ -1415,6 +1415,29 @@ requests_head = requests_fn('head')
 requests_post = requests_fn('post')
 
 
+def requests_post_with_redirects(url, *args, **kwargs):
+  """Make an HTTP POST, and follow redirects with POST instead of GET.
+
+  Violates the HTTP spec's rule to follow POST redirects with GET. Yolo!
+
+  Args:
+    url: string
+
+  Returns: requests.Response
+
+  Raises: TooManyRedirects
+  """
+  for i in range(requests.models.DEFAULT_REDIRECT_LIMIT):
+    resp = requests_post(url, *args, allow_redirects=False, **kwargs)
+    url = resp.headers.get('Location')
+    if resp.is_redirect and url:
+      continue
+    resp.raise_for_status()
+    return resp
+
+  raise requests.TooManyRedirects(response=resp)
+
+
 def _prune(kwargs):
   pruned = dict(kwargs)
 
