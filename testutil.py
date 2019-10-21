@@ -277,7 +277,7 @@ class TestCase(mox.MoxTestBase, Asserts):
 
   def setUp(self):
     super(TestCase, self).setUp()
-    for method in 'get', 'post':
+    for method in 'get', 'post', 'delete':
       self.mox.StubOutWithMock(requests, method, use_mock_anything=True)
     self.stub_requests_head()
 
@@ -316,6 +316,9 @@ class TestCase(mox.MoxTestBase, Asserts):
 
   def expect_requests_post(self, *args, **kwargs):
     return self._expect_requests_call(*args, method=requests.post, **kwargs)
+
+  def expect_requests_delete(self, *args, **kwargs):
+    return self._expect_requests_call(*args, method=requests.delete, **kwargs)
 
   def _expect_requests_call(self, url, response='', status_code=200,
                             content_type='text/html', method=requests.get,

@@ -1413,6 +1413,7 @@ def requests_fn(fn):
 requests_get = requests_fn('get')
 requests_head = requests_fn('head')
 requests_post = requests_fn('post')
+requests_delete = requests_fn('delete')
 
 
 def requests_post_with_redirects(url, *args, **kwargs):
