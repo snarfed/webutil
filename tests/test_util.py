@@ -530,6 +530,19 @@ class UtilTest(testutil.TestCase):
         offset = datetime.timedelta(minutes=offset)
       self.assertEqual(offset, dt.utcoffset())
 
+  def test_parse_iso8601_duration(self):
+    for bad in (None, '', 'bad'):
+        self.assertIsNone(util.parse_iso8601_duration(bad))
+
+    for input, expected in (
+        ('P0D', (0, 0)),
+        (' PT0M ', (0, 0)),
+        ('PT2M3S', (0, 123)),
+        ('P1Y2M3W4DT5H0M6S', (365 + 2 * 30 + 3 * 7 + 4, 5 * 60 * 60 + 6)),
+    ):
+        self.assertEqual(datetime.timedelta(*expected),
+                         util.parse_iso8601_duration(input))
+
   def test_maybe_iso8601_to_rfc3339(self):
     for input, expected in (
       (None, None),

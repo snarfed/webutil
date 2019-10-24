@@ -94,6 +94,9 @@ except ImportError:
 EPOCH = datetime.datetime.utcfromtimestamp(0)
 EPOCH_ISO = EPOCH.isoformat()
 T = bytes_to_native_str(b'T')  # for isoformat()
+# from https://stackoverflow.com/a/53140944/186123
+ISO8601_DURATION_RE = re.compile(
+  r'^ *P(?!$)(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)? *$')
 
 # Average HTML page size as of 2015-10-15 is 56K, so this is very generous and
 # conservative.
@@ -580,6 +583,8 @@ def linkify(text, pretty=False, skip_bare_cc_tlds=False, **kwargs):
   Args:
     text: string, input
     pretty: if True, uses :func:`pretty_link()` for link text
+    skip_bare_cc_tlds: boolean, whether to skip links of the form
+      [domain].[2-letter TLD] with no schema and no path
 
   Returns:
     string, linkified input
@@ -695,7 +700,7 @@ def parse_iso8601(val):
   time zone aware.
 
   Args:
-    str: string ISO 8601 or RFC 3339, e.g. '2012-07-23T05:54:49+00:00'
+    val: string ISO 8601 or RFC 3339, e.g. '2012-07-23T05:54:49+00:00'
 
   Returns:
     datetime
@@ -727,6 +732,37 @@ def parse_iso8601(val):
     val += '.0'
 
   return datetime.datetime.strptime(val, '%Y-%m-%d %H:%M:%S.%f').replace(tzinfo=tz)
+
+
+def parse_iso8601_duration(input):
+  """Parses an ISO 8601 duration.
+
+  Note: converts months to 30 days each. (ISO 8601 doesn't seem to define the
+  number of days in a month. Background:
+  https://stackoverflow.com/a/29458514/186123 )
+
+  Args:
+    input: string ISO 8601 duration, e.g. 'P3Y6M4DT12H30M5S'
+
+  https://en.wikipedia.org/wiki/ISO_8601#Durations
+
+  Returns:
+    timedelta, or None if input cannot be parsed as an ISO 8601 duration
+  """
+  if not input:
+    return None
+
+  match = ISO8601_DURATION_RE.match(input)
+  if not match:
+    return None
+
+  def g(i):
+    val = match.group(i)
+    return int(val[:-1]) if val else 0
+
+  return datetime.timedelta(weeks=g(3),
+                            days=365 * g(1) + 30 * g(2) + g(4),
+                            hours=g(6), minutes=g(7), seconds=g(8))
 
 
 def maybe_iso8601_to_rfc3339(input):
