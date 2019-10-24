@@ -747,7 +747,8 @@ def parse_iso8601_duration(input):
   https://en.wikipedia.org/wiki/ISO_8601#Durations
 
   Returns:
-    timedelta, or None if input cannot be parsed as an ISO 8601 duration
+    :class:`datetime.timedelta`, or None if input cannot be parsed as an ISO
+      8601 duration
   """
   if not input:
     return None
@@ -763,6 +764,28 @@ def parse_iso8601_duration(input):
   return datetime.timedelta(weeks=g(3),
                             days=365 * g(1) + 30 * g(2) + g(4),
                             hours=g(6), minutes=g(7), seconds=g(8))
+
+
+def to_iso8601_duration(input):
+  """Converts a timedelta to an ISO 8601 duration.
+
+  Returns a fairly strict format: 'PnMTnS'. Fractional seconds are silently
+  dropped.
+
+  Args:
+    input: :class:`datetime.timedelta`
+
+  https://en.wikipedia.org/wiki/ISO_8601#Durations
+
+  Returns:
+    string ISO 8601 duration, e.g. 'P3DT4S'
+
+  Raises: :class:`TypeError` if delta is not a :class:`datetime.timedelta`
+  """
+  if not isinstance(input, datetime.timedelta):
+    raise TypeError('Expected datetime.timedelta, got %s' % input.__class__)
+
+  return 'P%sDT%sS' % (input.days, input.seconds)
 
 
 def maybe_iso8601_to_rfc3339(input):

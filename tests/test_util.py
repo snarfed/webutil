@@ -543,6 +543,17 @@ class UtilTest(testutil.TestCase):
         self.assertEqual(datetime.timedelta(*expected),
                          util.parse_iso8601_duration(input))
 
+  def test_to_iso8601_duration(self):
+    for bad in (None, 3, 4.5, '', 'bad'):
+        self.assertRaises(TypeError, util.to_iso8601_duration, bad)
+
+    for input, expected in (
+        ((0, 0), 'P0DT0S'),
+        ((1, 2), 'P1DT2S'),
+        ((3, 4.5), 'P3DT4S'),
+    ):
+        self.assertEqual(expected, util.to_iso8601_duration(datetime.timedelta(*input)))
+
   def test_maybe_iso8601_to_rfc3339(self):
     for input, expected in (
       (None, None),
