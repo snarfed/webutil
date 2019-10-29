@@ -1437,7 +1437,7 @@ def requests_fn(fn):
         resp.raise_for_status()
     except (ValueError, requests.URLRequired) as e:
       if gateway:
-        msg = 'Bad URL %s: %s' % (url, e)
+        msg = 'Bad URL %s' % url
         logging.warning(msg, exc_info=True)
         raise exc.HTTPBadRequest(msg)
       raise

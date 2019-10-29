@@ -1251,3 +1251,17 @@ class UtilTest(testutil.TestCase):
 
     for i in range(2):
       self.assertEqual(200, util.requests_get('http://xyz').status_code)
+
+  def test_requests_get_unicode_url_ValueError(self):
+    """https://console.cloud.google.com/errors/CPzNwYaL3tjb9gE"""
+    url = 'http://acct:abc⊙de/'
+    self.expect_requests_get(url).AndRaise(ValueError())
+    self.mox.ReplayAll()
+    self.assertRaises(exc.HTTPBadRequest, util.requests_get, url, gateway=True)
+
+  def test_requests_get_unicode_url_ConnectionError(self):
+    """https://console.cloud.google.com/errors/CPzNwYaL3tjb9gE"""
+    url = 'http://acct:abc⊙de/'
+    self.expect_requests_get(url).AndRaise(requests.ConnectionError())
+    self.mox.ReplayAll()
+    self.assertRaises(exc.HTTPBadGateway, util.requests_get, url, gateway=True)
