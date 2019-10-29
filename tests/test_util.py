@@ -1237,3 +1237,17 @@ class UtilTest(testutil.TestCase):
     self.assert_equals('abc', e.exception.response.text)
     self.assert_equals(302, e.exception.response.status_code)
     self.assert_equals('http://xyz', e.exception.response.headers['Location'])
+
+  def test_requests_get_too_big(self):
+    for type in 'text/html', 'application/json', '', 'image/jpeg':
+      self.expect_requests_get('http://xyz', 'abc', response_headers={
+        'Content-Type': type,
+        'Content-Length': util.MAX_HTTP_RESPONSE_SIZE + 1,
+      })
+    self.mox.ReplayAll()
+
+    for i in range(2):
+      self.assertEqual(422, util.requests_get('http://xyz').status_code, i)
+
+    for i in range(2):
+      self.assertEqual(200, util.requests_get('http://xyz').status_code)

@@ -1450,20 +1450,22 @@ def requests_fn(fn):
     if url != resp.url:
       logging.info('Redirected to %s', resp.url)
 
-    # check response size
-    length = resp.headers.get('Content-Length')
-    if is_int(length):
-      length = int(length)
-    else:
-      length = len(resp.text)
-    if length > MAX_HTTP_RESPONSE_SIZE:
-      resp.close()
-      resp.status_code = HTTP_RESPONSE_TOO_BIG_STATUS_CODE
-      resp._text = ('Content-Length %s is larger than our limit %s.' %
-                    (length, MAX_HTTP_RESPONSE_SIZE))
-      resp._content = native_str(resp._text)
-      if gateway:
-        resp.raise_for_status()
+    # check response size for text/ and application/ Content-Types
+    type = resp.headers.get('Content-Type', '')
+    if type.startswith('text/') or type.startswith('application/'):
+      length = resp.headers.get('Content-Length')
+      if is_int(length):
+        length = int(length)
+      else:
+        length = len(resp.text)
+      if length > MAX_HTTP_RESPONSE_SIZE:
+        resp.close()
+        resp.status_code = HTTP_RESPONSE_TOO_BIG_STATUS_CODE
+        resp._text = ('Content-Length %s is larger than our limit %s.' %
+                      (length, MAX_HTTP_RESPONSE_SIZE))
+        resp._content = native_str(resp._text)
+        if gateway:
+          resp.raise_for_status()
 
     return resp
 
