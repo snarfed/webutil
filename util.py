@@ -116,7 +116,7 @@ class CacheDict(dict):
   """A dict that also implements memcache's get_multi() and set_multi() methods.
 
   Useful as a simple in memory replacement for App Engine's memcache API for
-  e.g. get_activities_response() in snarfed/activitystreams-unofficial.
+  e.g. get_activities_response() in granary.
   """
   def get_multi(self, keys):
     keys = set(keys)
