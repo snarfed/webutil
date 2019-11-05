@@ -9,8 +9,6 @@ import os
 import socket
 import traceback
 
-from google.appengine.api import memcache
-from google.appengine.ext.webapp import template
 import webapp2
 
 import handlers
@@ -106,25 +104,11 @@ class HandlersTest(HandlerTest):
 my host: localhost
 my foo: bar""", resp.body)
 
-  def test_template_handler_get_appengine_webapp(self):
-    class WebappTemplateHandler(FakeTemplateHandler):
-      USE_APPENGINE_WEBAPP = True
-
-    self.mox.StubOutWithMock(template, 'render')
-    filename = WebappTemplateHandler(self.request, self.response).template_file()
-    template.render(filename, {
-      'host': 'localhost',
-      'host_uri': 'http://localhost',
-      'foo': 'bar',
-    }).AndReturn('')
-    self.mox.ReplayAll()
-    webapp2.WSGIApplication([('/', WebappTemplateHandler)]).get_response('/')
-
-  def test_memcache_response(self):
+  def test_cache_response(self):
     class Handler(webapp2.RequestHandler):
       calls = 0
 
-      @handlers.memcache_response(datetime.timedelta(days=1))
+      @handlers.cache_response(datetime.timedelta(days=1))
       def get(self):
         Handler.calls += 1
         self.response.set_status(204)
@@ -156,16 +140,3 @@ my foo: bar""", resp.body)
     self.assertEquals(4, Handler.calls)
     self.assertEquals(204, resp.status_int)
     self.assertEquals('got http://localhost/?y', resp.body)
-
-  def test_memcache_response_too_big(self):
-    self.mox.stubs.Set(memcache, 'MAX_VALUE_SIZE', 100)
-
-    class Handler(webapp2.RequestHandler):
-      @handlers.memcache_response(datetime.timedelta(days=1))
-      def get(self):
-        self.response.out.write('x' * 101)
-
-    app = webapp2.WSGIApplication([('.*', Handler)])
-    resp = app.get_response('/?x')
-    self.assertEquals(200, resp.status_int)
-    self.assertIsNone(memcache.get('memcache_response http://localhost/?x'))

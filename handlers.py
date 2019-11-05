@@ -8,17 +8,17 @@ standard_library.install_aliases()
 from future.utils import native_str
 
 import calendar
+import functools
 import logging
 import os
+import threading
 import urllib.parse
 
-import appengine_config
-
-from google.appengine.ext.webapp import template
-from google.appengine.api import memcache
+import cachetools
 import jinja2
 import webapp2
 
+import appengine_config
 import logs
 import util
 from util import json_dumps, json_loads
@@ -92,12 +92,55 @@ def redirect(from_domain, to_domain):
   return decorator
 
 
+def cache_response(expiration, size=20 * 1000 * 1000):  # 20 MB
+  """:class:`webapp2.RequestHandler` method decorator that caches the response in memory.
+
+  Ideally this would be just a thin wrapper around the
+  :func:`cachetools.cachedmethod` decorator, but that doesn't pass `self` to the
+  `key` function, which we need to get the request URL. Long discussion:
+  https://github.com/tkem/cachetools/issues/107
+
+  Args:
+    expiration: :class:`datetime.timedelta`
+    size: integer, bytes. defaults to 20 MB.
+  """
+  lock = threading.RLock()
+  ttlcache = cachetools.TTLCache(
+    size, expiration.total_seconds(),
+    getsizeof=lambda response: len(response.body))
+
+  def decorator(method):
+    @functools.wraps(method)
+    def wrapper(self):
+      cache = self.request.get('cache', '').lower() != 'false'
+      if cache:
+        resp = ttlcache.get(self.request.url)
+        if resp:
+          return resp
+
+      resp = method(self)
+      if not resp:
+        resp = self.response
+
+      if cache:
+        with lock:
+          ttlcache[self.request.url] = resp
+
+      return resp
+
+    return wrapper
+
+  return decorator
+
+
 def memcache_response(expiration):
   """:class:`webapp2.RequestHandler` decorator that memcaches the response.
 
   Args:
     expiration: :class:`datetime.timedelta`
   """
+  from google.appengine.api import memcache
+
   def decorator(method):
     if appengine_config.DEBUG:
       return method
@@ -203,6 +246,7 @@ class TemplateHandler(ModernHandler):
     vars.update(self.template_vars(*args, **kwargs))
 
     if self.USE_APPENGINE_WEBAPP:
+      from google.appengine.ext.webapp import template
       self.response.out.write(template.render(self.template_file(), vars))
     else:
       self.response.out.write(
