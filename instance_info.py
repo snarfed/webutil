@@ -23,7 +23,7 @@ import heapq
 import os
 
 import appengine_config
-from google.appengine.api import runtime
+
 import handlers
 import threading
 import webapp2
@@ -51,7 +51,7 @@ class InfoHandler(handlers.TemplateHandler):
     return {'concurrents': concurrents,
             'current_requests': current_requests,
             'os': os,
-            'runtime': runtime,
+            'runtime': os.getenv('GAE_RUNTIME'),
             }
 
 

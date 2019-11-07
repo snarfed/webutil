@@ -12,8 +12,9 @@ try:
   APP_ID = app_identity.get_application_id()
   HOST = app_identity.get_default_version_hostname()
 except (ImportError, AttributeError):
-  # this is probably a unit test
-  APP_ID = None
+  # this is a unit test or the Python 3 runtime
+  # https://cloud.google.com/appengine/docs/standard/python3/runtime#environment_variables
+  APP_ID = os.getenv('GAE_APPLICATION')
   HOST = os.getenv('HTTP_HOST', 'localhost')
 
 HOST_URL = '%s://%s' % (SCHEME, HOST)
