@@ -95,6 +95,8 @@ def redirect(from_domain, to_domain):
 def cache_response(expiration, size=20 * 1000 * 1000):  # 20 MB
   """:class:`webapp2.RequestHandler` method decorator that caches the response in memory.
 
+  Includes a `cache_clear()` function that clears all cached responses.
+
   Ideally this would be just a thin wrapper around the
   :func:`cachetools.cachedmethod` decorator, but that doesn't pass `self` to the
   `key` function, which we need to get the request URL. Long discussion:
@@ -116,6 +118,7 @@ def cache_response(expiration, size=20 * 1000 * 1000):  # 20 MB
       if cache:
         resp = ttlcache.get(self.request.url)
         if resp:
+          logging.info('Serving cached response')
           return resp
 
       resp = method(self)
@@ -128,6 +131,7 @@ def cache_response(expiration, size=20 * 1000 * 1000):  # 20 MB
 
       return resp
 
+    wrapper.cache_clear = ttlcache.clear
     return wrapper
 
   return decorator
