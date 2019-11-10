@@ -29,8 +29,11 @@ import numbers
 import os
 import re
 import socket
+import threading
 import urllib.parse, urllib.request
 from xml.sax import saxutils
+
+from cachetools import cached, TTLCache
 
 try:
   import ujson
@@ -104,6 +107,10 @@ ISO8601_DURATION_RE = re.compile(
 # http://httparchive.org/interesting.php#bytesperpage
 MAX_HTTP_RESPONSE_SIZE = 1000000  # 1MB
 HTTP_RESPONSE_TOO_BIG_STATUS_CODE = 422  # Unprocessable Entity
+
+FOLLOW_REDIRECTS_CACHE_TIME = 60 * 60 * 24  # 1d expiration
+follow_redirects_cache = TTLCache(1000, FOLLOW_REDIRECTS_CACHE_TIME)
+follow_redirects_cache_lock = threading.RLock()
 
 
 class Struct(object):
@@ -1511,35 +1518,26 @@ def _prune(kwargs):
           if k not in ('allow_redirects', 'stream', 'timeout')}
 
 
-def follow_redirects(url, cache=None, fail_cache_time_secs = 60 * 60 * 24,  # a day
-                     **kwargs):
+@cached(follow_redirects_cache, lock=follow_redirects_cache_lock,
+        key=lambda url, **kwargs: url)
+def follow_redirects(url, **kwargs):
   """Fetches a URL with HEAD, repeating if necessary to follow redirects.
 
-  *Does not* raise an exception if any of the HTTP requests fail, just returns
+  Caches results for 1 day by default. To bypass the cache, use
+  follow_redirects.__wrapped__(...).
+
+  Does not raise an exception if any of the HTTP requests fail, just returns
   the failed response. If you care, be sure to check the returned response's
   status code!
 
   Args:
     url: string
-    cache: optional, a cache object to read and write resolved URLs to. Must
-      have get(key) and set(key, value, time=...) methods. Stores
-      'R [original URL]' in key, final URL in value.
     kwargs: passed to requests.head()
 
   Returns:
     the `requests.Response` for the final request. The `url` attribute has the
       final URL.
   """
-  if cache is not None:
-    cache_key = 'R ' + url
-    resolved = cache.get(text_type(cache_key))
-    if resolved is not None:
-      return resolved
-
-  # can't use urllib2 since it uses GET on redirect requests, even if i specify
-  # HEAD for the initial request.
-  # http://stackoverflow.com/questions/9967632
-  cache_time = fail_cache_time_secs
   try:
     # default scheme to http
     parsed = urllib.parse.urlparse(url)
@@ -1558,7 +1556,6 @@ def follow_redirects(url, cache=None, fail_cache_time_secs = 60 * 60 * 24,  # a 
     resolved.raise_for_status()
     if resolved.url != url:
       logging.debug('Resolved %s to %s', url, resolved.url)
-    cache_time = 0  # forever
   except BaseException as e:
     logging.warning("Couldn't resolve URL %s : %s", url, e)
 
@@ -1573,12 +1570,9 @@ def follow_redirects(url, cache=None, fail_cache_time_secs = 60 * 60 * 24,  # a 
   if refresh:
     for part in refresh.split(';'):
       if part.strip().startswith('url='):
-        return follow_redirects(part.strip()[4:], cache=cache, **kwargs)
+        return follow_redirects(part.strip()[4:], **kwargs)
 
   resolved.url = clean_url(resolved.url)
-  if cache is not None:
-    cache.set_multi({cache_key: resolved, 'R ' + resolved.url: resolved},
-                    time=cache_time)
   return resolved
 
 

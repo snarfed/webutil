@@ -286,6 +286,8 @@ class TestCase(mox.MoxTestBase, Asserts):
     # set time zone to UTC so that tests don't depend on local time zone
     os.environ['TZ'] = 'UTC'
 
+    util.follow_redirects_cache.clear()
+
   def stub_requests_head(self):
     """Automatically return 200 to outgoing HEAD requests."""
     def fake_head(url, **kwargs):

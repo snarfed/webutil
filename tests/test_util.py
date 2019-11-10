@@ -3,7 +3,7 @@
 
 Supports Python 3. Should not depend on App Engine API or SDK packages.
 """
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals
 from future import standard_library
 from future.moves.urllib import error as urllib_error_py2
 standard_library.install_aliases()
@@ -33,6 +33,10 @@ from unittest import skipIf
 
 
 class UtilTest(testutil.TestCase):
+
+  def setUp(self):
+    super(UtilTest, self).setUp()
+    util.follow_redirects_cache.clear()
 
   def test_to_xml(self):
     self.assert_equals('', util.to_xml({}))
@@ -1018,22 +1022,19 @@ class UtilTest(testutil.TestCase):
                                 redirected_url='http://final/url')
     self.mox.ReplayAll()
 
-    cache = util.CacheDict()
-    self.assert_equals(
-      'http://final/url',
-      util.follow_redirects('http://will/redirect', cache=cache).url)
-
-    self.assertEqual('http://final/url', cache['R http://will/redirect'].url)
-
-    # another call without cache should refetch
     self.assert_equals(
       'http://final/url',
       util.follow_redirects('http://will/redirect').url)
 
+    # another call without cache should refetch
+    self.assert_equals(
+      'http://final/url',
+      util.follow_redirects.__wrapped__('http://will/redirect').url)
+
     # another call with cache shouldn't refetch
     self.assert_equals(
       'http://final/url',
-      util.follow_redirects('http://will/redirect', cache=cache).url)
+      util.follow_redirects('http://will/redirect').url)
 
   def test_follow_redirects_with_refresh_header(self):
     headers = {'x': 'y'}
@@ -1043,9 +1044,8 @@ class UtilTest(testutil.TestCase):
                               redirected_url='http://final')
 
     self.mox.ReplayAll()
-    cache = util.CacheDict()
     self.assert_equals('http://final',
-                       util.follow_redirects('http://will/redirect', cache=cache,
+                       util.follow_redirects('http://will/redirect',
                                              headers=headers).url)
 
   def test_follow_redirects_defaults_scheme_to_http(self):
@@ -1084,17 +1084,17 @@ class UtilTest(testutil.TestCase):
           query=False, fragment=False, trailing_slash=False)
 
     self.unstub_requests_head()
-    self.expect_requests_head('https://a.bc/post', headers=None,
+    self.expect_requests_head('https://a.b/post', headers=None,
                               redirected_url='https://x.yz/post')
-    self.expect_requests_head('https://a.bc/post', headers={'Foo': 'bar'},
+    self.expect_requests_head('https://c.d/post', headers={'Foo': 'bar'},
                               redirected_url='https://x.yz/post')
-    self.expect_requests_head('https://a.bc/post', headers=None,
+    self.expect_requests_head('https://e.f/post', headers=None,
                               status_code=404)
     self.mox.ReplayAll()
 
-    check('https://x.yz/post', 'http://a.bc/post')
-    check('https://x.yz/post', 'http://a.bc/post', headers={'Foo': 'bar'})
-    check(None, 'http://a.bc/post')
+    check('https://x.yz/post', 'http://a.b/post')
+    check('https://x.yz/post', 'http://c.d/post', headers={'Foo': 'bar'})
+    check(None, 'http://e.f/post')
 
     # do these after unstub_requests_head to check that they don't HEAD
     check('http://fa.ke/good', 'http://fa.ke/good', approve='.*/good')
