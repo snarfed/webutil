@@ -1573,6 +1573,10 @@ def follow_redirects(url, **kwargs):
         return follow_redirects(part.strip()[4:], **kwargs)
 
   resolved.url = clean_url(resolved.url)
+  if url != resolved.url:
+    with follow_redirects_cache_lock:
+      follow_redirects_cache[resolved.url] = resolved
+
   return resolved
 
 
