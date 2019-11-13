@@ -113,7 +113,7 @@ def cache_response(expiration, size=20 * 1000 * 1000):  # 20 MB
 
   def decorator(method):
     @functools.wraps(method)
-    def wrapper(self):
+    def wrapper(self, *args, **kwargs):
       cache = self.request.get('cache', '').lower() != 'false'
       if cache:
         resp = ttlcache.get(self.request.url)
@@ -121,7 +121,7 @@ def cache_response(expiration, size=20 * 1000 * 1000):  # 20 MB
           logging.info('Serving cached response')
           return resp
 
-      resp = method(self)
+      resp = method(self, *args, **kwargs)
       if not resp:
         resp = self.response
 
