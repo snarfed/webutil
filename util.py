@@ -863,7 +863,8 @@ def add_query_params(url, params):
   """Adds new query parameters to a URL. Encodes as UTF-8 and URL-safe.
 
   Args:
-    url: string URL or :class:`urllib2.Request`. May already have query parameters.
+    url: string URL or :class:`urllib.request.Request`. May already have query
+      parameters.
     params: dict or list of (string key, string value) tuples. Keys may repeat.
 
   Returns:
@@ -1132,8 +1133,8 @@ def interpret_http_exception(exception):
       * :class:`gdata.client.RequestError`
       * :class:`oauth2client.client.AccessTokenRefreshError`
       * :class:`requests.HTTPError`
-      * :class:`urllib2.HTTPError`
-      * :class:`urllib2.URLError`
+      * :class:`urllib.error.HTTPError`
+      * :class:`urllib.error.URLError`
 
   Returns:
     (string status code or None, string response body or None)
@@ -1398,7 +1399,7 @@ def json_dumps(*args, **kwargs):
 
 
 def urlopen(url_or_req, *args, **kwargs):
-  """Wraps urllib2.urlopen and logs the HTTP method and URL."""
+  """Wraps :func:`urllib.request.urlopen` and logs the HTTP method and URL."""
   data = kwargs.get('data')
 
   if url_or_req.__class__.__name__ == 'Request':

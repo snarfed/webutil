@@ -16,6 +16,7 @@ import datetime
 import http.client
 import socket
 import io
+from unittest import skipIf
 import urllib.parse, urllib.request
 
 import apiclient.errors
@@ -26,10 +27,8 @@ import urllib3
 import webapp2
 from webob import exc
 
-import testutil
-import util
-from util import json_dumps, json_loads
-from unittest import skipIf
+from .. import testutil, util
+from ..util import json_dumps, json_loads
 
 
 class UtilTest(testutil.TestCase):

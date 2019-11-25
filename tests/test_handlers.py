@@ -11,8 +11,8 @@ import traceback
 
 import webapp2
 
-import handlers
-from testutil_appengine import HandlerTest
+from .. import handlers
+from ..testutil import HandlerTest
 
 handlers.JINJA_ENV.loader.searchpath.append('/')
 
@@ -46,19 +46,19 @@ class HandlersTest(HandlerTest):
     # HTTP exception
     Handler.err = urllib_error.HTTPError('/', 408, 'foo bar', None, None)
     resp = app.get_response('/')
-    self.assertEquals(408, resp.status_int)
-    self.assertEquals('HTTP Error 408: foo bar', resp.body)
+    self.assertEqual(408, resp.status_int)
+    self.assertEqual('HTTP Error 408: foo bar', resp.text)
 
     # network failure
     Handler.err = socket.timeout('foo bar')
     resp = app.get_response('/')
-    self.assertEquals(504, resp.status_int)
-    self.assertEquals('Upstream server request failed: foo bar', resp.body)
+    self.assertEqual(504, resp.status_int)
+    self.assertEqual('Upstream server request failed: foo bar', resp.text)
 
     # other exception
     Handler.err = AssertionError('foo')
     resp = app.get_response('/')
-    self.assertEquals(500, resp.status_int)
+    self.assertEqual(500, resp.status_int)
 
   def test_redirect(self):
     class Handler(webapp2.RequestHandler):
@@ -100,9 +100,9 @@ class HandlersTest(HandlerTest):
 
   def test_template_handler_get_jinja(self):
     resp = webapp2.WSGIApplication([('/', FakeTemplateHandler)]).get_response('/')
-    self.assertEquals("""\
+    self.assertEqual("""\
 my host: localhost
-my foo: bar""", resp.body)
+my foo: bar""", resp.text)
 
   def test_cache_response(self):
     class Handler(webapp2.RequestHandler):
@@ -118,25 +118,25 @@ my foo: bar""", resp.body)
 
     # first fetch populates the cache
     resp = app.get_response('/?x')
-    self.assertEquals(1, Handler.calls)
-    self.assertEquals(204, resp.status_int)
-    self.assertEquals('got http://localhost/?x', resp.body)
+    self.assertEqual(1, Handler.calls)
+    self.assertEqual(204, resp.status_int)
+    self.assertEqual('got http://localhost/?x', resp.text)
 
     # second fetch should use the cache instead of fetching from the silo
     resp = app.get_response('/?x')
-    self.assertEquals(1, Handler.calls)
-    self.assertEquals(204, resp.status_int)
-    self.assertEquals('got http://localhost/?x', resp.body)
+    self.assertEqual(1, Handler.calls)
+    self.assertEqual(204, resp.status_int)
+    self.assertEqual('got http://localhost/?x', resp.text)
 
     # fetches with ?cache=false shouldn't use the cache
     resp = app.get_response('/?x&cache=false')
     resp = app.get_response('/?x&cache=false')
-    self.assertEquals(3, Handler.calls)
-    self.assertEquals(204, resp.status_int)
-    self.assertEquals('got http://localhost/?x&cache=false', resp.body)
+    self.assertEqual(3, Handler.calls)
+    self.assertEqual(204, resp.status_int)
+    self.assertEqual('got http://localhost/?x&cache=false', resp.text)
 
     # a different URL shouldn't be cached
     resp = app.get_response('/?y')
-    self.assertEquals(4, Handler.calls)
-    self.assertEquals(204, resp.status_int)
-    self.assertEquals('got http://localhost/?y', resp.body)
+    self.assertEqual(4, Handler.calls)
+    self.assertEqual(204, resp.status_int)
+    self.assertEqual('got http://localhost/?y', resp.text)

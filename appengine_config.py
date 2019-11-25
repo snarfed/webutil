@@ -1,6 +1,5 @@
 """App Engine settings.
 """
-
 import os
 
 HTTP_TIMEOUT = 15  # seconds
@@ -19,4 +18,4 @@ except (ImportError, AttributeError):
 
 HOST_URL = '%s://%s' % (SCHEME, HOST)
 
-DEBUG = os.environ.get('SERVER_SOFTWARE', '').startswith('Development')
+DEBUG = os.environ.get('GAE_ENV') in (None, 'localdev')  # 'standard' in production

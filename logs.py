@@ -12,20 +12,20 @@ import time
 import urllib.request, urllib.parse, urllib.error
 
 import appengine_config
-from google.appengine.api import logservice
-from google.appengine.ext import ndb
+
+from google.cloud import ndb
+# from google.cloud.logging import Client
 import humanize
 import webapp2
 
-import util
-
+from . import util
 
 LEVELS = {
-  logservice.LOG_LEVEL_DEBUG:    'D',
-  logservice.LOG_LEVEL_INFO:     'I',
-  logservice.LOG_LEVEL_WARNING:  'W',
-  logservice.LOG_LEVEL_ERROR:    'E',
-  logservice.LOG_LEVEL_CRITICAL: 'F',
+  logging.DEBUG:    'D',
+  logging.INFO:     'I',
+  logging.WARNING:  'W',
+  logging.ERROR:    'E',
+  logging.CRITICAL: 'F',
 }
 
 MAX_LOG_AGE = datetime.timedelta(days=30)
@@ -55,7 +55,7 @@ def url(when, key):
     key: ndb.Key
   """
   return 'log?start_time=%s&key=%s' % (
-    calendar.timegm(when.utctimetuple()), key.urlsafe())
+    calendar.timegm(when.utctimetuple()), key.urlsafe().decode())
 
 
 def maybe_link(when, key, time_class='dt-updated', link_class=''):
@@ -187,6 +187,6 @@ class LogHandler(webapp2.RequestHandler):
     self.response.out.write('No log found!')
 
 
-application = webapp2.WSGIApplication([
-    ('/log', LogHandler),
-    ], debug=appengine_config.DEBUG)
+# application = webapp2.WSGIApplication([
+#     ('/log', LogHandler),
+#     ], debug=appengine_config.DEBUG)

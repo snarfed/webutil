@@ -21,12 +21,13 @@ import collections
 import datetime
 import heapq
 import os
+import threading
 
 import appengine_config
 
-import handlers
-import threading
 import webapp2
+
+from . import handlers
 
 CONCURRENTS_SIZE = 20
 

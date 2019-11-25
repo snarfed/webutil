@@ -3,6 +3,7 @@
 Includes classes for serving templates with common variables and XRD[S] and JRD
 files like host-meta and friends.
 """
+from __future__ import absolute_import, unicode_literals
 from future import standard_library
 standard_library.install_aliases()
 from future.utils import native_str
@@ -19,9 +20,9 @@ import jinja2
 import webapp2
 
 import appengine_config
-import logs
-import util
-from util import json_dumps, json_loads
+
+from . import logs, util
+from .util import json_dumps, json_loads
 
 JINJA_ENV = jinja2.Environment(
   loader=jinja2.FileSystemLoader(('.', 'templates')),

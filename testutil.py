@@ -13,12 +13,11 @@ from past.builtins import basestring
 import base64
 import datetime
 import difflib
-from mox3 import mox
-import pprint
-import re
-import os
 import email
 import io
+import os
+import pprint
+import re
 import traceback
 import urllib.parse, urllib.request
 
@@ -27,10 +26,12 @@ try:
 except (ImportError, ValueError):
   HTTP_TIMEOUT = 15
 
+from mox3 import mox
 import requests
+import webapp2
 
-from oauth_dropins.webutil import util
-from oauth_dropins.webutil.util import json_dumps, json_loads
+from . import util
+from .util import json_dumps, json_loads
 
 RE_TYPE = (re.Pattern if hasattr(re, 'Pattern')  # python >=3.7
            else re._pattern_type)                # python <3.7
@@ -433,3 +434,19 @@ class TestCase(mox.MoxTestBase, Asserts):
                                    headers=response_headers))
 
     return call
+
+
+class HandlerTest(TestCase):
+  """Base test class for webapp2 request handlers.
+
+  Attributes:
+    handler: :class:`webapp2.RequestHandler`
+    request: :class:`webob.Request`
+    response: :class:`webob.Response`
+  """
+  def setUp(self):
+    super(HandlerTest, self).setUp()
+
+    self.request = webapp2.Request.blank('/')
+    self.response = webapp2.Response()
+    self.handler = webapp2.RequestHandler(self.request, self.response)
