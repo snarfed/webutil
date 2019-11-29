@@ -35,6 +35,8 @@ from xml.sax import saxutils
 
 from cachetools import cached, TTLCache
 
+from appengine_config import HTTP_TIMEOUT
+
 try:
   import ujson
   json = ujson
@@ -74,14 +76,6 @@ try:
   from webob import exc
 except ImportError:
   exc = None
-
-try:
-  from appengine_config import app_identity, HTTP_TIMEOUT
-  from google.appengine.api import urlfetch_errors
-  from google.appengine.runtime import apiproxy_errors
-except (ImportError, ValueError):
-  HTTP_TIMEOUT = 15
-  app_identity = urlfetch_errors = apiproxy_errors = None
 
 # Used in parse_html() and friends.
 try:
@@ -1298,16 +1292,6 @@ def is_connection_failure(exception):
   # an alias of OSError.
   if PY2:
     types.append(socket.error)
-  if apiproxy_errors:
-    types += [
-      apiproxy_errors.CancelledError,
-      apiproxy_errors.DeadlineExceededError,
-    ]
-  if urlfetch_errors:
-    types += [
-      urlfetch_errors.DownloadError,  # base class, e.g. for DeadlineExceededError
-      urlfetch_errors.InternalTransientError,
-    ]
   if requests:
     types += [
       requests.ConnectionError,
@@ -1742,16 +1726,13 @@ def parse_html(input, **kwargs):
 
   http://www.crummy.com/software/BeautifulSoup/bs4/doc/#specifying-the-parser-to-use
 
-  lxml is a native module, so we don't bundle and deploy it to App Engine.
-  Instead, we use App Engine's version by declaring it in app.yaml.
-  https://cloud.google.com/appengine/docs/standard/python/tools/built-in-libraries-27
-
-  We pin App Engine's version in requirements.freeze.txt and tell BeautifulSoup
-  to use lxml explicitly to ensure we use the same parser and version in prod
-  and locally, since we've been bit by at least one meaningful difference
-  between lxml and e.g. html5lib: lxml includes the contents of <noscript> tags,
-  html5lib omits them. :(
+  We generally try to use the same parser and version in prod and locally, since
+  we've been bit by at least one meaningful difference between lxml and e.g.
+  html5lib: lxml includes the contents of <noscript> tags, html5lib omits them.
   https://github.com/snarfed/bridgy/issues/798#issuecomment-370508015
+
+  Specifically, projects like oauth-dropins, granary, and bridgy all use lxml
+  explicitly.
 
   Args:
     input: unicode HTML string or :class:`requests.Response`
@@ -1773,12 +1754,7 @@ def parse_html(input, **kwargs):
     content_type = input.headers.get('content-type', '')
     input = input.text if 'charset' in content_type else input.content
 
-  args = []
-  if app_identity:
-    # we're on App Engine; use lxml explicitly since it's built in
-    args = ['lxml']
-
-  return bs4.BeautifulSoup(input, *args, **kwargs)
+  return bs4.BeautifulSoup(input, **kwargs)
 
 
 def parse_mf2(input, url=None):

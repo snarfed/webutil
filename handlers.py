@@ -138,41 +138,6 @@ def cache_response(expiration, size=20 * 1000 * 1000):  # 20 MB
   return decorator
 
 
-def memcache_response(expiration):
-  """:class:`webapp2.RequestHandler` decorator that memcaches the response.
-
-  Args:
-    expiration: :class:`datetime.timedelta`
-  """
-  from google.appengine.api import memcache
-
-  def decorator(method):
-    if appengine_config.DEBUG:
-      return method
-
-    def wrapper(self, *args, **kwargs):
-      cache = self.request.get('cache', '').lower() != 'false'
-      if cache:
-        cache_key = 'memcache_response %s' % self.request.url
-        cached = memcache.get(cache_key)
-        if cached:
-          logging.info('Serving cached response %r', cache_key)
-          return cached
-
-      resp = method(self, *args, **kwargs)
-
-      if cache and not cached:
-        logging.info('Caching response in %r', cache_key)
-        try:
-          memcache.set(cache_key, resp or self.response, expiration.total_seconds())
-        except ValueError:
-          logging.warning('Response is too big for memcache!')
-
-    return wrapper
-
-  return decorator
-
-
 class ModernHandler(webapp2.RequestHandler):
   """Base handler that adds modern open/secure headers like CORS, HSTS, etc."""
   def __init__(self, *args, **kwargs):
