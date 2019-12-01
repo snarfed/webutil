@@ -21,7 +21,6 @@ import urllib.parse, urllib.request
 
 import apiclient.errors
 import httplib2
-from oauth2client.client import AccessTokenRefreshError
 import requests
 import urllib3
 import webapp2
@@ -773,16 +772,6 @@ class UtilTest(testutil.TestCase):
       pass
     ex = RequestError(status=429, body='my body')
     self.assertEqual(('429', 'my body'), ihc(ex))
-
-    # Google+
-    self.assertEqual((None, 'invalid_foo'),
-                     ihc(AccessTokenRefreshError('invalid_foo')))
-    self.assertEqual(('401', 'invalid_grant'),
-                     ihc(AccessTokenRefreshError('invalid_grant')))
-    msg = 'invalid_grant: Token has been revoked.'
-    self.assertEqual(('401', msg), ihc(AccessTokenRefreshError(msg)))
-    self.assertEqual(('502', 'internal_failure'),
-                     ihc(AccessTokenRefreshError('internal_failure')))
 
     # Flickr
     #
