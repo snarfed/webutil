@@ -9,3 +9,4 @@ APP_ID = os.getenv('GAE_APPLICATION', '').split('~')[-1]
 HOST = os.getenv('HTTP_HOST', 'localhost')
 HOST_URL = '%s://%s' % (SCHEME, HOST)
 DEBUG = os.environ.get('GAE_ENV') in (None, 'localdev')  # 'standard' in production
+LOCAL = os.environ.get('GAE_ENV') == 'localdev'
