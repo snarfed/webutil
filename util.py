@@ -1455,7 +1455,7 @@ def requests_fn(fn):
         resp.status_code = HTTP_RESPONSE_TOO_BIG_STATUS_CODE
         resp._text = ('Content-Length %s is larger than our limit %s.' %
                       (length, MAX_HTTP_RESPONSE_SIZE))
-        resp._content = native_str(resp._text)
+        resp._content = resp._text.encode('utf-8')
         if gateway:
           resp.raise_for_status()
 
