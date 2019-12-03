@@ -5,22 +5,19 @@ Supports Python 3. Should not depend on App Engine API or SDK packages.
 """
 from __future__ import absolute_import, unicode_literals
 from future import standard_library
-from future.moves.urllib import error as urllib_error_py2
 standard_library.install_aliases()
 from future.types.newstr import newstr
 from future.utils import binary_type, PY2, PY3, native_str, text_type
 from builtins import range, str
-import urllib.error as urllib_error_py3
 
 import datetime
 import http.client
 import socket
 import io
 from unittest import skipIf
+from urllib.error import HTTPError, URLError
 import urllib.parse, urllib.request
 
-import apiclient.errors
-import httplib2
 import requests
 import urllib3
 import webapp2
@@ -729,21 +726,11 @@ class UtilTest(testutil.TestCase):
     for arg in 0, 12.2, ')(,.",\'",[---', None, self:
       self.assertFalse(util.is_base64(arg), repr(arg))
 
-  def test_interpret_http_exception_python_2_urllib_error(self):
-    return self._test_interpret_http_exception(urllib_error_py2)
-
-  def test_interpret_http_exception_python_3_urllib_error(self):
-    return self._test_interpret_http_exception(urllib_error_py3)
-
-  def _test_interpret_http_exception(self, urllib_error_module):
-    HTTPError = urllib_error_module.HTTPError
-    URLError = urllib_error_module.URLError
+  def test_interpret_http_exception(self):
     ihc = util.interpret_http_exception
 
     self.assertEqual(('402', '402 Payment Required\n\nmy body'), ihc(
         exc.HTTPPaymentRequired(body_template='my body')))
-    self.assertEqual(('429', 'my body'), ihc(
-        apiclient.errors.HttpError(httplib2.Response({'status': 429}), b'my body')))
 
     # rate limiting
     ex = HTTPError('url', 429, 'msg', {}, io.StringIO('my body'))
@@ -941,16 +928,7 @@ class UtilTest(testutil.TestCase):
         with util.ignore_http_4xx_error():
           raise exc_cls()
 
-  def test_is_connection_failure_python_2_urllib_error(self):
-    return self._test_is_connection_failure(urllib_error_py2)
-
-  def test_is_connection_failure_python_3_urllib_error(self):
-    return self._test_is_connection_failure(urllib_error_py3)
-
-  def _test_is_connection_failure(self, urllib_error_module):
-    HTTPError = urllib_error_module.HTTPError
-    URLError = urllib_error_module.URLError
-
+  def _test_is_connection_failure(self):
     for e in (socket.timeout(), requests.ConnectionError(),
               http.client.NotConnected(),
               URLError(socket.gaierror('foo bar')),

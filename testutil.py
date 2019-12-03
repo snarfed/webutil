@@ -282,7 +282,7 @@ class TestCase(mox.MoxTestBase, Asserts):
       self.mox.StubOutWithMock(requests, method, use_mock_anything=True)
     self.stub_requests_head()
 
-    self.mox.StubOutWithMock(util, 'urllib_urlopen')
+    self.mox.StubOutWithMock(util.urllib.request, 'urlopen')
 
     # set time zone to UTC so that tests don't depend on local time zone
     os.environ['TZ'] = 'UTC'
@@ -422,7 +422,7 @@ class TestCase(mox.MoxTestBase, Asserts):
     if 'timeout' not in kwargs:
       kwargs['timeout'] = HTTP_TIMEOUT
 
-    call = util.urllib_urlopen(mox.Func(check_request), **kwargs)
+    call = util.urllib.request.urlopen(mox.Func(check_request), **kwargs)
     if status // 100 != 2:
       if response:
         response = urllib.request.addinfourl(io.StringIO(str(response)),
