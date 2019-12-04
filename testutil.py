@@ -1,7 +1,4 @@
-"""Unit test utilities.
-
-Supports Python 3. Should not depend on App Engine API or SDK packages.
-"""
+"""Unit test utilities."""
 from __future__ import absolute_import, division, unicode_literals
 from future import standard_library
 from future.moves.urllib import error as urllib_error
@@ -21,10 +18,7 @@ import re
 import traceback
 import urllib.parse, urllib.request
 
-try:
-  from appengine_config import HTTP_TIMEOUT
-except (ImportError, ValueError):
-  HTTP_TIMEOUT = 15
+from appengine_config import HTTP_TIMEOUT
 
 from mox3 import mox
 import requests
