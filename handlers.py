@@ -16,6 +16,7 @@ import threading
 import urllib.parse
 
 import cachetools
+from google.cloud import ndb
 import jinja2
 import webapp2
 
@@ -136,6 +137,25 @@ def cache_response(expiration, size=20 * 1000 * 1000):  # 20 MB
     return wrapper
 
   return decorator
+
+
+def ndb_context_middleware(app, client=None):
+  """WSGI middleware for per request instance info instrumentation.
+
+  Follows the WSGI standard. Details: http://www.python.org/dev/peps/pep-0333/
+
+  Install with e.g.:
+
+    application = handlers.ndb_context_middleware(webapp2.WSGIApplication(...)
+
+  Args:
+    client: :class:`google.cloud.ndb.Client`
+  """
+  def wrapper(environ, start_response):
+    with client.context():
+      return app(environ, start_response)
+
+  return wrapper
 
 
 class ModernHandler(webapp2.RequestHandler):

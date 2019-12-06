@@ -31,20 +31,6 @@ RE_TYPE = (re.Pattern if hasattr(re, 'Pattern')  # python >=3.7
            else re._pattern_type)                # python <3.7
 
 
-def get_task_params(task):
-  """Parses a task's POST body and returns the query params in a dict.
-  """
-  params = urllib.parse.parse_qs(base64.b64decode(task['body']))
-  params = dict((key, val[0]) for key, val in list(params.items()))
-  return params
-
-
-def get_task_eta(task):
-  """Returns a task's ETA as a datetime."""
-  return datetime.datetime.fromtimestamp(
-    float(dict(task['headers'])['X-AppEngine-TaskETA']))
-
-
 def requests_response(body='', url=None, status=200, content_type=None,
                       redirected_url=None, headers=None, allow_redirects=None,
                       encoding=None):
