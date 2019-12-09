@@ -29,7 +29,7 @@ from xml.sax import saxutils
 
 from cachetools import cached, TTLCache
 
-from appengine_config import HTTP_TIMEOUT
+from .appengine_config import HTTP_TIMEOUT
 
 try:
   import ujson

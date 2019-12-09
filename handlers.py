@@ -20,7 +20,7 @@ from google.cloud import ndb
 import jinja2
 import webapp2
 
-import appengine_config
+from . import appengine_config
 
 from . import logs, util
 from .util import json_dumps, json_loads
@@ -155,6 +155,7 @@ def ndb_context_middleware(app, client=None):
     with client.context():
       return app(environ, start_response)
 
+  wrapper.get_response = app.get_response
   return wrapper
 
 

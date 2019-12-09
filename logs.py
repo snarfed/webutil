@@ -11,7 +11,7 @@ import re
 import time
 import urllib.request, urllib.parse, urllib.error
 
-import appengine_config
+from . import appengine_config
 
 from google.cloud import ndb
 # from google.cloud.logging import Client

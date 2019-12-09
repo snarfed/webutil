@@ -18,7 +18,7 @@ import re
 import traceback
 import urllib.parse, urllib.request
 
-from appengine_config import HTTP_TIMEOUT
+from .appengine_config import HTTP_TIMEOUT
 
 from mox3 import mox
 import requests

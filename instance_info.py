@@ -23,7 +23,7 @@ import heapq
 import os
 import threading
 
-import appengine_config
+from . import appengine_config
 
 import webapp2
 
