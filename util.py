@@ -100,6 +100,12 @@ FOLLOW_REDIRECTS_CACHE_TIME = 60 * 60 * 24  # 1d expiration
 follow_redirects_cache = TTLCache(1000, FOLLOW_REDIRECTS_CACHE_TIME)
 follow_redirects_cache_lock = threading.RLock()
 
+"""Global config, string parser nae for BeautifulSoup to use, e.g. 'lxml'.
+May be set at runtime.
+https://www.crummy.com/software/BeautifulSoup/bs4/doc/#installing-a-parser
+"""
+beautifulsoup_parser = None
+
 
 class Struct(object):
   """A generic class that initializes its attributes from constructor kwargs."""
@@ -1718,6 +1724,7 @@ class WideUnicode(str):
 def parse_html(input, **kwargs):
   """Parses an HTML string with BeautifulSoup.
 
+  Uses the HTML parser currently set in the beautifulsoup_parser global.
   http://www.crummy.com/software/BeautifulSoup/bs4/doc/#specifying-the-parser-to-use
 
   We generally try to use the same parser and version in prod and locally, since
@@ -1734,6 +1741,8 @@ def parse_html(input, **kwargs):
 
   Returns: :class:`bs4.BeautifulSoup`
   """
+  kwargs.setdefault('features', beautifulsoup_parser)
+
   if isinstance(input, requests.Response):
     # The original HTTP 1.1 spec (RFC 2616, 1999) said to default HTML charset
     # to ISO-8859-1 if it's not explicitly provided in Content-Type. RFC 7231
