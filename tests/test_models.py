@@ -1,6 +1,6 @@
 """Unit tests for models.py.
 """
-from __future__ import unicode_literals
+import warnings
 
 from google.cloud import ndb
 
@@ -9,6 +9,10 @@ from .. import testutil
 
 
 class StringIdModelTest(testutil.TestCase):
+
+  def setUp(self):
+    warnings.filterwarnings('ignore', module='google.auth',
+      message='Your application has authenticated using end user credentials')
 
   def test_put(self):
     with ndb.Client().context():

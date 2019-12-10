@@ -15,8 +15,6 @@ To turn on concurrent request recording, add this to your appengine_config.py:
     from webutil import instance_info
     app = instance_info.concurrent_requests_wsgi_middleware(app)
 """
-from __future__ import absolute_import
-
 import collections
 import datetime
 import heapq

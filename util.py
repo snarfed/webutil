@@ -2,14 +2,6 @@
 
 Supports Python 3. Should not depend on App Engine API or SDK packages.
 """
-from __future__ import absolute_import, division, unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from future.utils import bytes_to_native_str, native_str, PY2, text_type
-from builtins import object, range, str
-import past.builtins
-from past.builtins import basestring
-
 import calendar
 import collections
 import contextlib
@@ -84,7 +76,6 @@ except ImportError:
 
 EPOCH = datetime.datetime.utcfromtimestamp(0)
 EPOCH_ISO = EPOCH.isoformat()
-T = bytes_to_native_str(b'T')  # for isoformat()
 # from https://stackoverflow.com/a/53140944/186123
 ISO8601_DURATION_RE = re.compile(
   r'^ *P(?!$)(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)? *$')
@@ -801,7 +792,7 @@ def maybe_iso8601_to_rfc3339(input):
   http://www.rfc-editor.org/rfc/rfc3339.txt
   """
   try:
-    return parse_iso8601(input).isoformat(T)
+    return parse_iso8601(input).isoformat('T')
   except (AssertionError, ValueError, TypeError):
     return input
 
@@ -812,7 +803,7 @@ def maybe_timestamp_to_rfc3339(input):
   Assumes UNIX timestamps are always UTC. (They're generally supposed to be.)
   """
   try:
-    return datetime.datetime.utcfromtimestamp(int(input)).replace(tzinfo=UTC).isoformat(T)
+    return datetime.datetime.utcfromtimestamp(int(input)).replace(tzinfo=UTC).isoformat('T')
   except (ValueError, TypeError):
     return input
 
@@ -1006,8 +997,8 @@ def decode_oauth_state(state):
 
   Returns: dict
   """
-  if not isinstance(state, basestring) and state is not None:
-    raise TypeError('Expected basestring, got %s' % state.__class__)
+  if not isinstance(state, str) and state is not None:
+    raise TypeError('Expected str, got %s' % state.__class__)
 
   logging.debug('decoding state %r', state)
   try:
@@ -1288,10 +1279,6 @@ def is_connection_failure(exception):
       http.client.NotConnected,
       socket.timeout,
   ]
-  # socket.error is its own thing in python 2, but python 3.3 changed it to be
-  # an alias of OSError.
-  if PY2:
-    types.append(socket.error)
   if requests:
     types += [
       requests.ConnectionError,
@@ -1361,7 +1348,6 @@ def load_file_lines(file):
   items = set()
 
   for line in file:
-    assert isinstance(line, str), "Use future's builtins.open, not Python 2's!"
     val = line.strip()
     if val and not val.startswith('#'):
       items.add(val)
@@ -1609,7 +1595,7 @@ class UrlCanonicalizer(object):
 
   @staticmethod
   def to_unicode(val):
-    return val.decode('utf-8') if isinstance(val, (bytes, past.builtins.str)) else val
+    return val.decode() if isinstance(val, bytes) else val
 
   def __call__(self, url, redirects=None):
     """Canonicalizes a string URL.

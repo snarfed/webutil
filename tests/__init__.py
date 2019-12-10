@@ -8,7 +8,8 @@ elif '-v' in sys.argv:
   logging.getLogger('google.cloud').setLevel(logging.INFO)
   logging.getLogger('urllib3').setLevel(logging.INFO)
 
-# Suppress warnings. (Not currently working.)
-# ../local3/lib/python3.6/site-packages/mox3/mox.py:909: DeprecationWarning: inspect.getargspec() is deprecated, use inspect.signature() or inspect.getfullargspec()
+# Suppress warnings.
 import warnings
+# Not currently working.
+# ../local3/lib/python3.6/site-packages/mox3/mox.py:909: DeprecationWarning: inspect.getargspec() is deprecated, use inspect.signature() or inspect.getfullargspec()
 warnings.filterwarnings('ignore', message=r'inspect.getargspec() is deprecated')

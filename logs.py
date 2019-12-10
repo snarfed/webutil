@@ -1,8 +1,5 @@
 """A handler that exposes App Engine app logs to users.
 """
-from future import standard_library
-standard_library.install_aliases()
-
 import calendar
 import cgi
 import datetime

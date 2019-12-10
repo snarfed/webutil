@@ -3,18 +3,10 @@
 
 Supports Python 3. Should not depend on App Engine API or SDK packages.
 """
-from __future__ import absolute_import, unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from future.types.newstr import newstr
-from future.utils import binary_type, PY2, PY3, native_str, text_type
-from builtins import range, str
-
 import datetime
 import http.client
 import socket
 import io
-from unittest import skipIf
 from urllib.error import HTTPError, URLError
 import urllib.parse, urllib.request
 
@@ -238,10 +230,6 @@ class UtilTest(testutil.TestCase):
         updated = util.update_scheme(orig + '://foo', handler)
         self.assertEqual(new + '://foo', updated)
 
-        handler.request.scheme = newstr(new)
-        updated = util.update_scheme(orig + '://foo', handler)
-        self.assertEqual(new + '://foo', updated)
-
     handler.request.scheme = 'https'
     self.assertEqual(
       'https://distillery.s3.amazonaws.com/profiles/xyz.jpg',
@@ -290,23 +278,6 @@ class UtilTest(testutil.TestCase):
                                      '&source=rss----12b80d28f892---4'))
     self.assertEqual('http://foo?source=not-rss',
                      util.clean_url('http://foo?&source=not-rss'))
-
-  @skipIf(PY3, "This tests a bug fix in future's backported urllib.parse.")
-  def test_clean_url_mixed_string_types(self):
-    url = 'http://foo?x=y#z'
-    for cls in str, newstr, binary_type, text_type:
-      self.assertEqual(url, util.clean_url(cls(url)), cls)
-
-  @skipIf(PY3, "This tests a bug fix in future's backported urllib.parse.")
-  def test_future_urlunparse_mixed_string_types(self):
-    """This tests an open PR for future that fixes a bug in urllib.parse.
-
-    https://github.com/PythonCharmers/python-future/pull/331
-    https://github.com/PythonCharmers/python-future/issues/273
-    """
-    for cls in str, newstr, binary_type, text_type:
-      self.assertEqual('http://foo/bar', urllib.parse.urlunparse(
-        ('http', 'foo', cls('/bar'), '', '', '')))
 
   def test_dedupe_urls(self):
     self.assertEqual([], util.dedupe_urls([]))
@@ -937,9 +908,6 @@ class UtilTest(testutil.TestCase):
     ):
       assert util.is_connection_failure(e), e
 
-    if PY2:
-      assert util.is_connection_failure(socket.error())
-
     for e in (None, 3, 'asdf', IOError(), http.client.HTTPException('unknown'),
               URLError('asdf'), HTTPError('url', 403, 'msg', {}, None),
               ):
@@ -1027,13 +995,10 @@ class UtilTest(testutil.TestCase):
     check('http://fa.ke/123', 'https://fa.ke/123', scheme='http')
     check('https://fa.ke/123', 'http://fa.ke/123', domain='fa.ke')
     check(None, 'http://fa.ke/123', domain='a.bc')
-    check('https://fa.ke/post', native_str('http://www.fa.ke/post'))
-    check('https://fa.ke/post', 'http://www.fa.ke/post', domain=native_str('fa.ke'))
 
     check('https://www.fa.ke/123', 'https://fa.ke/123', subdomain='www')
     check('https://foo.fa.ke/123', 'https://www.fa.ke/123', subdomain='foo')
     check('https://foo.fa.ke/123', 'https://foo.fa.ke/123', subdomain='bar')
-    check('https://www.fa.ke/123', 'https://fa.ke/123', subdomain=native_str('www'))
 
     check('https://fa.ke/123?x=y', 'http://fa.ke/123?x=y', query=True)
     check('https://fa.ke/123', 'http://fa.ke/123?x=y#abc', query=False)

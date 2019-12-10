@@ -1,13 +1,10 @@
 """Unit tests for handlers.py.
 """
-from future import standard_library
-standard_library.install_aliases()
-from future.moves.urllib import error as urllib_error
-
 import datetime
 import os
 import socket
 import traceback
+import urllib.error
 
 import webapp2
 
@@ -44,7 +41,7 @@ class HandlersTest(HandlerTest):
     app = webapp2.WSGIApplication([('/', Handler)])
 
     # HTTP exception
-    Handler.err = urllib_error.HTTPError('/', 408, 'foo bar', None, None)
+    Handler.err = urllib.error.HTTPError('/', 408, 'foo bar', None, None)
     resp = app.get_response('/')
     self.assertEqual(408, resp.status_int)
     self.assertEqual('HTTP Error 408: foo bar', resp.text)

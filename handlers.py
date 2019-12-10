@@ -3,11 +3,6 @@
 Includes classes for serving templates with common variables and XRD[S] and JRD
 files like host-meta and friends.
 """
-from __future__ import absolute_import, unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from future.utils import native_str
-
 import calendar
 import functools
 import logging
@@ -84,8 +79,7 @@ def redirect(from_domain, to_domain):
       # not using self.request.host because it includes port
       if parts[1] in from_domain:  # netloc
         parts[1] = to_domain
-        return self.redirect(native_str(urllib.parse.urlunparse(parts)),
-                             permanent=True)
+        return self.redirect(urllib.parse.urlunparse(parts), permanent=True)
       else:
         return method(self, *args, **kwargs)
 

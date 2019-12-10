@@ -1,12 +1,4 @@
 """Unit test utilities."""
-from __future__ import absolute_import, division, unicode_literals
-from future import standard_library
-from future.moves.urllib import error as urllib_error
-from future.utils import native_str
-standard_library.install_aliases()
-from builtins import object, str, zip
-from past.builtins import basestring
-
 import base64
 import datetime
 import difflib
@@ -16,7 +8,7 @@ import os
 import pprint
 import re
 import traceback
-import urllib.parse, urllib.request
+import urllib.error, urllib.parse, urllib.request
 
 from .appengine_config import HTTP_TIMEOUT
 
@@ -55,7 +47,7 @@ def requests_response(body='', url=None, status=200, content_type=None,
       if allow_redirects is False:
         resp.headers['location'] = redirected_url
       else:
-        if isinstance(redirected_url, basestring):
+        if isinstance(redirected_url, str):
           redirected_url = [redirected_url]
         assert isinstance(redirected_url, (list, tuple))
         resp.url = redirected_url[-1]
@@ -189,7 +181,7 @@ Actual value:
           # use custom key because Python 3 dicts are not comparable :/
           def hash_or_json(x):
             try:
-              return native_str(hash(x))
+              return str(hash(x))
             except TypeError:
               return json_dumps(x, sort_keys=True)
           expected = sorted(expected, key=hash_or_json)
@@ -376,13 +368,13 @@ class TestCase(mox.MoxTestBase, Asserts):
     """
     def check_request(req):
       try:
-        req_url = req if isinstance(req, basestring) else req.get_full_url()
+        req_url = req if isinstance(req, str) else req.get_full_url()
         if isinstance(url, RE_TYPE):
           self.assertRegexpMatches(req_url, url)
         else:
           self.assertEqual(url, req_url)
 
-        if isinstance(req, basestring):
+        if isinstance(req, str):
           assert not data, data
           assert not headers, headers
         else:
@@ -407,7 +399,7 @@ class TestCase(mox.MoxTestBase, Asserts):
       if response:
         response = urllib.request.addinfourl(io.StringIO(str(response)),
                                              response_headers, url, status)
-      call.AndRaise(urllib_error.HTTPError('url', status, 'message',
+      call.AndRaise(urllib.error.HTTPError('url', status, 'message',
                                            response_headers, response))
     elif response is not None:
       call.AndReturn(UrlopenResult(status, response, url=url,
