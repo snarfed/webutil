@@ -1371,17 +1371,17 @@ def json_dumps(*args, **kwargs):
 def urlopen(url_or_req, *args, **kwargs):
   """Wraps :func:`urllib.request.urlopen` and logs the HTTP method and URL."""
   data = kwargs.get('data')
+  if isinstance(data, str):
+    kwargs['data'] = data.encode()
 
   if url_or_req.__class__.__name__ == 'Request':
     if data is None:
       data = url_or_req.data
+      if isinstance(data, str):
+        url_or_req.data = data.encode()
     url = url_or_req.get_full_url()
   else:
     url = url_or_req
-
-  if url_or_req.__class__.__module__ == 'urllib2':
-    # convert python 2 urllib2.Request to python 3 urllib.request.Request
-    url_or_req = urllib.request.Request(url, data=data, headers=url_or_req.headers)
 
   logging.info('urlopen %s %s %s', 'GET' if data is None else 'POST', url,
                _prune(kwargs))
