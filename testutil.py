@@ -378,7 +378,9 @@ class TestCase(mox.MoxTestBase, Asserts):
           assert not data, data
           assert not headers, headers
         else:
-          self.assertEqual(data, req.data)
+          self.assertEqual(
+              data.decode() if isinstance(data, bytes) else data,
+              req.data.decode() if isinstance(req.data, bytes) else req.data)
           if isinstance(headers, mox.Comparator):
             self.assertTrue(headers.equals(req.header_items()))
           elif headers is not None:
