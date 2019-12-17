@@ -1281,8 +1281,11 @@ def is_connection_failure(exception):
   ]
   if requests:
     types += [
+      requests.exceptions.ChunkedEncodingError,
+      requests.exceptions.ContentDecodingError,
       requests.ConnectionError,
       requests.Timeout,
+      requests.TooManyRedirects,
     ]
 
   if urllib3:

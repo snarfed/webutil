@@ -899,19 +899,22 @@ class UtilTest(testutil.TestCase):
         with util.ignore_http_4xx_error():
           raise exc_cls()
 
-  def _test_is_connection_failure(self):
-    for e in (socket.timeout(), requests.ConnectionError(),
-              http.client.NotConnected(),
-              URLError(socket.gaierror('foo bar')),
-              urllib3.exceptions.TimeoutError(),
-              Exception('Connection closed unexpectedly by server at URL: ...'),
+  def test_is_connection_failure(self):
+    for e in (
+        socket.timeout(),
+        requests.ConnectionError(),
+        requests.TooManyRedirects(),
+        http.client.NotConnected(),
+        URLError(socket.gaierror('foo bar')),
+        urllib3.exceptions.TimeoutError(),
+        Exception('Connection closed unexpectedly by server at URL: ...'),
     ):
-      assert util.is_connection_failure(e), e
+      self.assertTrue(util.is_connection_failure(e), repr(e))
 
     for e in (None, 3, 'asdf', IOError(), http.client.HTTPException('unknown'),
               URLError('asdf'), HTTPError('url', 403, 'msg', {}, None),
               ):
-      assert not util.is_connection_failure(e), repr(e)
+      self.assertFalse(util.is_connection_failure(e), repr(e))
 
   def test_file_limiter(self):
     buf = io.StringIO('abcdefghijk')
