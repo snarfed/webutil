@@ -108,7 +108,7 @@ def linkify_datastore_keys(msg):
       return "'<a title='%s' href='https://console.cloud.google.com/datastore/entities;kind=%s;ns=__$DEFAULT$__/edit;key=%s?project=%s'>%s...</a>'" % (
         match.group(1), key.kind(), key_quoted, appengine_config.APP_ID, match.group(2))
     except BaseException:
-      logging.debug("Couldn't linkify candidate datastore key.", exc_info=True)
+      logging.debug("Couldn't linkify candidate datastore key.", stack_info=True)
       return msg
 
   return DATASTORE_KEY_RE.sub(linkify_key, msg)

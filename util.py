@@ -1004,7 +1004,7 @@ def decode_oauth_state(state):
   try:
     obj = json_loads(urllib.parse.unquote_plus(state)) if state else {}
   except ValueError:
-    logging.exception('Invalid value for state parameter: %s' % state)
+    logging.error('Invalid value for state parameter: %s' % state, stack_info=True)
     raise exc.HTTPBadRequest('Invalid value for state parameter: %s' % state)
 
   if not isinstance(obj, dict):
@@ -1299,7 +1299,7 @@ def is_connection_failure(exception):
     # TODO: exc_info might not be for exception, e.g. if the json_loads() in
     # interpret_http_exception() fails. need to pass through the whole
     # sys.exc_info() tuple here, not just the exception object.
-    logging.info('Connection failure: %s' % exception, exc_info=True)
+    logging.info('Connection failure: %s' % exception, stack_info=True)
     return True
 
   return False
@@ -1416,12 +1416,12 @@ def requests_fn(fn):
     except (ValueError, requests.URLRequired) as e:
       if gateway:
         msg = 'Bad URL %s' % url
-        logging.warning(msg, exc_info=True)
+        logging.warning(msg, stack_info=True)
         raise exc.HTTPBadRequest(msg)
       raise
     except requests.RequestException as e:
       if gateway:
-        logging.warning(url, exc_info=True)
+        logging.warning(url, stack_info=True)
         raise exc.HTTPBadGateway(str(e))
       raise
 
