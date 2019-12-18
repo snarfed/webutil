@@ -803,7 +803,8 @@ def maybe_timestamp_to_rfc3339(input):
   Assumes UNIX timestamps are always UTC. (They're generally supposed to be.)
   """
   try:
-    return datetime.datetime.utcfromtimestamp(int(input)).replace(tzinfo=UTC).isoformat('T')
+    dt = datetime.datetime.utcfromtimestamp(float(input)).replace(tzinfo=UTC)
+    return dt.isoformat('T', 'milliseconds' if dt.microsecond else 'seconds')
   except (ValueError, TypeError):
     return input
 

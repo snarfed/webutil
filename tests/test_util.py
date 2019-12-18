@@ -545,6 +545,8 @@ class UtilTest(testutil.TestCase):
       ('not a timestamp!', 'not a timestamp!'),
       (1349588757, '2012-10-07T05:45:57+00:00'),
       ('1349588757', '2012-10-07T05:45:57+00:00'),
+      (1349588757.123, '2012-10-07T05:45:57.123+00:00'),
+      (1349588757.123456, '2012-10-07T05:45:57.123+00:00'),
     ):
       self.assertEqual(expected, util.maybe_timestamp_to_rfc3339(input))
 
