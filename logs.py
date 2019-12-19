@@ -11,18 +11,13 @@ import re
 import time
 import urllib.request, urllib.parse, urllib.error
 
-from . import appengine_config
-
 from google.cloud import ndb
 from google.cloud.logging_v2 import LoggingServiceV2Client
 import humanize
 import webapp2
 
-from . import request_log_pb2
+from .appengine_config import APP_ID
 from . import util
-from .util import json_dumps
-
-appengine_config.APP_ID = 'brid-gy'
 
 LEVELS = {
   logging.DEBUG:    'D',
@@ -113,7 +108,7 @@ def linkify_datastore_keys(msg):
                                  for kind, id in tokens)
       key_quoted = urllib.parse.quote(urllib.parse.quote(key_str), safe=True)
       return "'<a title='%s' href='https://console.cloud.google.com/datastore/entities;kind=%s;ns=__$DEFAULT$__/edit;key=%s?project=%s'>%s...</a>'" % (
-        match.group(1), key.kind(), key_quoted, appengine_config.APP_ID, match.group(2))
+        match.group(1), key.kind(), key_quoted, APP_ID, match.group(2))
     except BaseException:
       logging.debug("Couldn't linkify candidate datastore key.", stack_info=True)
       return msg
@@ -122,17 +117,7 @@ def linkify_datastore_keys(msg):
 
 
 class LogHandler(webapp2.RequestHandler):
-  """Searches for and renders the app logs for a single task queue request.
-
-  Class attributes:
-    MODULE_VERSIONS: optional list of (module, version) tuples to search.
-      Overrides VERFSION_IDS.
-    VERSION_IDS: optional list of current module versions to search. If unset,
-      defaults to just the current version!
-  """
-  MODULE_VERSIONS = None
-  VERSION_IDS = None
-
+  """Searches for and renders the app logs for a single task queue request."""
   def get(self):
     """URL parameters:
       start_time: float, seconds since the epoch
@@ -146,11 +131,8 @@ class LogHandler(webapp2.RequestHandler):
     if start_time < MIN_START_TIME:
       self.abort(400, "start_time must be >= %s" % MIN_START_TIME)
 
-    from google.oauth2.service_account import Credentials
-    creds = Credentials.from_service_account_file('/Users/ryan/brid-gy-f51a4db29784.json')
-
-    client = LoggingServiceV2Client(credentials=creds)
-    project = 'projects/%s' % appengine_config.APP_ID
+    logging_client = LoggingServiceV2Client()
+    project = 'projects/%s' % APP_ID
     key = urllib.parse.unquote_plus(util.get_required_param(self, 'key'))
 
     # first, find the individual stdout log message to get the trace id
@@ -166,49 +148,33 @@ jsonPayload.message:"%s"' % (
     logging.info('Searching logs with: %s', query)
     try:
       # https://googleapis.dev/python/logging/latest/gapic/v2/api.html#google.cloud.logginjg_v2.LoggingServiceV2Client.list_log_entries
-      log = next(iter(client.list_log_entries((project,), filter_=query, page_size=1)))
+      log = next(iter(logging_client.list_log_entries((project,), filter_=query, page_size=1)))
     except StopIteration:
       self.response.out.write('No log found!')
       return
 
     logging.info('Got insert id %s trace %s', log.insert_id, log.trace)
 
-    # now, find the request_log with that trace
-    query = '\
-logName="%s/logs/appengine.googleapis.com%%2Frequest_log" AND \
-trace="%s"' % (project, log.trace)
-    logging.info('Searching logs with: %s', query)
-    try:
-      req = next(iter(client.list_log_entries((project,), filter_=query, page_size=1)))
-    except StopIteration:
-      self.response.out.write('No log found!')
-      return
-
-    pb = request_log_pb2.RequestLog.FromString(req.proto_payload.value)
-    logging.info('Got insert id %s request id %s', req.insert_id, pb.request_id)
-
+    # now, print all logs with that trace
     self.response.headers['Content-Type'] = 'text/html; charset=utf-8'
     self.response.out.write("""\
 <html>
 <body style="font-family: monospace; white-space: pre">
-<p>%s %s %s %s</p>
-""" % (pb.http_version, pb.method, pb.resource, pb.status))
+""")
 
-    # sanitize and render each text line
-    logging.info('@ %s', req)
-    logging.info('@@ %s', pb)
-    for line in pb.line:
-      logging.info('@@@')
-      msg = line.log_message
-      # don't sanitize poll task URLs since they have a key= query param
-      msg = linkify_datastore_keys(util.linkify(cgi.escape(
-        msg if msg.startswith('Created by this poll:') else sanitize(msg))))
-      timestamp = line.time.seconds + float(line.time.nanos) / 1000000000
-      self.response.out.write('%s %s %s:%s %s<br />' % (
-        LEVELS[line.severity],
-        datetime.datetime.utcfromtimestamp(timestamp),
-        line.source_location.file.split('/')[-1],
-        line.source_location.line,
-        msg.replace('\n', '<br />')))
+    query = 'logName="%s/logs/stdout" AND trace="%s"' % (project, log.trace)
+    logging.info('Searching logs with: %s', query)
+
+    # sanitize and render each line
+    for log in logging_client.list_log_entries((project,), filter_=query):
+      msg = log.json_payload.fields['message'].string_value
+      if msg:
+        msg = linkify_datastore_keys(util.linkify(cgi.escape(
+          msg if msg.startswith('Created by this poll:') else sanitize(msg))))
+        timestamp = log.timestamp.seconds + float(log.timestamp.nanos) / 1000000000
+        self.response.out.write('%s %s %s<br />' % (
+          LEVELS[log.severity / 10],
+          datetime.datetime.utcfromtimestamp(timestamp),
+          msg.replace('\n', '<br />')))
 
     self.response.out.write('</body>\n</html>')
