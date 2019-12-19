@@ -1,4 +1,7 @@
 """A handler that exposes App Engine app logs to users.
+
+StackDriver Logging API:
+https://cloud.google.com/logging/docs/apis
 """
 import calendar
 import cgi
@@ -11,11 +14,15 @@ import urllib.request, urllib.parse, urllib.error
 from . import appengine_config
 
 from google.cloud import ndb
-# from google.cloud.logging import Client
+from google.cloud.logging_v2 import LoggingServiceV2Client
 import humanize
 import webapp2
 
+from . import request_log_pb2
 from . import util
+from .util import json_dumps
+
+appengine_config.APP_ID = 'brid-gy'
 
 LEVELS = {
   logging.DEBUG:    'D',
@@ -139,51 +146,69 @@ class LogHandler(webapp2.RequestHandler):
     if start_time < MIN_START_TIME:
       self.abort(400, "start_time must be >= %s" % MIN_START_TIME)
 
+    from google.oauth2.service_account import Credentials
+    creds = Credentials.from_service_account_file('/Users/ryan/brid-gy-f51a4db29784.json')
+
+    client = LoggingServiceV2Client(credentials=creds)
+    project = 'projects/%s' % appengine_config.APP_ID
     key = urllib.parse.unquote_plus(util.get_required_param(self, 'key'))
-    # the propagate task logs the poll task's URL, which includes the source
-    # entity key as a query param. exclude that with this heuristic.
-    key_re = re.compile('[^=]' + key)
+
+    # first, find the individual stdout log message to get the trace id
+    query = '\
+logName="%s/logs/stdout" AND \
+timestamp>="%s" AND \
+timestamp<="%s" AND \
+jsonPayload.message:"%s"' % (
+  project,
+  datetime.datetime.utcfromtimestamp(start_time - 60).isoformat() + 'Z',
+  datetime.datetime.utcfromtimestamp(start_time + 120).isoformat() + 'Z',
+  key)
+    logging.info('Searching logs with: %s', query)
+    try:
+      # https://googleapis.dev/python/logging/latest/gapic/v2/api.html#google.cloud.logginjg_v2.LoggingServiceV2Client.list_log_entries
+      log = next(iter(client.list_log_entries((project,), filter_=query, page_size=1)))
+    except StopIteration:
+      self.response.out.write('No log found!')
+      return
+
+    logging.info('Got insert id %s trace %s', log.insert_id, log.trace)
+
+    # now, find the request_log with that trace
+    query = '\
+logName="%s/logs/appengine.googleapis.com%%2Frequest_log" AND \
+trace="%s"' % (project, log.trace)
+    logging.info('Searching logs with: %s', query)
+    try:
+      req = next(iter(client.list_log_entries((project,), filter_=query, page_size=1)))
+    except StopIteration:
+      self.response.out.write('No log found!')
+      return
+
+    pb = request_log_pb2.RequestLog.FromString(req.proto_payload.value)
+    logging.info('Got insert id %s request id %s', req.insert_id, pb.request_id)
 
     self.response.headers['Content-Type'] = 'text/html; charset=utf-8'
-
-    offset = None
-    kwargs = {
-      'start_time': start_time - 60,
-      'end_time': start_time + 120,
-      'offset': offset,
-      'include_app_logs': True,
-    }
-    if self.MODULE_VERSIONS:
-      kwargs['module_versions'] = self.MODULE_VERSIONS
-    if self.VERSION_IDS:
-      kwargs['version_ids'] = self.VERSION_IDS
-
-    logging.info('Fetching logs with %s', kwargs)
-    for log in logservice.fetch(**kwargs):
-      first_lines = '\n'.join([line.message.decode('utf-8') for line in
-                               log.app_logs[:min(50, len(log.app_logs))]])
-      if log.app_logs and key_re.search(first_lines):
-        # found it! render and return
-        self.response.out.write("""\
+    self.response.out.write("""\
 <html>
 <body style="font-family: monospace; white-space: pre">
-""")
-        self.response.out.write(sanitize(log.combined))
-        self.response.out.write('<br /><br />')
-        for a in log.app_logs:
-          msg = a.message.decode('utf-8')
-          # don't sanitize poll task URLs since they have a key= query param
-          msg = linkify_datastore_keys(util.linkify(cgi.escape(
-              msg if msg.startswith('Created by this poll:') else sanitize(msg))))
-          self.response.out.write('%s %s %s<br />' %
-              (datetime.datetime.utcfromtimestamp(a.time), LEVELS[a.level],
-               msg.replace('\n', '<br />')))
-        self.response.out.write('</body>\n</html>')
-        return
+<p>%s %s %s %s</p>
+""" % (pb.http_version, pb.method, pb.resource, pb.status))
 
-    self.response.out.write('No log found!')
+    # sanitize and render each text line
+    logging.info('@ %s', req)
+    logging.info('@@ %s', pb)
+    for line in pb.line:
+      logging.info('@@@')
+      msg = line.log_message
+      # don't sanitize poll task URLs since they have a key= query param
+      msg = linkify_datastore_keys(util.linkify(cgi.escape(
+        msg if msg.startswith('Created by this poll:') else sanitize(msg))))
+      timestamp = line.time.seconds + float(line.time.nanos) / 1000000000
+      self.response.out.write('%s %s %s:%s %s<br />' % (
+        LEVELS[line.severity],
+        datetime.datetime.utcfromtimestamp(timestamp),
+        line.source_location.file.split('/')[-1],
+        line.source_location.line,
+        msg.replace('\n', '<br />')))
 
-
-# application = webapp2.WSGIApplication([
-#     ('/log', LogHandler),
-#     ], debug=appengine_config.DEBUG)
+    self.response.out.write('</body>\n</html>')

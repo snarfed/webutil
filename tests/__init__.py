@@ -12,4 +12,4 @@ elif '-v' in sys.argv:
 import warnings
 # Not currently working.
 # ../local3/lib/python3.6/site-packages/mox3/mox.py:909: DeprecationWarning: inspect.getargspec() is deprecated, use inspect.signature() or inspect.getfullargspec()
-warnings.filterwarnings('ignore', message=r'inspect.getargspec() is deprecated')
+warnings.filterwarnings('ignore', module='mox', message='getargspec')
