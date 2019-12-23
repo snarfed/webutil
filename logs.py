@@ -16,7 +16,7 @@ from google.cloud.logging_v2 import LoggingServiceV2Client
 import humanize
 import webapp2
 
-from .appengine_config import APP_ID
+from .appengine_info import APP_ID
 from . import util
 
 LEVELS = {

@@ -9,19 +9,20 @@ be reported as 0.
 (The docs say it's deprecated because it's part of Backends, which is replaced
 by Modules, but I haven't found a corresponding part of the Modules API.)
 
-To turn on concurrent request recording, add this to your appengine_config.py:
+To turn on concurrent request recording, add the middleware and InfoHandler to your WSGI application, eg:
 
-  def webapp_add_wsgi_middleware(app):
-    from webutil import instance_info
-    app = instance_info.concurrent_requests_wsgi_middleware(app)
+  from oauth_dropins.webutil.instance_info import concurrent_requests_wsgi_middleware, InfoHandler
+
+  application = concurrent_requests_wsgi_middleware(webapp2.WSGIApplication([
+      ...
+      ('/_info', InfoHandler),
+    ])
 """
 import collections
 import datetime
 import heapq
 import os
 import threading
-
-from . import appengine_config
 
 import webapp2
 
@@ -78,8 +79,3 @@ def concurrent_requests_wsgi_middleware(app):
     return ret
 
   return wrapper
-
-
-application = webapp2.WSGIApplication([
-    ('/_info', InfoHandler),
-    ], debug=appengine_config.DEBUG)

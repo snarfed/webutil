@@ -21,8 +21,6 @@ from xml.sax import saxutils
 
 from cachetools import cached, TTLCache
 
-from .appengine_config import HTTP_TIMEOUT
-
 try:
   import ujson
   json = ujson
@@ -59,7 +57,13 @@ except ImportError:
       urllib3 = None
 
 try:
+  import webob
   from webob import exc
+  # webob doesn't know about HTTP 429 for rate limiting. Tell it.
+  try:
+    webob.util.status_reasons[429] = 'Rate limited'  # webob <= 0.9
+  except AttributeError:
+    webob.status_reasons[429] = 'Rate limited'  # webob >= 1.1.1
 except ImportError:
   exc = None
 
@@ -79,6 +83,15 @@ EPOCH_ISO = EPOCH.isoformat()
 # from https://stackoverflow.com/a/53140944/186123
 ISO8601_DURATION_RE = re.compile(
   r'^ *P(?!$)(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)? *$')
+
+# default HTTP request timeout
+HTTP_TIMEOUT = 15
+import socket
+socket.setdefaulttimeout(HTTP_TIMEOUT)
+# monkey-patch socket.getdefaulttimeout() because it often gets reset, e.g. by
+# socket.setblocking() and maybe other operations.
+# http://stackoverflow.com/a/8465202/186123
+socket.getdefaulttimeout = lambda: HTTP_TIMEOUT
 
 # Average HTML page size as of 2015-10-15 is 56K, so this is very generous and
 # conservative.
@@ -1335,6 +1348,13 @@ class FileLimiter(object):
     if (len(data) < to_read) or (to_read and not data):
       self.ateof = True
     return data
+
+
+def read(filename):
+  """Returns the contents of filename, or None if it doesn't exist."""
+  if os.path.exists(filename):
+    with open(filename, encoding='utf-8') as f:
+      return f.read().strip()
 
 
 def load_file_lines(file):

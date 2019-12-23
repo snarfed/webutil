@@ -5,7 +5,7 @@ import warnings
 from google.cloud import ndb
 
 from ..models import StringIdModel
-from .. import testutil
+from .. import appengine_config, testutil
 
 
 class StringIdModelTest(testutil.TestCase):
@@ -15,7 +15,7 @@ class StringIdModelTest(testutil.TestCase):
       message='Your application has authenticated using end user credentials')
 
   def test_put(self):
-    with ndb.Client().context():
+    with appengine_config.ndb_client.context():
       self.assertEqual(ndb.Key(StringIdModel, 'x'),
                        StringIdModel(id='x').put())
       self.assertRaises(AssertionError, StringIdModel().put)

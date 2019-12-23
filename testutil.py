@@ -10,14 +10,12 @@ import re
 import traceback
 import urllib.error, urllib.parse, urllib.request
 
-from .appengine_config import HTTP_TIMEOUT
-
 from mox3 import mox
 import requests
 import webapp2
 
 from . import util
-from .util import json_dumps, json_loads
+from .util import json_dumps, json_loads, HTTP_TIMEOUT
 
 RE_TYPE = (re.Pattern if hasattr(re, 'Pattern')  # python >=3.7
            else re._pattern_type)                # python <3.7
