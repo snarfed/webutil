@@ -7,7 +7,7 @@ import os
 
 APP_ID = os.getenv('GAE_APPLICATION', '').split('~')[-1]
 SCHEME = 'https' if (os.getenv('HTTPS') == 'on') else 'http'
-HOST = os.getenv('HTTP_HOST', 'localhost')
+HOST = os.getenv('HTTP_HOST') or os.getenv('SERVER_NAME') or 'localhost'
 HOST_URL = '%s://%s' % (SCHEME, HOST)
 DEBUG = os.environ.get('GAE_ENV') in (None, 'localdev')  # 'standard' in production
 LOCAL = os.environ.get('GAE_ENV') == 'localdev'
