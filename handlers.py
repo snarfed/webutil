@@ -188,7 +188,7 @@ class TemplateHandler(ModernHandler):
     """Returns a dict of template variable string keys and values.
 
     Args:
-      *args, **kwargs: passed through from get()
+      args, kwargs: passed through from get()
     """
     return {}
 

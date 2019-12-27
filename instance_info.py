@@ -16,7 +16,7 @@ To turn on concurrent request recording, add the middleware and InfoHandler to y
   application = concurrent_requests_wsgi_middleware(webapp2.WSGIApplication([
       ...
       ('/_info', InfoHandler),
-    ])
+  ])
 """
 import collections
 import datetime
