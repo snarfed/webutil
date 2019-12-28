@@ -65,13 +65,13 @@ except ImportError:
   pass
 
 # Stackdriver Logging
+import logging
 try:
   import google.cloud.logging
   logging_client = google.cloud.logging.Client()
   if not DEBUG:
     # https://stackoverflow.com/a/58296028/186123
     # https://googleapis.dev/python/logging/latest/usage.html#cloud-logging-handler
-    import logging
     from google.cloud.logging.handlers import AppEngineHandler, setup_logging
     setup_logging(AppEngineHandler(logging_client, name='stdout'),
                   log_level=logging.DEBUG)
@@ -81,3 +81,7 @@ try:
     # https://stackoverflow.com/questions/59398479
 except ImportError:
   pass
+
+for logger in ('google.cloud', 'oauthlib', 'requests', 'requests_oauthlib',
+               'urllib3'):
+  logging.getLogger(logger).setLevel(logging.INFO)
