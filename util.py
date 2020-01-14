@@ -1625,7 +1625,7 @@ class UrlCanonicalizer(object):
     """Canonicalizes a string URL.
 
     Returns the canonical form of a string URL, or None if it can't be
-    canonicalized, ie it's in the blacklist or its domain doesn't match.
+    canonicalized, eg its domain doesn't match.
     """
     url = self.to_unicode(url)
     if self.approve and self.approve.match(url):
