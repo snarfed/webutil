@@ -15,7 +15,7 @@ from google.cloud import ndb
 import jinja2
 import webapp2
 
-from . import appengine_info, logs, util
+from . import logs, util
 from .util import json_dumps, json_loads
 
 JINJA_ENV = jinja2.Environment(
@@ -201,7 +201,7 @@ class TemplateHandler(ModernHandler):
 
     To advertise XRDS, use::
 
-      headers['X-XRDS-Location'] = 'https://%s/.well-known/host-meta.xrds' % appengine_info.HOST
+      headers['X-XRDS-Location'] = 'https://%s/.well-known/host-meta.xrds' % self.request.host
     """
     return {
       'Cache-Control': 'max-age=300',
@@ -215,8 +215,8 @@ class TemplateHandler(ModernHandler):
       self.response.headers[key] = val
 
     vars = {
-      'host': appengine_info.HOST,
-      'host_uri': '%s://%s' % (appengine_info.SCHEME, appengine_info.HOST),
+      'host': self.request.host,
+      'host_uri': self.request.host_url,
     }
 
     # add query params. use a list for params with multiple values.

@@ -98,7 +98,7 @@ class HandlersTest(HandlerTest):
   def test_template_handler_get_jinja(self):
     resp = webapp2.WSGIApplication([('/', FakeTemplateHandler)]).get_response('/')
     self.assertEqual("""\
-my host: localhost
+my host: localhost:80
 my foo: bar""", resp.text)
 
   def test_cache_response(self):
