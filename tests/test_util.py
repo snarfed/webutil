@@ -294,6 +294,17 @@ class UtilTest(testutil.TestCase):
     self.assertEqual(['http://foo/'],
                       util.dedupe_urls(['http://foo', 'http://FOO/', 'http://FoO/']))
 
+    self.assertEqual([{'url': 'http://foo/'}, {'url': 'http://bar/'}],
+                      util.dedupe_urls([{'url': 'http://foo'},
+                                        {'url': 'http://FOO/'},
+                                        {'url': 'http://bar'}]))
+    self.assertEqual(
+      [{'stream': {'url': 'http://foo/'}}, {'stream': {'url': 'http://bar/'}}],
+       util.dedupe_urls([{'stream': {'url': 'http://foo'}},
+                         {'stream': {'url': 'http://FOO/'}},
+                         {'stream': {'url': 'http://bar'}}],
+                        key='stream'))
+
   def test_tag_uri(self):
     self.assertEqual('tag:x.com:foo', util.tag_uri('x.com', 'foo'))
     self.assertEqual('tag:x.com,2013:foo',

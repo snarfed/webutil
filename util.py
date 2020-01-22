@@ -5,6 +5,7 @@ Supports Python 3. Should not depend on App Engine API or SDK packages.
 import calendar
 import collections
 import contextlib
+import copy
 import base64
 import datetime
 import http.client
@@ -934,7 +935,7 @@ def get_required_param(handler, name):
   return val
 
 
-def dedupe_urls(urls):
+def dedupe_urls(urls, key=None):
   """Normalizes and de-dupes http(s) URLs.
 
   Converts domain to lower case, adds trailing slash when path is empty, and
@@ -955,14 +956,18 @@ def dedupe_urls(urls):
   TODO: port to https://pypi.python.org/pypi/urlnorm
 
   Args:
-    urls: sequence of string URLs
+    urls: sequence of string URLs or dict objects with 'url' keys
+    key: if not None, an inner key to be dereferenced in a dict object before
+      looking for the 'url' key
 
   Returns:
     sequence of string URLs
   """
+  seen = set()
   result = []
 
-  for url in urls:
+  for obj in urls:
+    url = get_url(obj, key=key)
     if not url:
       continue
 
@@ -979,8 +984,14 @@ def dedupe_urls(urls):
         pass
 
     url = urllib.parse.urlunsplit(norm)
-    if url not in result:
-      result.append(url)
+    if url not in seen:
+      seen.add(url)
+      if isinstance(obj, dict):
+        val = obj if key is None else get_first(obj, key)
+        val['url'] = url
+      else:
+        obj = url
+      result.append(obj)
 
   return result
 
