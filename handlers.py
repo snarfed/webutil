@@ -15,7 +15,7 @@ from google.cloud import ndb
 import jinja2
 import webapp2
 
-from . import logs, util
+from . import util
 from .util import json_dumps, json_loads
 
 JINJA_ENV = jinja2.Environment(
@@ -24,7 +24,6 @@ JINJA_ENV = jinja2.Environment(
 )
 JINJA_ENV.globals.update({
   'EPOCH': util.EPOCH,
-  'logs': logs,
   'timestamp': lambda dt: calendar.timegm(dt.utctimetuple()),
 })
 
@@ -47,7 +46,6 @@ def handle_exception(self, e, debug):
 
   * http://eemyop.blogspot.com/2013/05/digging-around-in-webapp2-finding-out.html
   * http://code.google.com/p/webapp-improved/source/detail?r=d962ac4625ce3c43a3e59fd7fc07daf8d7b7c46a
-
   """
   code, body = util.interpret_http_exception(e)
   if code:

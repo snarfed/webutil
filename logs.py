@@ -17,7 +17,7 @@ import humanize
 import webapp2
 
 from .appengine_info import APP_ID
-from . import util
+from . import handlers, util
 
 LEVELS = {
   logging.DEBUG:    'D',
@@ -26,6 +26,9 @@ LEVELS = {
   logging.ERROR:    'E',
   logging.CRITICAL: 'F',
 }
+
+CACHE_TIME = datetime.timedelta(days=1)
+CACHE_SIZE = 2 * 1000 * 1000  # 2 MB
 
 MAX_LOG_AGE = datetime.timedelta(days=30)
 # App Engine's launch, roughly
@@ -118,6 +121,7 @@ def linkify_datastore_keys(msg):
 
 class LogHandler(webapp2.RequestHandler):
   """Searches for and renders the app logs for a single task queue request."""
+  @handlers.cache_response(CACHE_TIME, size=CACHE_SIZE)
   def get(self):
     """URL parameters:
       start_time: float, seconds since the epoch
