@@ -66,6 +66,9 @@ except ImportError:
 
 # Stackdriver Logging
 import logging
+# needed for visible logging in dev_appserver
+logging.getLogger().setLevel(logging.DEBUG)
+
 try:
   import google.cloud.logging
   logging_client = google.cloud.logging.Client()
