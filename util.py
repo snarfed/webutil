@@ -1302,6 +1302,7 @@ def is_connection_failure(exception):
   types = [
       ConnectionError,
       http.client.ImproperConnectionState,
+      http.client.IncompleteRead,
       http.client.NotConnected,
       socket.timeout,
   ]
