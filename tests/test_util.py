@@ -6,6 +6,7 @@ Supports Python 3. Should not depend on App Engine API or SDK packages.
 import datetime
 import http.client
 import socket
+import ssl
 import io
 from urllib.error import HTTPError, URLError
 import urllib.parse, urllib.request
@@ -921,6 +922,7 @@ class UtilTest(testutil.TestCase):
         URLError(socket.gaierror('foo bar')),
         urllib3.exceptions.TimeoutError(),
         Exception('Connection closed unexpectedly by server at URL: ...'),
+        ssl.SSLError(),
     ):
       self.assertTrue(util.is_connection_failure(e), repr(e))
 

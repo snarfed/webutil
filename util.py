@@ -16,6 +16,7 @@ import numbers
 import os
 import re
 import socket
+import ssl
 import threading
 import urllib.error, urllib.parse, urllib.request
 from xml.sax import saxutils
@@ -1305,6 +1306,7 @@ def is_connection_failure(exception):
       http.client.IncompleteRead,
       http.client.NotConnected,
       socket.timeout,
+      ssl.SSLError,
   ]
   if requests:
     types += [
