@@ -1785,7 +1785,7 @@ def parse_html(input, **kwargs):
   return bs4.BeautifulSoup(input, **kwargs)
 
 
-def parse_mf2(input, url=None):
+def parse_mf2(input, url=None, id=None):
   """Parses microformats2 out of HTML.
 
   Currently uses mf2py.
@@ -1795,6 +1795,8 @@ def parse_mf2(input, url=None):
       :class:`requests.Response`
     url: optional unicode string, URL of the input page, used as the base for
       relative URLs
+    id: string, optional id of specific element to extract and parse. defaults
+      to the whole page.
 
   Returns: dict, parsed mf2 data
   """
@@ -1803,6 +1805,12 @@ def parse_mf2(input, url=None):
 
   if not isinstance(input, (bs4.BeautifulSoup, bs4.Tag)):
     input = parse_html(input)
+
+  if id:
+    logging.info('Extracting and parsing just DOM element %s', id)
+    input = input.find(id=id)
+    if not input:
+      return None
 
   return mf2py.parse(url=url, doc=input, img_with_alt=True)
 
