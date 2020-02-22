@@ -1801,7 +1801,7 @@ def parse_mf2(input, url=None):
   if isinstance(input, requests.Response) and not url:
     url = input.url
 
-  if not isinstance(input, bs4.BeautifulSoup):
+  if not isinstance(input, (bs4.BeautifulSoup, bs4.Tag)):
     input = parse_html(input)
 
   return mf2py.parse(url=url, doc=input, img_with_alt=True)
