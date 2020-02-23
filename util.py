@@ -1198,6 +1198,9 @@ def interpret_http_exception(exception):
   elif e.__class__.__name__ == 'RequestError':
     code = getattr(e, 'status')
     body = getattr(e, 'body')
+  elif e.__class__.__name__ == 'Unauthorized':
+    code = '401'
+    body = ''
 
   if code:
     code = str(code)
