@@ -35,17 +35,6 @@ def handle_exception(self, e, debug):
   adding this line to your handler class definition::
 
     handle_exception = handlers.handle_exception
-
-  I originally tried to put this in a :class:`webapp2.RequestHandler` subclass,
-  but it gave me this exception::
-
-    File ".../webapp2-2.5.1/webapp2_extras/local.py", line 136, in _get_current_object
-      raise RuntimeError('no object bound to %s' % self.__name__) RuntimeError: no object bound to app
-
-  These are probably related:
-
-  * http://eemyop.blogspot.com/2013/05/digging-around-in-webapp2-finding-out.html
-  * http://code.google.com/p/webapp-improved/source/detail?r=d962ac4625ce3c43a3e59fd7fc07daf8d7b7c46a
   """
   code, body = util.interpret_http_exception(e)
   if code:
@@ -151,6 +140,8 @@ def ndb_context_middleware(app, client=None):
 
 class ModernHandler(webapp2.RequestHandler):
   """Base handler that adds modern open/secure headers like CORS, HSTS, etc."""
+  handle_exception = handle_exception
+
   def __init__(self, *args, **kwargs):
     super(ModernHandler, self).__init__(*args, **kwargs)
     self.response.headers.update({
