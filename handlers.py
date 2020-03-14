@@ -166,9 +166,6 @@ class TemplateHandler(ModernHandler):
   Subclasses must override :meth:`template_file()` and may also override
   :meth:`template_vars()` and :meth:`content_type()`.
   """
-  # set to True to use google.appengine.ext.webapp.template instead of jinja2
-  USE_APPENGINE_WEBAPP = False
-
   def template_file(self):
     """Returns the string template file path."""
     raise NotImplementedError()
@@ -216,13 +213,8 @@ class TemplateHandler(ModernHandler):
       vars[key] = values
 
     vars.update(self.template_vars(*args, **kwargs))
-
-    if self.USE_APPENGINE_WEBAPP:
-      from google.appengine.ext.webapp import template
-      self.response.out.write(template.render(self.template_file(), vars))
-    else:
-      self.response.out.write(
-        JINJA_ENV.get_template(self.template_file()).render(**vars))
+    self.response.out.write(
+      JINJA_ENV.get_template(self.template_file()).render(**vars))
 
 
 class XrdOrJrdHandler(TemplateHandler):
