@@ -28,7 +28,10 @@ if DEBUG:
   os.environ.setdefault('CLOUDSDK_CORE_PROJECT', 'app')
   os.environ.setdefault('DATASTORE_DATASET', 'app')
   os.environ.setdefault('GOOGLE_CLOUD_PROJECT', 'app')
-
+  # work around that these APIs don't natively support dev_appserver.py
+  # https://github.com/googleapis/python-ndb/issues/238
+  # https://github.com/googleapis/python-ndb/issues/376#issuecomment-604991109
+  os.environ.setdefault('DATASTORE_EMULATOR_HOST', 'localhost:8089')
 
 # NDB (Cloud Datastore)
 try:
@@ -36,11 +39,6 @@ try:
   # https://googleapis.dev/python/python-ndb/latest/migrating.html#setting-up-a-connection
   from google.cloud import ndb
   ndb_client = ndb.Client()
-  if DEBUG:
-    # work around that these APIs don't natively support dev_appserver.py
-    # https://github.com/googleapis/python-ndb/issues/238
-    ndb_client.host = 'localhost:8089'
-    ndb_client.secure = False
 except ImportError:
   pass
 
