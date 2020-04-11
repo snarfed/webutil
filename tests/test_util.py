@@ -562,6 +562,18 @@ class UtilTest(testutil.TestCase):
     ):
       self.assertEqual(expected, util.maybe_timestamp_to_rfc3339(input))
 
+  def test_maybe_timestamp_to_rfc3339(self):
+    for input, expected in (
+      (None, None),
+      ('', ''),
+      ('not a timestamp!', 'not a timestamp!'),
+      (1349588757, '2012-10-07T05:45:57Z'),
+      ('1349588757', '2012-10-07T05:45:57Z'),
+      (1349588757.123, '2012-10-07T05:45:57.123Z'),
+      (1349588757.123456, '2012-10-07T05:45:57.123Z'),
+    ):
+      self.assertEqual(expected, util.maybe_timestamp_to_iso8601(input))
+
   def test_to_utc_timestamp(self):
     self.assertIsNone(util.to_utc_timestamp(None))
     self.assertEqual(0, util.to_utc_timestamp(datetime.datetime(1970, 1, 1)))

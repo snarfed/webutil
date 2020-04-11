@@ -824,6 +824,15 @@ def maybe_timestamp_to_rfc3339(input):
     return input
 
 
+def maybe_timestamp_to_iso8601(input):
+  """Tries to convert a string or int UNIX timestamp to ISO 8601.
+
+  Assumes UNIX timestamps are always UTC. (They're generally supposed to be.)
+  """
+  ret = maybe_timestamp_to_rfc3339(input)
+  return ret if ret == input else ret.replace('+00:00', 'Z')
+
+
 def to_utc_timestamp(input):
   """Converts a datetime to a float POSIX timestamp (seconds since epoch)."""
   if not input:
