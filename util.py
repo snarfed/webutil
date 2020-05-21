@@ -80,6 +80,11 @@ try:
 except ImportError:
   mf2py = None
 
+try:
+  import prawcore
+except ImportError:
+  prawcore = None
+
 EPOCH = datetime.datetime.utcfromtimestamp(0)
 EPOCH_ISO = EPOCH.isoformat()
 # from https://stackoverflow.com/a/53140944/186123
@@ -1188,7 +1193,8 @@ def interpret_http_exception(exception):
   elif isinstance(e, urllib.error.URLError):
     body = str(e.reason)
 
-  elif requests and isinstance(e, requests.HTTPError):
+  elif ((requests and isinstance(e, requests.HTTPError)) or
+        (prawcore and isinstance(e, prawcore.exceptions.ResponseException))):
     code = e.response.status_code
     body = e.response.text
 

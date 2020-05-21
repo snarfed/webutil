@@ -11,6 +11,7 @@ import io
 from urllib.error import HTTPError, URLError
 import urllib.parse, urllib.request
 
+import prawcore.exceptions
 import requests
 import urllib3
 import webapp2
@@ -910,6 +911,10 @@ class UtilTest(testutil.TestCase):
 
     # upstream connection failures are converted to 504
     self.assertEqual(('504', 'foo bar'), ihc(socket.timeout('foo bar')))
+
+    self.assertEqual(('504', 'foo bar'),
+                     ihc(prawcore.exceptions.ResponseException(
+                       testutil.requests_response('foo bar', status=504))))
 
   def test_ignore_http_4xx_error(self):
     x = 0
