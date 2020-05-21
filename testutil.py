@@ -56,6 +56,8 @@ def requests_response(body='', url=None, status=200, content_type=None,
     resp.status_code = status
     if content_type is None:
       content_type = 'text/html'
+    elif content_type == 'None':
+      content_type = None
     resp.headers['content-type'] = content_type
     if headers is not None:
       resp.headers.update(headers)
