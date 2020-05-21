@@ -1487,7 +1487,7 @@ def requests_fn(fn):
 
     # check response size for text/ and application/ Content-Types
     type = resp.headers.get('Content-Type', '')
-    if type.startswith('text/') or type.startswith('application/'):
+    if type and (type.startswith('text/') or type.startswith('application/')):
       length = resp.headers.get('Content-Length')
       if is_int(length):
         length = int(length)
@@ -1797,7 +1797,7 @@ def parse_html(input, **kwargs):
     # so, if charset isn't explicitly provided, pass on the raw bytes and let
     # BS4/UnicodeDammit figure it out from <meta charset> tag or anything else.
     # https://github.com/snarfed/granary/issues/171
-    content_type = input.headers.get('content-type', '')
+    content_type = input.headers.get('content-type') or ''
     input = input.text if 'charset' in content_type else input.content
 
   return bs4.BeautifulSoup(input, **kwargs)
