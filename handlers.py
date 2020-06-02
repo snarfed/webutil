@@ -4,6 +4,7 @@ Includes classes for serving templates with common variables and XRD[S] and JRD
 files like host-meta and friends.
 """
 import calendar
+import datetime
 import functools
 import logging
 import os
@@ -14,6 +15,7 @@ import cachetools
 from google.cloud import ndb
 import jinja2
 import webapp2
+from webob import exc
 
 from . import util
 from .util import json_dumps, json_loads
@@ -109,6 +111,43 @@ def cache_response(expiration, size=20 * 1000 * 1000):  # 20 MB
       if cache:
         with lock:
           ttlcache[self.request.url] = resp
+
+      return resp
+
+    wrapper.cache_clear = ttlcache.clear
+    return wrapper
+
+  return decorator
+
+
+def throttle(one_request_each, cache_size=5000):
+  """:class:`webapp2.RequestHandler` method decorator that rate limits requests.
+
+  Accepts at most one request with a given URL (including query parameters)
+  within each `one_request_each` time period. After that, serves a HTTP 429
+  response to each subsequent request for the same URL until the time period
+  finished.
+
+  Args:
+    one_request_each: :class:`datetime.timedelta`
+    cache_size: integer, number of URLs to cache. defaults to 5000.
+  """
+  lock = threading.RLock()
+  ttlcache = cachetools.TTLCache(cache_size, one_request_each.total_seconds())
+
+  def decorator(method):
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+      if self.request.url in ttlcache:
+        logging.info('Throttling repeated request for this URL; returning HTTP 429')
+        raise exc.HTTPTooManyRequests("Too many requests for this URL. Please reduce your polling rate.")
+
+      resp = method(self, *args, **kwargs)
+      if not resp:
+        resp = self.response
+
+      with lock:
+        ttlcache[self.request.url] = True
 
       return resp
 

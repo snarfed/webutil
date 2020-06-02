@@ -137,3 +137,25 @@ my foo: bar""", resp.text)
     self.assertEqual(4, Handler.calls)
     self.assertEqual(204, resp.status_int)
     self.assertEqual('got http://localhost/?y', resp.text)
+
+  def test_throttle(self):
+    class Handler(webapp2.RequestHandler):
+      @handlers.throttle(one_request_each=datetime.timedelta(seconds=60))
+      def get(self):
+        self.response.set_status(204)
+
+    app = webapp2.WSGIApplication([('.*', Handler)])
+
+    # three different initial fetches, all should succeed
+    urls = ('/a', '/a?x', '/a?y')
+    for url in urls:
+      self.assertEqual(204, app.get_response(url).status_int)
+
+    # second time should fail
+    for url in urls:
+      self.assertEqual(429, app.get_response(url).status_int)
+
+    # clear cache, should succeed again
+    Handler.get.cache_clear()
+    for url in urls:
+      self.assertEqual(204, app.get_response(url).status_int)
