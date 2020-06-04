@@ -171,14 +171,18 @@ jsonPayload.message:"%s"' % (
 
     # sanitize and render each line
     for log in logging_client.list_log_entries((project,), filter_=query):
+      logging.debug('Got a log entry')
       msg = log.json_payload.fields['message'].string_value
       if msg:
+        logging.debug('Got a useful log entry')
         msg = linkify_datastore_keys(util.linkify(cgi.escape(
           msg if msg.startswith('Created by this poll:') else sanitize(msg))))
+        logging.debug('Linkified')
         timestamp = log.timestamp.seconds + float(log.timestamp.nanos) / 1000000000
         self.response.out.write('%s %s %s<br />' % (
           LEVELS[log.severity / 10],
           datetime.datetime.utcfromtimestamp(timestamp),
           msg.replace('\n', '<br />')))
+        logging.debug('Wrote line')
 
     self.response.out.write('</body>\n</html>')
