@@ -109,7 +109,7 @@ def linkify_datastore_keys(msg):
                 for kind, id in key.pairs()]
       key_str = '0/|' + '|'.join('%d/%s|%d/%s' % (len(kind), kind, len(id), id)
                                  for kind, id in tokens)
-      key_quoted = urllib.parse.quote(urllib.parse.quote(key_str), safe=True)
+      key_quoted = urllib.parse.quote(urllib.parse.quote(key_str), safe='/:')
       return "'<a title='%s' href='https://console.cloud.google.com/datastore/entities;kind=%s;ns=__$DEFAULT$__/edit;key=%s?project=%s'>%s...</a>'" % (
         match.group(1), key.kind(), key_quoted, APP_ID, match.group(2))
     except BaseException:
@@ -151,7 +151,7 @@ jsonPayload.message:"%s"' % (
   key)
     logging.info('Searching logs with: %s', query)
     try:
-      # https://googleapis.dev/python/logging/latest/gapic/v2/api.html#google.cloud.logginjg_v2.LoggingServiceV2Client.list_log_entries
+      # https://googleapis.dev/python/logging/latest/gapic/v2/api.html#google.cloud.logging_v2.LoggingServiceV2Client.list_log_entries
       log = next(iter(logging_client.list_log_entries((project,), filter_=query, page_size=1)))
     except StopIteration:
       self.response.out.write('No log found!')
@@ -166,11 +166,13 @@ jsonPayload.message:"%s"' % (
 <body style="font-family: monospace; white-space: pre">
 """)
 
-    query = 'logName="%s/logs/stdout" AND trace="%s"' % (project, log.trace)
+    query = 'logName="%s/logs/stdout" trace="%s" resource.type="gae_app"' % (
+      project, log.trace)
     logging.info('Searching logs with: %s', query)
 
     # sanitize and render each line
-    for log in logging_client.list_log_entries((project,), filter_=query):
+    for log in logging_client.list_log_entries((project,), filter_=query,
+                                               page_size=1000):
       logging.debug('Got a log entry')
       msg = log.json_payload.fields['message'].string_value
       if msg:
