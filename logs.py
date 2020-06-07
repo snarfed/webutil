@@ -140,15 +140,11 @@ class LogHandler(webapp2.RequestHandler):
     key = urllib.parse.unquote_plus(util.get_required_param(self, 'key'))
 
     # first, find the individual stdout log message to get the trace id
-    query = '\
-logName="%s/logs/stdout" AND \
-timestamp>="%s" AND \
-timestamp<="%s" AND \
-jsonPayload.message:"%s"' % (
-  project,
-  datetime.datetime.utcfromtimestamp(start_time - 60).isoformat() + 'Z',
-  datetime.datetime.utcfromtimestamp(start_time + 120).isoformat() + 'Z',
-  key)
+    timestamp_filter = 'timestamp>="%s" timestamp<="%s"' % (
+      datetime.datetime.utcfromtimestamp(start_time - 60).isoformat() + 'Z',
+      datetime.datetime.utcfromtimestamp(start_time + 120).isoformat() + 'Z')
+    query = 'logName="%s/logs/stdout" jsonPayload.message:"%s" %s' % (
+      project, key, timestamp_filter)
     logging.info('Searching logs with: %s', query)
     try:
       # https://googleapis.dev/python/logging/latest/gapic/v2/api.html#google.cloud.logging_v2.LoggingServiceV2Client.list_log_entries
@@ -166,8 +162,8 @@ jsonPayload.message:"%s"' % (
 <body style="font-family: monospace; white-space: pre">
 """)
 
-    query = 'logName="%s/logs/stdout" trace="%s" resource.type="gae_app"' % (
-      project, log.trace)
+    query = 'logName="%s/logs/stdout" trace="%s" resource.type="gae_app" %s' % (
+      project, log.trace, timestamp_filter)
     logging.info('Searching logs with: %s', query)
 
     # sanitize and render each line
