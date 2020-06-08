@@ -109,7 +109,7 @@ def linkify_datastore_keys(msg):
                 for kind, id in key.pairs()]
       key_str = '0/|' + '|'.join('%d/%s|%d/%s' % (len(kind), kind, len(id), id)
                                  for kind, id in tokens)
-      key_quoted = urllib.parse.quote(urllib.parse.quote(key_str), safe='/:')
+      key_quoted = urllib.parse.quote(urllib.parse.quote(key_str, safe=''), safe='')
       return "'<a title='%s' href='https://console.cloud.google.com/datastore/entities;kind=%s;ns=__$DEFAULT$__/edit;key=%s?project=%s'>%s...</a>'" % (
         match.group(1), key.kind(), key_quoted, APP_ID, match.group(2))
     except BaseException:
