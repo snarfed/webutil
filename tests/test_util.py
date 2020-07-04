@@ -755,7 +755,11 @@ class UtilTest(testutil.TestCase):
     # fake gdata.client.RequestError since gdata isn't a dependency
     class RequestError(util.Struct):
       pass
+
     ex = RequestError(status=429, body='my body')
+    self.assertEqual(('429', 'my body'), ihc(ex))
+
+    ex = RequestError(status=429, body=b'my body')
     self.assertEqual(('429', 'my body'), ihc(ex))
 
     # Flickr

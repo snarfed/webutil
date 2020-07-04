@@ -1223,6 +1223,13 @@ def interpret_http_exception(exception):
   if code or body:
     logging.warning('Error %s, response body: %s', code, repr(body))
 
+  if isinstance(body, bytes):
+    # good faith effort to decode as UTF-8 or ASCII
+    try:
+      body = body.decode()
+    except:
+      pass
+
   # silo-specific error_types that should disable the source.
   #
   # instagram
