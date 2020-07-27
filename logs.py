@@ -4,8 +4,8 @@ StackDriver Logging API:
 https://cloud.google.com/logging/docs/apis
 """
 import calendar
-import cgi
 import datetime
+import html
 import logging
 import re
 import time
@@ -173,7 +173,7 @@ class LogHandler(webapp2.RequestHandler):
       msg = log.json_payload.fields['message'].string_value
       if msg:
         logging.debug('Got a useful log entry')
-        msg = linkify_datastore_keys(util.linkify(cgi.escape(
+        msg = linkify_datastore_keys(util.linkify(html.escape(
           msg if msg.startswith('Created by this poll:') else sanitize(msg))))
         logging.debug('Linkified')
         timestamp = log.timestamp.seconds + float(log.timestamp.nanos) / 1000000000
