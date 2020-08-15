@@ -1244,7 +1244,7 @@ def interpret_http_exception(exception):
   if body:
     try:
       body_json = json_loads(body)
-      error = body_json.get('error', {})
+      error = body_json if isinstance(body_json, str) else body_json.get('error', {})
       if not isinstance(error, dict):
         error = {'message': repr(error)}
     except BaseException:

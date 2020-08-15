@@ -898,6 +898,12 @@ class UtilTest(testutil.TestCase):
         ('503', body.getvalue()),
         ihc(HTTPError('url', code, 'BAD REQUEST', {}, body)))
 
+    # pleroma JSON string error message
+    # https://console.cloud.google.com/errors/CP3p1f2g_MeF5AE
+    code, body = ihc(HTTPError('url', 500, '', {}, json_str('Something went wrong')))
+    self.assertEqual('502', code)
+    self.assertEqual('"Something went wrong"', body)
+
     # make sure we handle non-facebook JSON bodies ok
     wordpress_rest_error = json_str({
       'error': 'unauthorized',
