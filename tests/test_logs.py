@@ -6,12 +6,13 @@ from google.cloud import ndb
 
 from mox3 import mox
 
-from .. import logs
+from .. import appengine_config, logs
 
-# KEY = ndb.Key('Foo', 123)
-# KEY_STR = KEY.urlsafe().decode()
+with appengine_config.ndb_client.context():
+  KEY = ndb.Key('Foo', 123)
+  KEY_STR = KEY.urlsafe().decode()
 
-@unittest.skip
+
 class LogsTest(mox.MoxTestBase):
 
   def test_url(self):
