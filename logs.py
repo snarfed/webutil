@@ -98,22 +98,27 @@ def maybe_link(when, key, time_class='dt-updated', link_class=''):
 # datastore string keys are url-safe-base64 of, say, at least 32(ish) chars.
 # https://cloud.google.com/appengine/docs/python/ndb/keyclass#Key_urlsafe
 # http://tools.ietf.org/html/rfc3548.html#section-4
-DATASTORE_KEY_RE = re.compile("'(([A-Za-z0-9-_=]{8})[A-Za-z0-9-_=]{24,})'")
+BASE64 = 'A-Za-z0-9-_='
+DATASTORE_KEY_RE = re.compile("([^%s])(([%s]{8})[%s]{24,})([^%s])" % ((BASE64,) * 4))
 
 def linkify_datastore_keys(msg):
   """Converts string datastore keys to links to the admin console viewer."""
   def linkify_key(match):
     try:
-      key = ndb.Key(urlsafe=match.group(1))
+      logging.debug('Linkifying datastore key: %s', match.group(2))
+      key = ndb.Key(urlsafe=match.group(2))
       tokens = [(kind, '%s:%s' % ('id' if isinstance(id, int) else 'name', id))
                 for kind, id in key.pairs()]
       key_str = '0/|' + '|'.join('%d/%s|%d/%s' % (len(kind), kind, len(id), id)
                                  for kind, id in tokens)
       key_quoted = urllib.parse.quote(urllib.parse.quote(key_str, safe=''), safe='')
-      return "'<a title='%s' href='https://console.cloud.google.com/datastore/entities;kind=%s;ns=__$DEFAULT$__/edit;key=%s?project=%s'>%s...</a>'" % (
-        match.group(1), key.kind(), key_quoted, APP_ID, match.group(2))
-    except BaseException:
-      logging.debug("Couldn't linkify candidate datastore key.", stack_info=True)
+      html = "%s<a title='%s' href='https://console.cloud.google.com/datastore/entities;kind=%s;ns=__$DEFAULT$__/edit;key=%s?project=%s'>%s...</a>%s" % (
+        match.group(1), match.group(2), key.kind(), key_quoted, APP_ID,
+        match.group(3), match.group(4))
+      logging.debug('Returning %s', html)
+      return html
+    except BaseException as e:
+      logging.debug("Couldn't linkify candidate datastore key.", exc_info=True)
       return msg
 
   return DATASTORE_KEY_RE.sub(linkify_key, msg)
@@ -169,18 +174,14 @@ class LogHandler(webapp2.RequestHandler):
     # sanitize and render each line
     for log in logging_client.list_log_entries((project,), filter_=query,
                                                page_size=1000):
-      logging.debug('Got a log entry')
       msg = log.json_payload.fields['message'].string_value
       if msg:
-        logging.debug('Got a useful log entry')
         msg = linkify_datastore_keys(util.linkify(html.escape(
           msg if msg.startswith('Created by this poll:') else sanitize(msg))))
-        logging.debug('Linkified')
         timestamp = log.timestamp.seconds + float(log.timestamp.nanos) / 1000000000
         self.response.out.write('%s %s %s<br />' % (
           LEVELS[log.severity / 10],
           datetime.datetime.utcfromtimestamp(timestamp),
           msg.replace('\n', '<br />')))
-        logging.debug('Wrote line')
 
     self.response.out.write('</body>\n</html>')

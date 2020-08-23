@@ -528,6 +528,7 @@ def extract_links(text):
   # strip "outside" parens
   links = [l[:-1] if l[-1] == ')' and '(' not in l else l
            for l in links]
+  # TODO: strip trailing periods, commas, etc
   return links
 
 
