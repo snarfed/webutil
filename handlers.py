@@ -108,7 +108,7 @@ def cache_response(expiration, size=20 * 1000 * 1000):  # 20 MB
       if not resp:
         resp = self.response
 
-      if cache:
+      if cache and ttlcache.getsizeof(resp) <= size:
         with lock:
           ttlcache[self.request.url] = resp
 

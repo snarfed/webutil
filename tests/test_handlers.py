@@ -105,7 +105,7 @@ my foo: bar""", resp.text)
     class Handler(webapp2.RequestHandler):
       calls = 0
 
-      @handlers.cache_response(datetime.timedelta(days=1))
+      @handlers.cache_response(datetime.timedelta(days=1), size=1000)
       def get(self):
         Handler.calls += 1
         self.response.set_status(204)
@@ -137,6 +137,12 @@ my foo: bar""", resp.text)
     self.assertEqual(4, Handler.calls)
     self.assertEqual(204, resp.status_int)
     self.assertEqual('got http://localhost/?y', resp.text)
+
+    # too big response shouldn't be cached
+    url = '/?z' + 'z' * 1001
+    resp = app.get_response(url)
+    resp = app.get_response(url)
+    self.assertEqual(6, Handler.calls)
 
   def test_throttle(self):
     class Handler(webapp2.RequestHandler):
