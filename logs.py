@@ -118,7 +118,7 @@ def linkify_datastore_keys(msg):
       logging.debug('Returning %s', html)
       return html
     except BaseException as e:
-      logging.debug("Couldn't linkify candidate datastore key.", exc_info=True)
+      # logging.debug("Couldn't linkify candidate datastore key.")   # too noisy
       return msg
 
   return DATASTORE_KEY_RE.sub(linkify_key, msg)
