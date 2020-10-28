@@ -17,7 +17,9 @@ import os
 import re
 import socket
 import ssl
+import sys
 import threading
+import traceback
 import urllib.error, urllib.parse, urllib.request
 from xml.sax import saxutils
 
@@ -1480,13 +1482,20 @@ def requests_fn(fn):
         resp.raise_for_status()
     except (ValueError, requests.URLRequired) as e:
       if gateway:
-        msg = 'Bad URL %s' % url
-        logging.warning(msg, stack_info=True)
+        msg = f'Bad URL {url} : {e}'
+        logging.warning(msg)
+        # this format_exc with tb None below, instead of passing exc_info=True
+        # above, prevents the 'Traceback (most recent call last):' prefix that
+        # triggers Stackdriver Error Reporting
+        logging.warning(traceback.format_tb(sys.exc_info()[2]))
         raise exc.HTTPBadRequest(msg)
       raise
     except requests.RequestException as e:
+      if e.response:
+        logging.info(f'Received {e.response.status_code}: {e.response.text}')
       if gateway:
-        logging.warning(url, stack_info=True)
+        logging.warning(url)
+        logging.warning(traceback.format_tb(sys.exc_info()[2]))
         raise exc.HTTPBadGateway(str(e))
       raise
 
@@ -1509,6 +1518,8 @@ def requests_fn(fn):
         resp._content = resp._text.encode('utf-8')
         if gateway:
           resp.raise_for_status()
+
+    logging.info(f'Received {resp.status_code}')
 
     return resp
 
