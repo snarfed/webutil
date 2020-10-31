@@ -1487,15 +1487,15 @@ def requests_fn(fn):
         # this format_exc with tb None below, instead of passing exc_info=True
         # above, prevents the 'Traceback (most recent call last):' prefix that
         # triggers Stackdriver Error Reporting
-        logging.warning(traceback.format_tb(sys.exc_info()[2]))
+        logging.warning('\n'.join(traceback.format_tb(sys.exc_info()[2])))
         raise exc.HTTPBadRequest(msg)
       raise
     except requests.RequestException as e:
       if e.response:
         logging.info(f'Received {e.response.status_code}: {e.response.text}')
       if gateway:
-        logging.warning(url)
-        logging.warning(traceback.format_tb(sys.exc_info()[2]))
+        logging.warning(f'{e} for {url}')
+        logging.warning('\n'.join(traceback.format_tb(sys.exc_info()[2])))
         raise exc.HTTPBadGateway(str(e))
       raise
 
