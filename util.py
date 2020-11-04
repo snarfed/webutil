@@ -1,6 +1,6 @@
 """Misc utilities.
 
-Supports Python 3. Should not depend on App Engine API or SDK packages.
+Should not depend on App Engine API or SDK packages.
 """
 import calendar
 import collections
@@ -1479,6 +1479,7 @@ def requests_fn(fn):
       # use getattr so that stubbing out with mox still works
       resp = getattr(requests, fn)(url, *args, **kwargs)
       if gateway:
+        logging.info(f'Received {resp.status_code}: {"" if resp.ok else resp.text[:500]}')
         resp.raise_for_status()
     except (ValueError, requests.URLRequired) as e:
       if gateway:
@@ -1491,8 +1492,6 @@ def requests_fn(fn):
         raise exc.HTTPBadRequest(msg)
       raise
     except requests.RequestException as e:
-      if e.response:
-        logging.info(f'Received {e.response.status_code}: {e.response.text}')
       if gateway:
         logging.warning(f'{e} for {url}')
         logging.warning('\n'.join(traceback.format_tb(sys.exc_info()[2])))
