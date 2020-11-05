@@ -99,8 +99,7 @@ def maybe_link(when, key, time_class='dt-updated', link_class=''):
 # https://cloud.google.com/appengine/docs/python/ndb/keyclass#Key_urlsafe
 # http://tools.ietf.org/html/rfc3548.html#section-4
 BASE64 = 'A-Za-z0-9-_='
-DATASTORE_KEY_RE = re.compile(
-  """(['" ])(([%s]{8})[%s]{24,})(['" ])""" % (BASE64, BASE64))
+DATASTORE_KEY_RE = re.compile("([^%s])(([%s]{8})[%s]{24,})([^%s])" % ((BASE64,) * 4))
 
 def linkify_datastore_keys(msg):
   """Converts string datastore keys to links to the admin console viewer."""
@@ -120,7 +119,7 @@ def linkify_datastore_keys(msg):
       return html
     except BaseException as e:
       # logging.debug("Couldn't linkify candidate datastore key.")   # too noisy
-      return msg
+      return match.group(0)
 
   return DATASTORE_KEY_RE.sub(linkify_key, msg)
 
