@@ -23,7 +23,7 @@ class LogsTest(mox.MoxTestBase):
     when = datetime.datetime(1970, 1, 3)
     expected = r'<time class="foo" datetime="1970-01-03T00:00:00" title="Sat Jan  3 00:00:00 1970">\d+ years ago</time>'
     actual = logs.maybe_link(when, KEY, time_class='foo')
-    self.assertRegexpMatches(actual, expected)
+    self.assertRegex(actual, expected)
 
     self.mox.StubOutWithMock(logs, 'MAX_LOG_AGE')
     logs.MAX_LOG_AGE = datetime.timedelta(days=99999)

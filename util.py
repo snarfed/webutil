@@ -4,6 +4,7 @@ Should not depend on App Engine API or SDK packages.
 """
 import calendar
 import collections
+from collections.abc import Iterator
 import contextlib
 import copy
 import base64
@@ -172,11 +173,11 @@ def trim_nulls(value, ignore=()):
   if isinstance(value, dict):
     trimmed = {k: trim_nulls(v, ignore=ignore) for k, v in value.items()}
     return {k: v for k, v in trimmed.items() if k in ignore or v not in NULLS}
-  elif (isinstance(value, (tuple, list, set, frozenset, collections.Iterator)) or
+  elif (isinstance(value, (tuple, list, set, frozenset, Iterator)) or
         inspect.isgenerator(value)):
     trimmed = [trim_nulls(v, ignore=ignore) for v in value]
     ret = (v for v in trimmed if v if v not in NULLS)
-    if isinstance(value, collections.Iterator) or inspect.isgenerator(value):
+    if isinstance(value, Iterator) or inspect.isgenerator(value):
       return ret
     else:
       return type(value)(list(ret))
@@ -1493,9 +1494,12 @@ def requests_fn(fn):
       raise
     except requests.RequestException as e:
       if gateway:
-        logging.warning(f'{e} for {url}')
+        msg = str(e)
+        if e.response is not None:
+          msg += f' ; {e.response.text}'
+        logging.warning(msg)
         logging.warning('\n'.join(traceback.format_tb(sys.exc_info()[2])))
-        raise exc.HTTPBadGateway(str(e))
+        raise exc.HTTPBadGateway(msg)
       raise
 
     if url != resp.url:
