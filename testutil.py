@@ -9,7 +9,9 @@ import pprint
 import re
 import traceback
 import urllib.error, urllib.parse, urllib.request
+import warnings
 
+from bs4 import GuessedAtParserWarning
 from mox3 import mox
 import requests
 import webapp2
@@ -249,6 +251,16 @@ class TestCase(mox.MoxTestBase, Asserts):
   maxDiff = None
 
   def setUp(self):
+    # suppress a few warnings
+    # local/lib/python3.8/site-packages/mf2util.py:556: DeprecationWarning: The 'warn' function is deprecated, use 'warning' instead
+    # logging.warn('Failed to parse datetime %s', date_str)
+    warnings.filterwarnings('ignore', module='mf2util',
+                            message="The 'warn' function is deprecated")
+    # local/lib/python3.6/site-packages/mox3/mox.py:909: DeprecationWarning: inspect.getargspec() is deprecated, use inspect.signature() or inspect.getfullargspec()
+    warnings.filterwarnings('ignore', module='mox', message='inspect\.getargspec')
+    # local/lib/python3.8/site-packages/webmentiontools/send.py:65: GuessedAtParserWarning: No parser was explicitly specified, so I'm using the best available HTML parser for this system ("lxml"). This usually isn't a problem, but if you run this code on another system, or in a different virtual environment, it may use a different parser and behave differently.
+    warnings.filterwarnings('ignore', category=GuessedAtParserWarning)
+
     super(TestCase, self).setUp()
     for method in 'get', 'post', 'delete':
       self.mox.StubOutWithMock(requests, method, use_mock_anything=True)
