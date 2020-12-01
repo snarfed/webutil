@@ -414,6 +414,8 @@ class UtilTest(testutil.TestCase):
          'interesting how twitter auto-links it http://example.com/a_link_(with_parens) vs. (http://example.com/a_link_without)'),
         ('links separated by punctuation <a href="http://foo.com">http://foo.com</a>, <a href="http://bar.com/">http://bar.com/</a>; <a href="http://baz.com/?s=query">http://baz.com/?s=query</a>; did it work?',
          'links separated by punctuation http://foo.com, http://bar.com/; http://baz.com/?s=query; did it work?'),
+        ('"<a href="http://foo.com">http://foo.com</a>",', '"http://foo.com",'),
+        ('\'<a href="http://foo.com">http://foo.com</a>\',', "'http://foo.com',"),
     ):
         self.assertEqual(expected, util.linkify(input))
 
