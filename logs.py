@@ -12,7 +12,7 @@ import time
 import urllib.request, urllib.parse, urllib.error
 
 from google.cloud import ndb
-from google.cloud.logging_v2.services.logging_service_v2 import LoggingServiceV2Client
+from google.cloud.logging_v2 import LoggingServiceV2Client
 import humanize
 import webapp2
 
