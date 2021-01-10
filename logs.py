@@ -85,10 +85,18 @@ def maybe_link(when, key, time_class='dt-updated', link_class=''):
 
   Returns: string HTML
   """
-  time = '<time class="%s" datetime="%s" title="%s">%s</time>' % (
-    time_class, when.isoformat(), when.ctime(), humanize.naturaltime(when))
+  # always show time zone. assume naive timestamps are UTC.
+  if when.tzinfo is None:
+    when = when.replace(tzinfo=datetime.timezone.utc)
 
-  now = datetime.datetime.now()
+  # humanize.naturaltime breaks on timezone-aware datetimes :(
+  # https://github.com/jmoiron/humanize/issues/9#issuecomment-322917865
+  now = datetime.datetime.now(tz=when.tzinfo)
+
+  time = '<time class="%s" datetime="%s" title="%s %s">%s</time>' % (
+    time_class, when.isoformat(), when.ctime(), when.tzname(),
+    humanize.naturaltime(when, when=now))
+
   if now > when > now - MAX_LOG_AGE:
     return '<a class="%s" href="/%s">%s</a>' % (link_class, url(when, key), time)
 
