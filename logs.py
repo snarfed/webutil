@@ -154,8 +154,8 @@ class LogHandler(webapp2.RequestHandler):
 
     # first, find the individual stdout log message to get the trace id
     timestamp_filter = 'timestamp>="%s" timestamp<="%s"' % (
-      datetime.datetime.utcfromtimestamp(start_time - 60).isoformat() + 'Z',
-      datetime.datetime.utcfromtimestamp(start_time + 120).isoformat() + 'Z')
+      self.utcfromtimestamp(start_time - 60).isoformat() + 'Z',
+      self.utcfromtimestamp(start_time + 120).isoformat() + 'Z')
     query = 'logName="%s/logs/stdout" jsonPayload.message:"%s" %s' % (
       project, key, timestamp_filter)
     logging.info('Searching logs with: %s', query)
@@ -163,6 +163,7 @@ class LogHandler(webapp2.RequestHandler):
       # https://googleapis.dev/python/logging/latest/gapic/v2/api.html#google.cloud.logging_v2.LoggingServiceV2Client.list_log_entries
       log = next(iter(logging_client.list_log_entries((project,), filter_=query, page_size=1)))
     except StopIteration:
+      logging.info('No log found!')
       self.response.out.write('No log found!')
       return
 
@@ -190,7 +191,19 @@ class LogHandler(webapp2.RequestHandler):
         timestamp = log.timestamp.seconds + float(log.timestamp.nanos) / 1000000000
         self.response.out.write('%s %s %s<br />' % (
           LEVELS[log.severity / 10],
-          datetime.datetime.utcfromtimestamp(timestamp),
+          self.utcfromtimestamp(timestamp),
           msg.replace('\n', '<br />')))
 
     self.response.out.write('</body>\n</html>')
+
+  def utcfromtimestamp(self, val):
+    """Wrapper for datetime.utcfromtimestamp that returns HTTP 400 on overflow.
+
+    ...specifically, if datetime.utcfromtimestamp raises OverflowError because
+    the timestamp is greater than the platform's time_t can hold.
+    https://docs.python.org/3.9/library/datetime.html#datetime.datetime.utcfromtimestamp
+    """
+    try:
+      return datetime.datetime.utcfromtimestamp(val)
+    except OverflowError:
+      self.abort(400, f'start_time too big: {val}')

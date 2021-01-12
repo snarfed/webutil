@@ -1,10 +1,11 @@
 """Unit tests for logs.py. Woefully incomplete."""
 import datetime
+import time
 import unittest
 
 from google.cloud import ndb
-
 from mox3 import mox
+import webapp2
 
 from .. import appengine_config, logs
 
@@ -36,3 +37,13 @@ class LogsTest(mox.MoxTestBase):
     when = datetime.datetime.now() + datetime.timedelta(minutes=1)
     got = logs.maybe_link(when, KEY)
     self.assertFalse(got.startswith('<a'), got)
+
+  def test_utcfromtimestamp_overflow(self):
+    too_big = 999999999999999999999
+    with self.assertRaises(OverflowError):
+      time.gmtime(too_big)
+
+    app = webapp2.WSGIApplication([('/log', logs.LogHandler)])
+    resp = app.get_response(f'/log?key=abc&start_time={too_big}')
+    self.assertEqual(400, resp.status_int)
+    self.assertIn('start_time too big', resp.text)
