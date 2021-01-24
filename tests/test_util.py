@@ -281,6 +281,17 @@ class UtilTest(testutil.TestCase):
     self.assertEqual('http://foo?source=not-rss',
                      util.clean_url('http://foo?&source=not-rss'))
 
+  def test_quote_path(self):
+    for unchanged in '', 'foo', 'http://foo', 'http://foo#bar', 'http://foo?x=y&z=w':
+      self.assertEqual(unchanged, util.quote_path(unchanged))
+
+    for input, expected in (
+        ('http://x/☕', 'http://x/%E2%98%95'),
+        ('http://x/foo ☕ bar', 'http://x/foo%20%E2%98%95%20bar'),
+        ('http://☕:☕@☕.com/☕?☕=☕&☕=☕#☕', 'http://☕:☕@☕.com/%E2%98%95?☕=☕&☕=☕#☕'),
+    ):
+      self.assertEqual(expected, util.quote_path(input))
+
   def test_dedupe_urls(self):
     self.assertEqual([], util.dedupe_urls([]))
     self.assertEqual([], util.dedupe_urls(['', None, '']))

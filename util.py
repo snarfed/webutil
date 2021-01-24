@@ -481,6 +481,24 @@ def clean_url(url):
   return urllib.parse.urlunparse(parts)
 
 
+def quote_path(url):
+  """Quotes (URL-encodes) just the path part of a URL.
+
+  Args:
+    url: string
+
+  Returns:
+    string, the quoted url, or None if it can't be parsed
+  """
+  try:
+    parts = list(urllib.parse.urlparse(url))
+  except (AttributeError, TypeError, ValueError):
+    return None
+
+  parts[2] = urllib.parse.quote(parts[2])
+  return urllib.parse.urlunparse(parts)
+
+
 def base_url(url):
   """Returns the base of a given URL.
 
