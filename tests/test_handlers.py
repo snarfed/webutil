@@ -165,3 +165,11 @@ my foo: bar""", resp.text)
     Handler.get.cache_clear()
     for url in urls:
       self.assertEqual(204, app.get_response(url).status_int)
+
+  def test_modern_handler_options(self):
+    app = webapp2.WSGIApplication([('.*', handlers.ModernHandler)])
+    resp = app.get_response('/', method='OPTIONS')
+    self.assertEqual(200, resp.status_int)
+    self.assertEqual('*', resp.headers['Access-Control-Allow-Origin'])
+    self.assertEqual('*', resp.headers['Access-Control-Allow-Methods'])
+    self.assertEqual('*', resp.headers['Access-Control-Allow-Headers'])

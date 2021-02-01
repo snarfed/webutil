@@ -184,6 +184,8 @@ class ModernHandler(webapp2.RequestHandler):
   def __init__(self, *args, **kwargs):
     super(ModernHandler, self).__init__(*args, **kwargs)
     self.response.headers.update({
+      'Access-Control-Allow-Headers': '*',
+      'Access-Control-Allow-Methods': '*',
       'Access-Control-Allow-Origin': '*',
       # see https://content-security-policy.com/
       'Content-Security-Policy':
@@ -197,6 +199,10 @@ class ModernHandler(webapp2.RequestHandler):
       'X-Frame-Options': 'SAMEORIGIN',
       'X-XSS-Protection': '1; mode=block',
     })
+
+  def options(self):
+    """Respond to CORS pre-flight OPTIONS requests."""
+    pass
 
 
 class TemplateHandler(ModernHandler):
