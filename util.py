@@ -1373,7 +1373,9 @@ def is_connection_failure(exception):
        isinstance(exception.reason, socket.error)) or
       (isinstance(exception, http.client.HTTPException) and
        'Deadline exceeded' in msg) or
-      'Connection closed unexpectedly' in msg  # tweepy.TweepError
+      # these are tweepy.TweepError wrapping NewConnectionError
+      'Connection closed unexpectedly' in msg or
+      'Max retries exceeded' in msg
      ):
     # TODO: exc_info might not be for exception, e.g. if the json_loads() in
     # interpret_http_exception() fails. need to pass through the whole
