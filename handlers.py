@@ -200,7 +200,7 @@ class ModernHandler(webapp2.RequestHandler):
       'X-XSS-Protection': '1; mode=block',
     })
 
-  def options(self):
+  def options(self, *args, **kwargs):
     """Respond to CORS pre-flight OPTIONS requests."""
     pass
 
