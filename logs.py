@@ -186,8 +186,8 @@ class LogHandler(webapp2.RequestHandler):
       msg = log.json_payload.fields['message'].string_value
       if msg:
         msg = linkify_datastore_keys(util.linkify(html.escape(
-          msg if msg.startswith('Created by this poll:') else sanitize(msg)),
-          quote=False))
+          msg if msg.startswith('Created by this poll:') else sanitize(msg),
+          quote=False)))
         timestamp = log.timestamp.seconds + float(log.timestamp.nanos) / 1000000000
         self.response.out.write('%s %s %s<br />' % (
           LEVELS[log.severity / 10],
