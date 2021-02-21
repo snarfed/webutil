@@ -251,11 +251,15 @@ class TemplateHandler(ModernHandler):
     }
 
     # add query params. use a list for params with multiple values.
-    for key in self.request.params:
-      values = self.request.params.getall(key)
-      if len(values) == 1:
-        values = values[0]
-      vars[key] = values
+    try:
+      for key in self.request.params:
+        values = self.request.params.getall(key)
+        if len(values) == 1:
+          values = values[0]
+        vars[key] = values
+    except UnicodeDecodeError as e:
+      logging.warning('Bad query param', exc_info=True)
+      self.abort(400, "Couldn't decode query parameters as UTF-8")
 
     vars.update(self.template_vars(*args, **kwargs))
     self.response.out.write(
