@@ -372,6 +372,7 @@ def domain_or_parent_in(input, domains):
   * foo, [] => False
   * foo, [foo] => True
   * foo.bar.com, [bar.com] => True
+  * foobar.com, [bar.com] => False
   * foo.bar.com, [.bar.com] => True
   * foo.bar.com, [fux.bar.com] => False
   * bar.com, [fux.bar.com] => False
