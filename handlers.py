@@ -259,7 +259,9 @@ class TemplateHandler(ModernHandler):
         vars[key] = values
     except UnicodeDecodeError as e:
       logging.warning('Bad query param', exc_info=True)
-      self.abort(400, "Couldn't decode query parameters as UTF-8")
+      self.response.status = 400
+      self.response.write("Couldn't decode query parameters as UTF-8")
+      return
 
     vars.update(self.template_vars(*args, **kwargs))
     self.response.out.write(

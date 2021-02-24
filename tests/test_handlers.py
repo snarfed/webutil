@@ -95,13 +95,13 @@ class HandlersTest(HandlerTest):
       self.assertEqual(205, resp.status_int)
       self.assertNotIn('Location', resp.headers)
 
-  def test_template_handler_get_jinja(self):
+  def test_template_handler_unicode_error(self):
     resp = webapp2.WSGIApplication([('/', FakeTemplateHandler)]
                                    ).get_response('/?x=%C0%AF')
     self.assertEqual(400, resp.status_int)
     self.assertIn("Couldn't decode query parameters as UTF-8", resp.text)
 
-  def test_template_handler_unicode_error(self):
+  def test_template_handler_get_jinja(self):
     resp = webapp2.WSGIApplication([('/', FakeTemplateHandler)]).get_response('/')
     self.assertEqual("""\
 my host: localhost:80
