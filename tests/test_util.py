@@ -371,6 +371,11 @@ class UtilTest(testutil.TestCase):
     self.assertEqual(['http://foo.com/z-'],
                       util.extract_links('x http://foo.com/z-'))
 
+    # omit trailing close parentheses (eg in markdown links)
+    self.assertEqual(['http://xy/z'], util.extract_links('[abc](http://xy/z)'))
+    self.assertEqual(['http://xy/z'], util.extract_links('[abc](http://xy/z).'))
+    self.assertEqual(['http://xy/z'], util.extract_links('([abc](http://xy/z))'))
+
     # query
     self.assertEqual(['http://foo.com/bar?baz=baj'],
                       util.extract_links('http://foo.com/bar?baz=baj y'))

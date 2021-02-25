@@ -519,8 +519,9 @@ def base_url(url):
 # https://github.com/silas/huck/blob/master/huck/utils.py#L59 , but i kept
 # finding new input strings that would make it hang the regexp engine.
 #
-# more complicated alternative:
+# more complicated alternatives:
 # http://stackoverflow.com/questions/720113#comment23297770_2102648
+# https://daringfireball.net/2010/07/improved_regex_for_matching_urls
 #
 # list of TLDs:
 # https://en.wikipedia.org/wiki/List_of_Internet_top-level_domains#ICANN-era_generic_top-level_domains
@@ -530,6 +531,7 @@ _SCHEME_RE = r'\b(?:[a-z]{3,9}:/{1,3})'
 _HOST_RE =   r'(?:[a-z0-9\-.])+(?::\d{2,6})?'
 _DOMAIN_RE = r'(?:[a-z0-9\-]+\.)+[a-z0-9\-]{2,}(?::\d{2,6})?'
 _PATH_QUERY_RE = r'(?:(?:/[\w/.\-_~.;:%?@$#&()=+]*)|\b)'
+# _PATH_QUERY_RE = r'(?:(?:/[\w/.\-_~.;:%?@$#&()=+]*(?:[^(){}.!?,\s]))|/|\b)'
 _LINK_RE = re.compile(
   _SCHEME_RE + _HOST_RE + _PATH_QUERY_RE,  # scheme required
   re.UNICODE | re.IGNORECASE)
@@ -546,29 +548,29 @@ def extract_links(text):
   if not text:
     return []
 
-  links = uniquify(match.group() for match in _LINK_RE.finditer(text))
-  # strip "outside" parens
-  links = [l[:-1] if l[-1] == ')' and '(' not in l else l
-           for l in links]
-  # TODO: strip trailing periods, commas, etc
-  return links
+  return uniquify(tokenize_links(text, skip_html_links=False, require_scheme=True)[0])
 
 
-def tokenize_links(text, skip_bare_cc_tlds=False):
+def tokenize_links(text, skip_bare_cc_tlds=False, skip_html_links=True,
+                   require_scheme=False):
   """Splits text into link and non-link text.
 
   Args:
     text: string to linkify
     skip_bare_cc_tlds: boolean, whether to skip links of the form
       [domain].[2-letter TLD] with no schema and no path
+    skip_html_links: boolean, whether to skip links in HTML <a> tags (
+      both href and text)
+    require_scheme: boolean, whether to require scheme (eg http:// )
 
   Returns:
     a tuple containing two lists of strings, a list of links and list of
     non-link text. Roughly equivalent to the output of re.findall and re.split,
     with some post-processing.
   """
-  links = _LINKIFY_RE.findall(text)
-  splits = _LINKIFY_RE.split(text)
+  regexp = _LINK_RE if require_scheme else _LINKIFY_RE
+  links = regexp.findall(text)
+  splits = regexp.split(text)
 
   for ii in range(len(links)):
     # trim trailing punctuation from links
@@ -584,9 +586,9 @@ def tokenize_links(text, skip_bare_cc_tlds=False):
     link = links[ii]
 
     # avoid double linking by looking at preceeding 2 chars
-    if (splits[ii].strip().endswith('="')
-        or splits[ii].strip().endswith("='")
-        or splits[ii + 1].strip().startswith('</a')
+    if ((skip_html_links and (splits[ii].strip().endswith('="')
+                              or splits[ii].strip().endswith("='")
+                              or splits[ii + 1].strip().startswith('</a')))
         # skip domains with 2-letter TLDs and no schema or path
         or (skip_bare_cc_tlds and re.match('[a-z0-9\-]+\.[a-z]{2}$', link))):
       # collapse link into before text
