@@ -12,7 +12,7 @@ import time
 import urllib.request, urllib.parse, urllib.error
 
 from google.cloud import ndb
-from google.cloud.logging_v2 import LoggingServiceV2Client
+from google.cloud.logging import Client
 import humanize
 import webapp2
 
@@ -148,7 +148,7 @@ class LogHandler(webapp2.RequestHandler):
     if start_time < MIN_START_TIME:
       self.abort(400, "start_time must be >= %s" % MIN_START_TIME)
 
-    logging_client = LoggingServiceV2Client()
+    client = Client()
     project = 'projects/%s' % APP_ID
     key = urllib.parse.unquote_plus(util.get_required_param(self, 'key'))
 
@@ -160,8 +160,8 @@ class LogHandler(webapp2.RequestHandler):
       project, key, timestamp_filter)
     logging.info('Searching logs with: %s', query)
     try:
-      # https://googleapis.dev/python/logging/latest/gapic/v2/api.html#google.cloud.logging_v2.LoggingServiceV2Client.list_log_entries
-      log = next(iter(logging_client.list_log_entries((project,), filter_=query, page_size=1)))
+      # https://googleapis.dev/python/logging/latest/client.html#google.cloud.logging_v2.client.Client.list_entries
+      log = next(iter(client.list_entries(filter_=query, page_size=1)))
     except StopIteration:
       logging.info('No log found!')
       self.response.out.write('No log found!')
@@ -181,18 +181,14 @@ class LogHandler(webapp2.RequestHandler):
     logging.info('Searching logs with: %s', query)
 
     # sanitize and render each line
-    for log in logging_client.list_log_entries((project,), filter_=query,
-                                               page_size=1000):
-      msg = log.json_payload.fields['message'].string_value
+    for log in client.list_entries(filter_=query, page_size=1000):
+      msg = log.payload.get('message')
       if msg:
         msg = linkify_datastore_keys(util.linkify(html.escape(
           msg if msg.startswith('Created by this poll:') else sanitize(msg),
           quote=False)))
-        timestamp = log.timestamp.seconds + float(log.timestamp.nanos) / 1000000000
         self.response.out.write('%s %s %s<br />' % (
-          LEVELS[log.severity / 10],
-          self.utcfromtimestamp(timestamp),
-          msg.replace('\n', '<br />')))
+          log.severity[0], log.timestamp, msg.replace('\n', '<br />')))
 
     self.response.out.write('</body>\n</html>')
 
