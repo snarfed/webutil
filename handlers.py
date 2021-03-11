@@ -272,8 +272,8 @@ class XrdOrJrdHandler(TemplateHandler):
   """Renders and serves an XRD or JRD file.
 
   JRD is served if the request path ends in .json, or the query parameters
-  include 'format=json', or the request headers include
-  'Accept: application/json'.
+  include 'format=json', or the request's Accept header includes
+  application/json or application/jrd+json.
 
   Subclasses must override :meth:`template_prefix()`.
 
@@ -295,7 +295,8 @@ class XrdOrJrdHandler(TemplateHandler):
     self.response.write(json_dumps(self.template_vars(*args, **kwargs), indent=2))
 
   def content_type(self):
-    return ('application/json; charset=utf-8' if self.is_jrd()
+    # https://tools.ietf.org/html/rfc7033#section-10.2
+    return ('application/jrd+json' if self.is_jrd()
             else 'application/xrd+xml; charset=utf-8')
 
   def template_prefix(self):
@@ -307,9 +308,11 @@ class XrdOrJrdHandler(TemplateHandler):
 
   def is_jrd(self):
     """Returns True if JRD should be served, False if XRD."""
+    accept = self.request.headers.get('Accept', '')
     return (os.path.splitext(self.request.path)[1] == '.json' or
             self.request.get('format') == 'json' or
-            self.request.headers.get('Accept') == 'application/json')
+            'application/json' in accept or
+            'application/jrd+json' in accept)
 
 
 class HostMetaHandler(XrdOrJrdHandler):
