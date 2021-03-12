@@ -75,7 +75,9 @@ def redirect(from_domain, to_domain):
   return decorator
 
 
-def cache_response(expiration, size=20 * 1000 * 1000):  # 20 MB
+def cache_response(expiration,
+                   size=20 * 1000 * 1000,  # 20 MB
+                   headers=None):
   """:class:`webapp2.RequestHandler` method decorator that caches the response in memory.
 
   Includes a `cache_clear()` function that clears all cached responses.
@@ -88,6 +90,7 @@ def cache_response(expiration, size=20 * 1000 * 1000):  # 20 MB
   Args:
     expiration: :class:`datetime.timedelta`
     size: integer, bytes. defaults to 20 MB.
+    headers: sequencey of string HTTP headers to include in the cache key
   """
   lock = threading.RLock()
   ttlcache = cachetools.TTLCache(
@@ -97,9 +100,14 @@ def cache_response(expiration, size=20 * 1000 * 1000):  # 20 MB
   def decorator(method):
     @functools.wraps(method)
     def wrapper(self, *args, **kwargs):
+      key = self.request.url
+      if headers:
+        key += ' ' + repr(sorted(
+          (h, v) for h, v in self.request.headers.items() if h in headers))
+
       cache = self.request.get('cache', '').lower() != 'false'
       if cache:
-        resp = ttlcache.get(self.request.url)
+        resp = ttlcache.get(key)
         if resp:
           logging.info('Serving cached response')
           return resp
@@ -110,7 +118,7 @@ def cache_response(expiration, size=20 * 1000 * 1000):  # 20 MB
 
       if cache and ttlcache.getsizeof(resp) <= size:
         with lock:
-          ttlcache[self.request.url] = resp
+          ttlcache[key] = resp
 
       return resp
 
@@ -271,20 +279,19 @@ class TemplateHandler(ModernHandler):
 class XrdOrJrdHandler(TemplateHandler):
   """Renders and serves an XRD or JRD file.
 
-  JRD is served if the request path ends in .json, or the query parameters
-  include 'format=json', or the request's Accept header includes
-  application/json or application/jrd+json.
+  XRD is served if the request path ends in .xml, or the forjat query parameter
+  is 'xml' or 'xrd', or the request's Accept header includes 'xml' or 'xrd'.
 
   Subclasses must override :meth:`template_prefix()`.
 
   Class members:
     JRD_TEMPLATE: boolean, renders JRD with a template if True,
-    otherwise renders it as JSON directly.
+      otherwise renders it as JSON directly.
   """
   JRD_TEMPLATE = True
 
   def get(self, *args, **kwargs):
-    if self.JRD_TEMPLATE:
+    if self.JRD_TEMPLATE or not self.is_jrd():
       return super(XrdOrJrdHandler, self).get(*args, **kwargs)
 
     self.response.headers['Content-Type'] = self.content_type()
@@ -308,11 +315,10 @@ class XrdOrJrdHandler(TemplateHandler):
 
   def is_jrd(self):
     """Returns True if JRD should be served, False if XRD."""
-    accept = self.request.headers.get('Accept', '')
-    return (os.path.splitext(self.request.path)[1] == '.json' or
-            self.request.get('format') == 'json' or
-            'application/json' in accept or
-            'application/jrd+json' in accept)
+    accept = self.request.headers.get('Accept', '').lower()
+    return not (os.path.splitext(self.request.path)[1] == '.xml' or
+                self.request.get('format').lower() in ('xrd', 'xml') or
+                'xrd' in accept or 'xml' in accept)
 
 
 class HostMetaHandler(XrdOrJrdHandler):

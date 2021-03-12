@@ -1,6 +1,7 @@
 """Unit tests for handlers.py.
 """
-import datetime
+from collections import defaultdict
+from datetime import timedelta
 import os
 import socket
 import traceback
@@ -111,7 +112,7 @@ my foo: bar""", resp.text)
     class Handler(webapp2.RequestHandler):
       calls = 0
 
-      @handlers.cache_response(datetime.timedelta(days=1), size=1000)
+      @handlers.cache_response(timedelta(days=1), size=1000)
       def get(self):
         Handler.calls += 1
         self.response.set_status(204)
@@ -150,9 +151,38 @@ my foo: bar""", resp.text)
     resp = app.get_response(url)
     self.assertEqual(6, Handler.calls)
 
+  def test_cache_response_headers(self):
+    class Handler(webapp2.RequestHandler):
+      # maps (Foo, Bar) header values tuple to # of calls
+      calls = defaultdict(int)
+
+      @handlers.cache_response(timedelta(days=1), headers=('Foo', 'Bar'))
+      def get(self):
+        Handler.calls[(self.request.headers.get('Foo'),
+                       self.request.headers.get('Bar'))] += 1
+
+    app = webapp2.WSGIApplication([('.*', Handler)])
+
+    for i in range(2):
+      app.get_response('/', headers={'Foo': 'x', 'Bar': 'y'})
+
+    for i in range(2):
+      app.get_response('/', headers={'Foo': 'z'})
+
+    for i in range(2):
+      app.get_response('/', headers={})
+
+    app.get_response('/', headers={'Foo': 'z'})
+
+    self.assertEqual({
+      ('x', 'y'): 1,
+      ('z', None): 1,
+      (None, None): 1,
+    }, Handler.calls)
+
   def test_throttle(self):
     class Handler(webapp2.RequestHandler):
-      @handlers.throttle(one_request_each=datetime.timedelta(seconds=60))
+      @handlers.throttle(one_request_each=timedelta(seconds=60))
       def get(self):
         self.response.set_status(204)
 
