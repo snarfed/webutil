@@ -348,6 +348,8 @@ class HostMetaHandler(XrdOrJrdHandler):
   Supports both JRD and XRD; defaults to XRD.
   https://tools.ietf.org/html/rfc6415#section-3
   """
+  DEFAULT_TYPE = XrdOrJrdHandler.XRD
+
   def template_prefix(self):
     return 'templates/host-meta'
 
