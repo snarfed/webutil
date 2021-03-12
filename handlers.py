@@ -279,19 +279,47 @@ class TemplateHandler(ModernHandler):
 class XrdOrJrdHandler(TemplateHandler):
   """Renders and serves an XRD or JRD file.
 
-  XRD is served if the request path ends in .xml, or the forjat query parameter
-  is 'xml' or 'xrd', or the request's Accept header includes 'xml' or 'xrd'.
+  JRD is served if the request path ends in .jrd or .json, or the format query
+  parameter is 'jrd' or 'json', or the request's Accept header includes 'jrd' or
+  'json'.
+
+  XRD is served if the request path ends in .xrd or .xml, or the format query
+  parameter is 'xml' or 'xrd', or the request's Accept header includes 'xml' or
+  'xrd'.
+
+  Otherwise, defaults to DEFAULT_TYPE.
 
   Subclasses must override :meth:`template_prefix()`.
 
   Class members:
+    DEFAULT_TYPE: either JRD or XRD, which type to return by default if the
+      request doesn't ask for one explicitly with the Accept header.
     JRD_TEMPLATE: boolean, renders JRD with a template if True,
       otherwise renders it as JSON directly.
   """
+  JRD = 'jrd'
+  XRD = 'xrd'
+  DEFAULT_TYPE = JRD  # either JRD or XRD
   JRD_TEMPLATE = True
 
+  def _type(self):
+    """Returns XRD or JRD."""
+    accept = self.request.headers.get('Accept', '').lower()
+    format = self.request.get('format', '').lower()
+    ext = os.path.splitext(self.request.path)[1]
+
+    if (ext in ('.jrd', '.json') or format in ('jrd', 'json') or
+        'jrd' in accept or 'json' in accept):
+      return self.JRD
+    elif (ext in ('.xrd', '.xml') or format in ('xrd', 'xml') or
+        'xrd' in accept or 'xml' in accept):
+      return self.XRD
+    else:
+      assert self.DEFAULT_TYPE in (self.JRD, self.XRD)
+      return self.DEFAULT_TYPE
+
   def get(self, *args, **kwargs):
-    if self.JRD_TEMPLATE or not self.is_jrd():
+    if self.JRD_TEMPLATE or self._type() == self.XRD:
       return super(XrdOrJrdHandler, self).get(*args, **kwargs)
 
     self.response.headers['Content-Type'] = self.content_type()
@@ -303,7 +331,7 @@ class XrdOrJrdHandler(TemplateHandler):
 
   def content_type(self):
     # https://tools.ietf.org/html/rfc7033#section-10.2
-    return ('application/jrd+json' if self.is_jrd()
+    return ('application/jrd+json' if self._type() == self.JRD
             else 'application/xrd+xml; charset=utf-8')
 
   def template_prefix(self):
@@ -311,18 +339,14 @@ class XrdOrJrdHandler(TemplateHandler):
     raise NotImplementedError()
 
   def template_file(self):
-    return self.template_prefix() + ('.jrd' if self.is_jrd() else '.xrd')
-
-  def is_jrd(self):
-    """Returns True if JRD should be served, False if XRD."""
-    accept = self.request.headers.get('Accept', '').lower()
-    return not (os.path.splitext(self.request.path)[1] == '.xml' or
-                self.request.get('format').lower() in ('xrd', 'xml') or
-                'xrd' in accept or 'xml' in accept)
+    return f'{self.template_prefix()}.{self._type()}'
 
 
 class HostMetaHandler(XrdOrJrdHandler):
   """Renders and serves the /.well-known/host-meta file.
+
+  Supports both JRD and XRD; defaults to XRD.
+  https://tools.ietf.org/html/rfc6415#section-3
   """
   def template_prefix(self):
     return 'templates/host-meta'
