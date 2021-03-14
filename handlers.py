@@ -8,6 +8,7 @@ import datetime
 import functools
 import logging
 import os
+import re
 import threading
 import urllib.parse
 
@@ -304,19 +305,28 @@ class XrdOrJrdHandler(TemplateHandler):
 
   def _type(self):
     """Returns XRD or JRD."""
-    accept = self.request.headers.get('Accept', '').lower()
     format = self.request.get('format', '').lower()
     ext = os.path.splitext(self.request.path)[1]
 
-    if (ext in ('.jrd', '.json') or format in ('jrd', 'json') or
-        'jrd' in accept or 'json' in accept):
+    if ext in ('.jrd', '.json') or format in ('jrd', 'json'):
       return self.JRD
-    elif (ext in ('.xrd', '.xml') or format in ('xrd', 'xml') or
-        'xrd' in accept or 'xml' in accept):
+    elif ext in ('.xrd', '.xml') or format in ('xrd', 'xml'):
       return self.XRD
-    else:
-      assert self.DEFAULT_TYPE in (self.JRD, self.XRD)
-      return self.DEFAULT_TYPE
+
+    # We don't do full content negotiation (Accept Header parsing); we just
+    # check whether jrd/json and xrd/xml are in the header, and if they both
+    # are, which one comes first. :/
+    # https://developer.mozilla.org/en-US/docs/Web/HTTP/Content_negotiation
+    accept = self.request.headers.get('Accept', '').lower()
+    jrd = re.search(r'jrd|json', accept)
+    xrd = re.search(r'xrd|xml', accept)
+    if jrd and (not xrd or jrd.start() < xrd.start()):
+      return self.JRD
+    elif xrd and (not jrd or xrd.start() < jrd.start()):
+      return self.XRD
+
+    assert self.DEFAULT_TYPE in (self.JRD, self.XRD)
+    return self.DEFAULT_TYPE
 
   def get(self, *args, **kwargs):
     if self.JRD_TEMPLATE or self._type() == self.XRD:

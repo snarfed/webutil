@@ -211,17 +211,17 @@ my foo: bar""", resp.text)
     self.assertEqual('*', resp.headers['Access-Control-Allow-Methods'])
     self.assertEqual('*', resp.headers['Access-Control-Allow-Headers'])
 
-  def assert_jrd(self, expected, resp):
+  def assert_jrd(self, resp, expected={'foo': 'bar'}):
     self.assertEqual(200, resp.status_int)
     self.assertEqual('application/jrd+json; charset=utf-8',
                      resp.headers['Content-Type'])
     self.assertEqual(expected, resp.json)
 
-  def assert_xrd(self, resp):
+  def assert_xrd(self, resp, expected='<XRD><Foo>bar</Foo></XRD>'):
       self.assertEqual(200, resp.status_int)
       self.assertEqual('application/xrd+xml; charset=utf-8',
                        resp.headers['Content-Type'])
-      self.assertEqual('<XRD><Foo>bar</Foo></XRD>', resp.text)
+      self.assertEqual(expected, resp.text)
 
   def test_xrd_or_jrd_handler_default_jrd(self):
     class Handler(XrdOrJrdHandler):
@@ -232,7 +232,7 @@ my foo: bar""", resp.text)
         return {'foo': 'bar'}
 
     app = webapp2.WSGIApplication([('.*', Handler)])
-    self.assert_jrd({'foo': 'bar'}, app.get_response('/'))
+    self.assert_jrd(app.get_response('/'))
 
     for resp in (app.get_response('/x.xrd'),
                  app.get_response('/x.xml'),
@@ -263,7 +263,7 @@ my foo: bar""", resp.text)
                  app.get_response('/', headers={'Accept': 'application/jrd+json'}),
                  app.get_response('/', headers={'Accept': 'application/json'}),
                  ):
-      self.assert_jrd({'foo': 'bar'}, resp)
+      self.assert_jrd(resp)
 
   def test_xrd_or_jrd_handler_jrd_template_false(self):
     class Handler(XrdOrJrdHandler):
@@ -273,4 +273,21 @@ my foo: bar""", resp.text)
         return {'baz': 'bar'}
 
     resp = webapp2.WSGIApplication([('/', Handler)]).get_response('/')
-    self.assert_jrd({'baz': 'bar'}, resp)
+    self.assert_jrd(resp, {'baz': 'bar'})
+
+  def test_xrd_or_jrd_handler_accept_header_order(self):
+    class Handler(XrdOrJrdHandler):
+      def template_prefix(self):
+        return os.path.join(os.path.dirname(__file__), 'test_handler_template')
+
+      def template_vars(self):
+        return {'foo': 'bar'}
+
+    app = webapp2.WSGIApplication([('.*', Handler)])
+
+    self.assert_jrd(app.get_response('/', headers={
+      'Accept': 'application/jrd+json,application/xrd+xml',
+    }))
+    self.assert_xrd(app.get_response('/', headers={
+      'Accept': 'application/xrd+xml,application/jrd+json',
+    }))
