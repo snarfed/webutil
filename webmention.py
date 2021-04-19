@@ -13,18 +13,22 @@ LINK_HEADER_RE = re.compile(
   r'''<([^>]+)>; rel=["']?(https?://)?webmention(\.org/?)?["']?''')
 
 # Returned by discover(). Attributes:
-# endpoint: str
-# response: requests.Response
+#   endpoint: str
+#   response: requests.Response
 Endpoint = namedtuple('Endpoint', ('endpoint', 'response'))
 
 
 def discover(url, **requests_kwargs):
   """Discovers a URL's webmention endpoint.
 
+  Args:
+    url: str
+    requests_kwargs: passed to :meth:`requests.post`
+
   Returns: :class:`Endpoint`. If no endpoint is discovered, the endpoint
   attribute will be None.
 
-  Raises: :class:`requests.HTTPError`
+  Raises: :class:`ValueError` on bad URL, :class:`requests.HTTPError` on failure
   """
   resp = util.requests_get(url, **requests_kwargs)
   resp.raise_for_status()
@@ -57,3 +61,26 @@ def discover(url, **requests_kwargs):
 
   logging.debug(f'No webmention endpoint found for {url} in headers or HTML')
   return Endpoint(None, resp)
+
+
+def send(endpoint, source, target, **requests_kwargs):
+  """Sends a webmention
+
+  Args:
+    endpoint: str, webmention endpoint URL
+    source: str, source URL
+    target: str, target URL
+    requests_kwargs: passed to :meth:`requests.post`
+
+  Returns: :class:`requests.Response` on success.
+
+  Raises: :class:`ValueError` on bad URL, :class:`requests.HTTPError` on failure
+  """
+  requests_kwargs.setdefault('headers', {})['Accept'] = '*/*'
+  # following 3xx redirects translates POST to GET, which we don't want,
+  # so disable that. we may support 307/308 later.
+  # https://github.com/snarfed/bridgy/issues/753
+  resp = util.requests_post(endpoint, data={'source': source, 'target': target},
+                            allow_redirects=False, **requests_kwargs)
+  resp.raise_for_status()
+  return resp

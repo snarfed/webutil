@@ -9,9 +9,10 @@ import urllib3
 from .. import testutil, util
 from ..webmention import discover, send
 
-class WebmentionTest(testutil.TestCase):
 
-  def _test_discover(self, expected, html, **kwargs):
+class DiscoverTest(testutil.TestCase):
+
+  def _test(self, expected, html, **kwargs):
     call = self.expect_requests_get('http://foo', f'<html>{html}</html>', **kwargs)
     self.mox.ReplayAll()
 
@@ -19,75 +20,96 @@ class WebmentionTest(testutil.TestCase):
     self.assertEqual(expected, got.endpoint)
     self.assertEqual(call._return_value, got.response)
 
+  def test_discover_bad_url(self):
+    for bad in (None, 123, '', 'asdf'):
+      with self.assertRaises(ValueError):
+        discover(bad)
+
   def test_discover_no_endpoint(self):
-      self._test_discover(None, '')
+    self._test(None, '')
 
   def test_discover_html_link(self):
-      self._test_discover(
-        'http://endpoint', '<link rel="webmention" href="http://endpoint">')
+    self._test('http://endpoint', '<link rel="webmention" href="http://endpoint">')
 
   def test_discover_html_a(self):
-      self._test_discover(
-        'http://endpoint', '<a rel="webmention" href="http://endpoint">')
+    self._test('http://endpoint', '<a rel="webmention" href="http://endpoint">')
 
   def test_discover_html_relative(self):
-      self._test_discover('http://foo/bar', '<link rel="webmention" href="/bar">')
+    self._test('http://foo/bar', '<link rel="webmention" href="/bar">')
 
   def test_discover_html_rel_url(self):
-      self._test_discover(
-        'http://foo/bar', '<link rel="http://webmention.org/" href="/bar">')
+    self._test('http://foo/bar', '<link rel="http://webmention.org/" href="/bar">')
 
   def test_discover_html_link_and_a(self):
-      self._test_discover(
-        'http://endpoint1', """\
+    self._test('http://endpoint1', """\
 <a rel="webmention" href="http://endpoint1">
 <link rel="webmention" href="http://endpoint2">
 """)
 
   def test_discover_html_other_links(self):
-      self._test_discover(
-        'http://endpoint', """\
+    self._test('http://endpoint', """\
 <link rel="foo" href="http://bar">
 <link rel="webmention" href="http://endpoint">
 """)
 
   def test_discover_html_empty(self):
-      self._test_discover(None, '<link rel="webmention/" href="">')
+    self._test(None, '<link rel="webmention/" href="">')
 
   def test_discover_header(self):
-      self._test_discover('http://endpoint', '', response_headers={
-        'Link': '<http://endpoint>; rel=webmention',
-      })
+    self._test('http://endpoint', '', response_headers={
+      'Link': '<http://endpoint>; rel=webmention',
+    })
 
   def test_discover_header_relative(self):
-      self._test_discover('http://foo/bar', '', response_headers={
-        'Link': '</bar>; rel="webmention"',
-      })
+    self._test('http://foo/bar', '', response_headers={
+      'Link': '</bar>; rel="webmention"',
+    })
 
   def test_discover_header_quoted(self):
-      self._test_discover('http://endpoint', '', response_headers={
-        'Link': '<http://endpoint>; rel="webmention"',
-      })
+    self._test('http://endpoint', '', response_headers={
+      'Link': '<http://endpoint>; rel="webmention"',
+    })
 
   def test_discover_header_rel_url(self):
-      self._test_discover('http://endpoint', '', response_headers={
-        'Link': '<http://endpoint>; rel="https://webmention.org/"',
-      })
+    self._test('http://endpoint', '', response_headers={
+      'Link': '<http://endpoint>; rel="https://webmention.org/"',
+    })
 
   def test_discover_other_headers(self):
-      self._test_discover('http://endpoint', '', response_headers={
-        'Link': '<http://foo>; rel="bar", <http://endpoint>; rel="webmention"',
-      })
+    self._test('http://endpoint', '', response_headers={
+      'Link': '<http://foo>; rel="bar", <http://endpoint>; rel="webmention"',
+    })
 
   def test_discover_multiple_link_headers(self):
-      self._test_discover('http://1', '', response_headers={
-        'Link': '<http://1>; rel="webmention", <http://2>; rel="webmention"',
-      })
+    self._test('http://1', '', response_headers={
+      'Link': '<http://1>; rel="webmention", <http://2>; rel="webmention"',
+    })
 
   def test_discover_header_empty(self):
-      self._test_discover(None, '', response_headers={
-        'Link': '<http://endpoint>; rel=""',
-      })
+    self._test(None, '', response_headers={
+      'Link': '<http://endpoint>; rel=""',
+    })
+
+  def test_discover_header_query_params(self):
+    self._test('http://endpoint?x=y&a=b', '', response_headers={
+      'Link': '<http://endpoint?x=y&a=b>; rel="webmention"',
+    })
+
+  def test_discover_header_fragment(self):
+    self._test('http://endpoint#foo', '', response_headers={
+      'Link': '<http://endpoint#foo>; rel="webmention"',
+    })
+
+
+class DiscoverTest(testutil.TestCase):
+
+  def _test(self, expected, html, **kwargs):
+    call = self.expect_requests_get('http://foo', f'<html>{html}</html>', **kwargs)
+    self.mox.ReplayAll()
+
+    got = discover('http://foo')
+    self.assertEqual(expected, got.endpoint)
+    self.assertEqual(call._return_value, got.response)
 
   # def test_link_header_rel_webmention_unquoted(self):
   #   """We should support rel=webmention (no quotes) in the Link header."""
