@@ -55,6 +55,13 @@ class DiscoverTest(testutil.TestCase):
   def test_discover_html_empty(self):
     self._test(None, '<link rel="webmention/" href="">')
 
+  def test_discover_html_unicode(self):
+    self._test('http://☕/☕?☕=☕', '<link rel="webmention" href="http://☕/☕?☕=☕">')
+
+  def test_discover_html_escaped(self):
+    self._test('http://%E2%98%95/%E2%98%95?%E2%98%95=%E2%98%95',
+      '<link rel="webmention" href="http://%E2%98%95/%E2%98%95?%E2%98%95=%E2%98%95">')
+
   def test_discover_header(self):
     self._test('http://endpoint', '', response_headers={
       'Link': '<http://endpoint>; rel=webmention',
@@ -100,8 +107,19 @@ class DiscoverTest(testutil.TestCase):
       'Link': '<http://endpoint#foo>; rel="webmention"',
     })
 
+  def test_discover_header_unicode(self):
+    self._test('http://☕/☕?☕=☕', '', response_headers={
+      'Link': '<http://☕/☕?☕=☕>; rel="webmention"',
+    })
 
-class DiscoverTest(testutil.TestCase):
+  def test_discover_header_escaped(self):
+    self._test('http://%E2%98%95/%E2%98%95?%E2%98%95=%E2%98%95', '',
+               response_headers={
+      'Link': '<http://%E2%98%95/%E2%98%95?%E2%98%95=%E2%98%95>; rel="webmention"',
+    })
+
+
+class SendTest(testutil.TestCase):
 
   def _test(self, expected, html, **kwargs):
     call = self.expect_requests_get('http://foo', f'<html>{html}</html>', **kwargs)

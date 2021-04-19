@@ -5,7 +5,7 @@ Spec: https://webmention.net/draft/
 from collections import namedtuple
 import logging
 import re
-from urllib.parse import urljoin
+from urllib.parse import urlparse, urljoin
 
 from . import util
 
@@ -30,6 +30,9 @@ def discover(url, **requests_kwargs):
 
   Raises: :class:`ValueError` on bad URL, :class:`requests.HTTPError` on failure
   """
+  if not url or not isinstance(url, str) or not urlparse(url).netloc:
+      raise ValueError(url)
+
   resp = util.requests_get(url, **requests_kwargs)
   resp.raise_for_status()
 
@@ -76,6 +79,10 @@ def send(endpoint, source, target, **requests_kwargs):
 
   Raises: :class:`ValueError` on bad URL, :class:`requests.HTTPError` on failure
   """
+  for arg in endpoint, source, target:
+      if not arg or not isinstance(arg, str) or not urlparse(arg).netloc:
+          raise ValueError(arg)
+
   requests_kwargs.setdefault('headers', {})['Accept'] = '*/*'
   # following 3xx redirects translates POST to GET, which we don't want,
   # so disable that. we may support 307/308 later.
