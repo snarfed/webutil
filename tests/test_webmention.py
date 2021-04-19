@@ -20,263 +20,157 @@ class DiscoverTest(testutil.TestCase):
     self.assertEqual(expected, got.endpoint)
     self.assertEqual(call._return_value, got.response)
 
-  def test_discover_bad_url(self):
+  def test_bad_url(self):
     for bad in (None, 123, '', 'asdf'):
       with self.assertRaises(ValueError):
         discover(bad)
 
-  def test_discover_no_endpoint(self):
+  def test_no_endpoint(self):
     self._test(None, '')
 
-  def test_discover_html_link(self):
+  def test_html_link(self):
     self._test('http://endpoint', '<link rel="webmention" href="http://endpoint">')
 
-  def test_discover_html_a(self):
+  def test_html_a(self):
     self._test('http://endpoint', '<a rel="webmention" href="http://endpoint">')
 
-  def test_discover_html_relative(self):
+  def test_html_relative(self):
     self._test('http://foo/bar', '<link rel="webmention" href="/bar">')
 
-  def test_discover_html_rel_url(self):
+  def test_html_rel_url(self):
     self._test('http://foo/bar', '<link rel="http://webmention.org/" href="/bar">')
 
-  def test_discover_html_link_and_a(self):
+  def test_html_link_and_a(self):
     self._test('http://endpoint1', """\
 <a rel="webmention" href="http://endpoint1">
 <link rel="webmention" href="http://endpoint2">
 """)
 
-  def test_discover_html_other_links(self):
+  def test_html_other_links(self):
     self._test('http://endpoint', """\
 <link rel="foo" href="http://bar">
 <link rel="webmention" href="http://endpoint">
 """)
 
-  def test_discover_html_empty(self):
+  def test_html_empty(self):
     self._test(None, '<link rel="webmention/" href="">')
 
-  def test_discover_html_unicode(self):
+  def test_html_unicode(self):
     self._test('http://☕/☕?☕=☕', '<link rel="webmention" href="http://☕/☕?☕=☕">')
 
-  def test_discover_html_escaped(self):
+  def test_html_escaped(self):
     self._test('http://%E2%98%95/%E2%98%95?%E2%98%95=%E2%98%95',
       '<link rel="webmention" href="http://%E2%98%95/%E2%98%95?%E2%98%95=%E2%98%95">')
 
-  def test_discover_header(self):
+  def test_html_content_type_html(self):
+    self._test('http://foo/bar', '<link rel="http://webmention.org/" href="/bar">',
+               response_headers={'Content-Type': 'text/html'})
+
+  def test_html_content_type_html_charset(self):
+    self._test('http://foo/bar', '<link rel="http://webmention.org/" href="/bar">',
+               response_headers={'Content-Type': 'text/html; charset=utf-8'})
+
+  def test_html_content_type_other(self):
+    self._test(None, '<link rel="http://webmention.org/" href="/bar">',
+               response_headers={'Content-Type': 'text/json'})
+
+  def test_header(self):
     self._test('http://endpoint', '', response_headers={
       'Link': '<http://endpoint>; rel=webmention',
     })
 
-  def test_discover_header_relative(self):
+  def test_header_relative(self):
     self._test('http://foo/bar', '', response_headers={
       'Link': '</bar>; rel="webmention"',
     })
 
-  def test_discover_header_quoted(self):
+  def test_header_quoted(self):
     self._test('http://endpoint', '', response_headers={
       'Link': '<http://endpoint>; rel="webmention"',
     })
 
-  def test_discover_header_rel_url(self):
+  def test_header_rel_url(self):
     self._test('http://endpoint', '', response_headers={
       'Link': '<http://endpoint>; rel="https://webmention.org/"',
     })
 
-  def test_discover_other_headers(self):
+  def test_other_headers(self):
     self._test('http://endpoint', '', response_headers={
       'Link': '<http://foo>; rel="bar", <http://endpoint>; rel="webmention"',
     })
 
-  def test_discover_multiple_link_headers(self):
+  def test_multiple_link_headers(self):
     self._test('http://1', '', response_headers={
       'Link': '<http://1>; rel="webmention", <http://2>; rel="webmention"',
     })
 
-  def test_discover_header_empty(self):
+  def test_header_empty(self):
     self._test(None, '', response_headers={
       'Link': '<http://endpoint>; rel=""',
     })
 
-  def test_discover_header_query_params(self):
+  def test_header_query_params(self):
     self._test('http://endpoint?x=y&a=b', '', response_headers={
       'Link': '<http://endpoint?x=y&a=b>; rel="webmention"',
     })
 
-  def test_discover_header_fragment(self):
-    self._test('http://endpoint#foo', '', response_headers={
+  def test_header_fragment(self):
+    self._test('http://endpoint', '', response_headers={
       'Link': '<http://endpoint#foo>; rel="webmention"',
     })
 
-  def test_discover_header_unicode(self):
+  def test_header_unicode(self):
     self._test('http://☕/☕?☕=☕', '', response_headers={
       'Link': '<http://☕/☕?☕=☕>; rel="webmention"',
     })
 
-  def test_discover_header_escaped(self):
+  def test_header_escaped(self):
     self._test('http://%E2%98%95/%E2%98%95?%E2%98%95=%E2%98%95', '',
                response_headers={
       'Link': '<http://%E2%98%95/%E2%98%95?%E2%98%95=%E2%98%95>; rel="webmention"',
     })
 
+  def test_requests_exception(self):
+    with self.assertRaises(requests.HTTPError):
+      self._test('http://endpoint', '', status_code=500)
+
 
 class SendTest(testutil.TestCase):
 
-  def _test(self, expected, html, **kwargs):
-    call = self.expect_requests_get('http://foo', f'<html>{html}</html>', **kwargs)
+  def _test(self, endpoint='http://endpoint', source='http://source',
+            target='http://target', **kwargs):
+    call = self.expect_requests_post(endpoint, data={
+      'source': source,
+      'target': target,
+    }, allow_redirects=False, headers={'Accept': '*/*'}, **kwargs)
     self.mox.ReplayAll()
 
-    got = discover('http://foo')
-    self.assertEqual(expected, got.endpoint)
-    self.assertEqual(call._return_value, got.response)
+    got = send(endpoint, source, target)
+    self.assertEqual(call._return_value, got)
 
-  # def test_link_header_rel_webmention_unquoted(self):
-  #   """We should support rel=webmention (no quotes) in the Link header."""
-  #   self.mox.UnsetStubs()  # drop WebmentionSend mock; let it run
-  #   super(PropagateTest, self).setUp()
+  def test_bad_url(self):
+    for bad in (None, 123, '', 'asdf'):
+      with self.assertRaises(ValueError):
+        send(bad, 'http://x', 'http://x')
+      with self.assertRaises(ValueError):
+        send('http://x', bad, 'http://x')
+      with self.assertRaises(ValueError):
+        send('http://x', 'http://x', bad)
 
-  #   self.responses[0].unsent = ['http://my/post']
-  #   self.responses[0].put()
-  #   self.expect_requests_head('http://my/post')
-  #   self.expect_webmention_requests_get(
-  #     'http://my/post', timeout=999,
-  #     response_headers={'Link': '<http://my/endpoint>; rel=webmention'})
+  def test_success(self):
+    self._test()
 
-  #   source_url = ('http://localhost/comment/fake/%s/a/1_2_a' %
-  #                 self.sources[0].key.string_id())
-  #   self.expect_requests_post(
-  #     'http://my/endpoint', timeout=999,
-  #     data={'source': source_url, 'target': 'http://my/post'},
-  #     stream=None, allow_redirects=False, headers={'Accept': '*/*'})
+  def test_requests_exception(self):
+    with self.assertRaises(requests.HTTPError):
+      self._test(status_code=500)
 
-  #   self.mox.ReplayAll()
-  #   self.post_task()
-  #   self.assert_response_is('complete', sent=['http://my/post'])
+  def test_preserve_endpoint_query_params(self):
+    self._test('http://endpoint?x=y&a=b')
 
-  # def test_discover_error(self):
-  #   self.expect_webmention(error={'code': 'NO_ENDPOINT'}).AndReturn(False)
-  #   # second time shouldn't try to send a webmention
+  def test_unicode_urls(self):
+    self._test('http://☕/☕?☕=☕', 'http://❤/❤?❤=❤', 'http://⚠/⚠?⚠=⚠')
 
-  #   self.mox.ReplayAll()
-  #   self.post_task()
-  #   self.assert_response_is('complete', skipped=['http://target1/post/url'])
-
-  #   self.responses[0].status = 'new'
-  #   self.responses[0].put()
-  #   self.post_task()
-  #   self.assert_response_is('complete', skipped=['http://target1/post/url'])
-
-  # def test_non_html_file(self):
-  #   """If our HEAD fails, we should still require content-type text/html."""
-  #   self.mox.UnsetStubs()  # drop WebmentionSend mock; let it run
-  #   super(PropagateTest, self).setUp()
-
-  #   self.responses[0].unsent = ['http://not/html']
-  #   self.responses[0].put()
-  #   self.expect_requests_head('http://not/html', status_code=405)
-  #   self.expect_webmention_requests_get(
-  #     'http://not/html', content_type='image/gif', timeout=999)
-
-  #   self.mox.ReplayAll()
-  #   self.post_task()
-  #   self.assert_response_is('complete', skipped=['http://not/html'])
-
-  # def test_non_html_file_extension(self):
-  #   """If our HEAD fails, we should infer type from file extension."""
-  #   self.responses[0].unsent = ['http://this/is/a.pdf']
-  #   self.responses[0].put()
-
-  #   self.expect_requests_head('http://this/is/a.pdf', status_code=405,
-  #                             # we should ignore an error response's content type
-  #                             content_type='text/html')
-
-  #   self.mox.ReplayAll()
-  #   self.post_task()
-  #   self.assert_response_is('complete')
-
-  # def test_content_type_html_with_charset(self):
-  #   """We should handle Content-Type: text/html; charset=... ok."""
-  #   self.mox.UnsetStubs()  # drop WebmentionSend mock; let it run
-  #   super(PropagateTest, self).setUp()
-
-  #   self.responses[0].unsent = ['http://html/charset']
-  #   self.responses[0].put()
-  #   self.expect_requests_head('http://html/charset', status_code=405)
-  #   self.expect_webmention_requests_get(
-  #     'http://html/charset',
-  #     content_type='text/html; charset=utf-8',
-  #     response_headers={'Link': '<http://my/endpoint>; rel="webmention"'},
-  #     timeout=999)
-
-  #   source_url = ('http://localhost/comment/fake/%s/a/1_2_a' %
-  #                 self.sources[0].key.string_id())
-  #   self.expect_requests_post(
-  #     'http://my/endpoint',
-  #     data={'source': source_url, 'target': 'http://html/charset'},
-  #     stream=None, timeout=999, allow_redirects=False, headers={'Accept': '*/*'})
-
-  #   self.mox.ReplayAll()
-  #   self.post_task()
-  #   self.assert_response_is('complete', sent=['http://html/charset'])
-
-  # def test_no_content_type_header(self):
-  #   """If the Content-Type header is missing, we should assume text/html."""
-  #   self.mox.UnsetStubs()  # drop WebmentionSend mock; let it run
-  #   super(PropagateTest, self).setUp()
-
-  #   self.responses[0].unsent = ['http://unknown/type']
-  #   self.responses[0].put()
-  #   self.expect_requests_head('http://unknown/type', status_code=405)
-  #   self.expect_webmention_requests_get('http://unknown/type', content_type=None,
-  #                                       timeout=999)
-
-  #   self.mox.ReplayAll()
-  #   self.post_task()
-  #   self.assert_response_is('complete', skipped=['http://unknown/type'])
-
-  # def test_webmention_post_omits_accept_header(self):
-  #   """The webmention POST request should never send the Accept header."""
-  #   self.mox.UnsetStubs()  # drop WebmentionSend mock; let it run
-  #   super(PropagateTest, self).setUp()
-
-  #   self.responses[0].source = Twitter(id='rhiaro').put()
-  #   self.responses[0].put()
-  #   # self.expect_requests_head('http://my/post')
-  #   self.expect_webmention_requests_get(
-  #     'http://target1/post/url', timeout=999,
-  #     headers=util.REQUEST_HEADERS_CONNEG,
-  #     response_headers={'Link': '<http://my/endpoint>; rel=webmention'})
-
-  #   self.expect_requests_post(
-  #     'http://my/endpoint', timeout=999,
-  #     data={'source': 'http://localhost/comment/twitter/rhiaro/a/1_2_a',
-  #           'target': 'http://target1/post/url'},
-  #     stream=None, allow_redirects=False, headers={'Accept': '*/*'})
-
-  #   self.mox.ReplayAll()
-  #   self.post_task()
-  #   self.assert_response_is('complete', sent=['http://target1/post/url'])
-
-  # def test_unicode_in_target_url(self):
-  #   """Target URLs with escaped unicode chars should work ok."""
-  #   url = 'https://maps/?q=' + urllib.parse.quote_plus('3 Cours de la République'.encode())
-  #   self.responses[0].unsent = [url]
-  #   self.responses[0].put()
-
-  #   self.expect_webmention(target=url).AndReturn(True)
-  #   self.mox.ReplayAll()
-
-  #   self.post_task()
-  #   self.assert_response_is('complete', sent=[url])
-
-  # def test_dns_failure(self):
-  #   """If DNS lookup fails for a URL, we should give up."""
-  #   self.responses[0].put()
-  #   self.expect_webmention().AndRaise(requests.exceptions.ConnectionError(
-  #       'Max retries exceeded: DNS lookup failed for URL: foo'))
-  #   self.mox.ReplayAll()
-
-  #   self.post_task()
-  #   self.assert_response_is('complete', failed=['http://target1/post/url'])
-
-  def test_send_preserve_endpoint_query_params(self):
-    pass
+  def test_unicode_urls_escaped(self):
+    self._test('http://%E2%98%95/%E2%98%95?%E2%98%95=%E2%98%95',
+               'http://%E2%9A%A0/%E2%9A%A0?%E2%9A%A0=%E2%9A%A0',
+               'http://%E2%9D%A4/%E2%9D%A4?%E2%9D%A4=%E2%9D%A4')
