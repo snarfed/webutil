@@ -34,6 +34,8 @@ def discover(url, **requests_kwargs):
       raise ValueError(url)
 
   resp = util.requests_get(url, **requests_kwargs)
+  # TODO: decide whether non-2xx responses should continue with discovery
+  # https://github.com/snarfed/bridgy/issues/1012
   resp.raise_for_status()
 
   # look in headers
