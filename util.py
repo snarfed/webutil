@@ -18,6 +18,7 @@ import os
 import re
 import socket
 import ssl
+import string
 import sys
 import threading
 import traceback
@@ -526,10 +527,12 @@ def base_url(url):
 # list of TLDs:
 # https://en.wikipedia.org/wiki/List_of_Internet_top-level_domains#ICANN-era_generic_top-level_domains
 #
-# TODO: support internationalized/emoji TLDs
+# Note that emoji and other unicode chars are allowed in all domain segments, including TLDs!
+# https://en.wikipedia.org/wiki/Top-level_domain#Internationalized_country_code_TLDs
 _SCHEME_RE = r'\b(?:[a-z]{3,9}:/{1,3})'
-_HOST_RE =   r'(?:[a-z0-9\-.])+(?::\d{2,6})?'
-_DOMAIN_RE = r'(?:[a-z0-9\-]+\.)+[a-z0-9\-]{2,}(?::\d{2,6})?'
+_PUNCT = string.punctuation.replace('-', '').replace('.', '')
+_HOST_RE =   r'(?:[^\s%s])+(?::\d{2,6})?' % _PUNCT
+_DOMAIN_RE = r'(?:[^\s.%s]+\.)+[^\s%s]{2,}(?::\d{2,6})?' % (_PUNCT, _PUNCT)
 _PATH_QUERY_RE = r'(?:(?:/[\w/.\-_~.;:%?@$#&()=+]*)|\b)'
 # _PATH_QUERY_RE = r'(?:(?:/[\w/.\-_~.;:%?@$#&()=+]*(?:[^(){}.!?,\s]))|/|\b)'
 _LINK_RE = re.compile(

@@ -390,6 +390,10 @@ class UtilTest(testutil.TestCase):
     self.assertEqual(['http://%s' % c for c in ('a', 'b', 'c', 'd')],
                       util.extract_links('http://a http://b http://c http://d'))
 
+    # emoji in domain
+    self.assertEqual(['http://☕⊙.ws'],
+                     util.extract_links('emoji http://☕⊙.ws domain'))
+
   def test_linkify(self):
     for unchanged in (
         '',
@@ -399,8 +403,6 @@ class UtilTest(testutil.TestCase):
         '<a href="http://foo.com"  class="x">xyz</a> Y',
         "X <a href='http://foo.com' />",
         'asdf <a href="http://foo.com">foo</a> qwert ',
-        # TODO: support unicode chars
-        'http://aÇb.com',
         'http://a<b>.com'):
       self.assertEqual(unchanged, util.linkify(unchanged))
 
@@ -432,6 +434,8 @@ class UtilTest(testutil.TestCase):
          'links separated by punctuation http://foo.com, http://bar.com/; http://baz.com/?s=query; did it work?'),
         ('"<a href="http://foo.com">http://foo.com</a>",', '"http://foo.com",'),
         ('\'<a href="http://foo.com">http://foo.com</a>\',', "'http://foo.com',"),
+        ('<a href="http://aÇb.com">http://aÇb.com</a>', 'http://aÇb.com'),
+        ('<a href="http://a☕⊙b.com">http://a☕⊙b.com</a>', 'http://a☕⊙b.com'),
     ):
         self.assertEqual(expected, util.linkify(input))
 
@@ -494,6 +498,10 @@ class UtilTest(testutil.TestCase):
     # pass through unicode chars gracefully(ish)
     self.assertEqual('<a href="http://x/ben-werdmüller">x/ben-werdmüller</a>',
                      pl('http://x/ben-werdmüller'))
+
+    self.assertEqual('<a href="http://aÇb.com">aÇb.com</a>', pl('http://aÇb.com'))
+    self.assertEqual('<a href="http://a☕⊙b.com">a☕⊙b.com</a>',
+                     pl('http://a☕⊙b.com'))
 
   # TODO: make this work
   # def test_linkify_broken(self):
