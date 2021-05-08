@@ -23,6 +23,7 @@ import sys
 import threading
 import traceback
 import urllib.error, urllib.parse, urllib.request
+from urllib.parse import urlparse
 from xml.sax import saxutils
 
 from cachetools import cached, TTLCache
@@ -314,7 +315,7 @@ def parse_acct_uri(uri, hosts=None):
 
   Raises: ValueError if the uri is invalid or the host isn't allowed.
   """
-  parsed = urllib.parse.urlparse(uri)
+  parsed = urlparse(uri)
   if parsed.scheme and parsed.scheme != 'acct':
     raise ValueError('Acct URI %s has unsupported scheme: %s' %
                      (uri, parsed.scheme))
@@ -333,7 +334,7 @@ def parse_acct_uri(uri, hosts=None):
 
 
 def favicon_for_url(url):
-  return 'http://%s/favicon.ico' % urllib.parse.urlparse(url).netloc
+  return 'http://%s/favicon.ico' % urlparse(url).netloc
 
 
 # http://stackoverflow.com/questions/2532053/validate-hostname-string-in-python
@@ -351,9 +352,9 @@ def domain_from_link(url):
   Returns:
     string
   """
-  parsed = urllib.parse.urlparse(url)
+  parsed = urlparse(url)
   if not parsed.hostname and '//' not in url:
-    parsed = urllib.parse.urlparse('http://' + url)
+    parsed = urlparse('http://' + url)
 
   domain = parsed.hostname
   if domain:
@@ -419,8 +420,7 @@ def update_scheme(url, handler):
                'http://distillery.s3.amazonaws.com', url)
   url = re.sub(r'^http://photos-\w\.(ak\.)instagram\.com',
                'http://igcdn-photos-e-a.akamaihd.net', url)
-  return urllib.parse.urlunparse((handler.request.scheme,) +
-                                 urllib.parse.urlparse(url)[1:])
+  return urllib.parse.urlunparse((handler.request.scheme,) + urlparse(url)[1:])
 
 
 def schemeless(url, slashes=True):
@@ -434,7 +434,7 @@ def schemeless(url, slashes=True):
   Returns:
     string URL
   """
-  url = urllib.parse.urlunparse(('',) + urllib.parse.urlparse(url)[1:])
+  url = urllib.parse.urlunparse(('',) + urlparse(url)[1:])
   if not slashes:
     url = url.strip('/')
   return url
@@ -449,7 +449,7 @@ def fragmentless(url):
   Returns:
     string URL
   """
-  return urllib.parse.urlunparse(urllib.parse.urlparse(url)[:5] + ('',))
+  return urllib.parse.urlunparse(urlparse(url)[:5] + ('',))
 
 
 def clean_url(url):
@@ -472,7 +472,7 @@ def clean_url(url):
   utm_params = set(('utm_campaign', 'utm_content', 'utm_medium', 'utm_source',
                     'utm_term'))
   try:
-    parts = list(urllib.parse.urlparse(url))
+    parts = list(urlparse(url))
   except (AttributeError, TypeError, ValueError):
     return None
 
@@ -494,7 +494,7 @@ def quote_path(url):
     string, the quoted url, or None if it can't be parsed
   """
   try:
-    parts = list(urllib.parse.urlparse(url))
+    parts = list(urlparse(url))
   except (AttributeError, TypeError, ValueError):
     return None
 
@@ -681,7 +681,7 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
       max_length = 30
   else:
     # use shortened version of URL as link text
-    parsed = urllib.parse.urlparse(url)
+    parsed = urlparse(url)
     text = url[len(parsed.scheme) + 3:]  # strip scheme and ://
     host_len = len(parsed.netloc)
     if (keep_host and not parsed.params and not parsed.query and not parsed.fragment):
@@ -923,7 +923,7 @@ def add_query_params(url, params):
     params = list(params.items())
 
   # convert to list so we can modify later
-  parsed = list(urllib.parse.urlparse(url))
+  parsed = list(urlparse(url))
   # query params are in index 4
   params = [(k, str(v).encode('utf-8')) for k, v in params]
   parsed[4] += ('&' if parsed[4] else '') + urllib.parse.urlencode(params)
@@ -952,7 +952,7 @@ def remove_query_param(url, param):
     (string URL without the given param, string param value)
   """
   # convert to list so we can modify later
-  parsed = list(urllib.parse.urlparse(url))
+  parsed = list(urlparse(url))
 
   # query params are in index 4
   removed = None
@@ -1518,7 +1518,11 @@ def requests_fn(fn):
           # https://github.com/psf/requests/issues/3687
           # https://github.com/kjd/idna/issues/18
           # https://github.com/kjd/idna/issues/40
-          return call(punycode, *args, **kwargs)
+          resp = call(punycode, *args, **kwargs)
+          resp.url = resp.url.replace(urlparse(punycode).netloc,
+                                      urlparse(url).netloc)
+          return resp
+
       if gateway:
         msg = f'Bad URL {url} : {e}'
         logging.warning(msg)
@@ -1528,6 +1532,7 @@ def requests_fn(fn):
         logging.warning('\n'.join(traceback.format_tb(sys.exc_info()[2])))
         raise exc.HTTPBadRequest(msg)
       raise
+
     except requests.RequestException as e:
       if gateway:
         msg = str(e)
@@ -1626,7 +1631,7 @@ def follow_redirects(url, **kwargs):
   """
   try:
     # default scheme to http
-    parsed = urllib.parse.urlparse(url)
+    parsed = urlparse(url)
     if not parsed.scheme:
       url = 'http://' + url
     resolved = requests_head(url, allow_redirects=True, **kwargs)
@@ -1724,7 +1729,7 @@ class UrlCanonicalizer(object):
     elif self.reject and self.reject.match(url):
       return None
 
-    parsed = urllib.parse.urlparse(url)
+    parsed = urlparse(url)
     domain = parsed.hostname
     if not domain:
       return None
