@@ -26,6 +26,7 @@ import urllib.error, urllib.parse, urllib.request
 from xml.sax import saxutils
 
 from cachetools import cached, TTLCache
+from domain2idna import domain2idna
 
 try:
   import ujson
@@ -1509,6 +1510,15 @@ def requests_fn(fn):
         logging.info(f'Received {resp.status_code}: {"" if resp.ok else resp.text[:500]}')
         resp.raise_for_status()
     except (ValueError, requests.URLRequired) as e:
+      if isinstance(e, requests.exceptions.InvalidURL):
+        punycode = domain2idna(url)  # surprisingly, this handles full URLs fine
+        if punycode != url:
+          # the domain is valid idn2003 but not idn2008. encode and try again.
+          # https://unicode.org/faq/idn.html#6
+          # https://github.com/psf/requests/issues/3687
+          # https://github.com/kjd/idna/issues/18
+          # https://github.com/kjd/idna/issues/40
+          return call(punycode, *args, **kwargs)
       if gateway:
         msg = f'Bad URL {url} : {e}'
         logging.warning(msg)

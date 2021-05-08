@@ -1267,3 +1267,9 @@ class UtilTest(testutil.TestCase):
     self.expect_requests_get(url).AndRaise(requests.ConnectionError())
     self.mox.ReplayAll()
     self.assertRaises(exc.HTTPBadGateway, util.requests_get, url, gateway=True)
+
+  def test_requests_get_invalid_emoji_domain_fallback_to_domain2idnaError(self):
+    self.expect_requests_get('http://abc⊙.de/').AndRaise(requests.exceptions.InvalidURL())
+    self.expect_requests_get('http://xn--abc-yr2a.de/', 'ok')
+    self.mox.ReplayAll()
+    self.assertEqual(200, util.requests_get('http://abc⊙.de/').status_code)
