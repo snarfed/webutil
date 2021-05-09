@@ -144,6 +144,12 @@ beautifulsoup_parser = None
 # TODO: support IDN TLDs:
 # https://en.wikipedia.org/wiki/Top-level_domain#Internationalized_country_code_TLDs
 # https://www.iana.org/domains/root/db
+#
+# TODO: fix bug in LINK_RE that makes it miss emoji domain links without scheme,
+# eg '☕⊙.ws'. bug is that the \b at the beginning of SCHEME_RE doesn't apply to
+# emoji, since they're not word-constituent characters, and that the '?' added
+# in LINK_RE only applies to the parenthesized group in SCHEME_RE, not the \b.
+# I tried changing \b to '(?:^|[\s%s])' % PUNCT, but that broke other things.
 PUNCT = string.punctuation.replace('-', '').replace('.', '')
 SCHEME_RE = r'\b(?:[a-z]{3,9}:/{1,3})'
 HOST_RE =  r'(?:[^\s%s])+(?::\d{2,6})?' % PUNCT

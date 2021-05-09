@@ -442,6 +442,7 @@ class UtilTest(testutil.TestCase):
         ('<a href="http://a☕⊙b.com">a☕⊙b.com</a>', 'a☕⊙b.com'),
         ('<a href="http://☕⊙.ws">http://☕⊙.ws</a>', 'http://☕⊙.ws'),
         # TODO: implement
+        # see comments in regexps at top of util.py for details
         # ('<a href="http://☕⊙.ws">☕⊙.ws</a>', '☕⊙.ws'),
     ):
         self.assertEqual(expected, util.linkify(input))
