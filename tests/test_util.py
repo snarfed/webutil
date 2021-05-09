@@ -202,6 +202,9 @@ class UtilTest(testutil.TestCase):
       self.assertEqual('asdf.com', actual, '%s returned %s' % (good_link, actual))
 
     self.assertEqual('asdf.com.', util.domain_from_link('http://asdf.com./x'))
+    self.assertEqual('⊙.de', util.domain_from_link('http://⊙.de/x'))
+    self.assertEqual('abc⊙.de', util.domain_from_link('http://abc⊙.de/x'))
+    self.assertEqual('abc.⊙.de', util.domain_from_link('http://abc.⊙.de/x'))
 
     for bad_link in '', '  ', 'a&b.com', 'http://', 'file:///':
       self.assertEqual(None, util.domain_from_link(bad_link))
@@ -436,8 +439,16 @@ class UtilTest(testutil.TestCase):
         ('\'<a href="http://foo.com">http://foo.com</a>\',', "'http://foo.com',"),
         ('<a href="http://aÇb.com">http://aÇb.com</a>', 'http://aÇb.com'),
         ('<a href="http://a☕⊙b.com">http://a☕⊙b.com</a>', 'http://a☕⊙b.com'),
+        ('<a href="http://a☕⊙b.com">a☕⊙b.com</a>', 'a☕⊙b.com'),
+        ('<a href="http://☕⊙.ws">http://☕⊙.ws</a>', 'http://☕⊙.ws'),
+        # TODO: implement
+        # ('<a href="http://☕⊙.ws">☕⊙.ws</a>', '☕⊙.ws'),
     ):
         self.assertEqual(expected, util.linkify(input))
+
+    # test skip_bare_cc_tlds
+    for unchanged in ('x ab.ws y', 'x ☕⊙.ws y'):
+      self.assertEqual(unchanged, util.linkify(unchanged, skip_bare_cc_tlds=True))
 
   def test_pretty_link(self):
     pl = util.pretty_link

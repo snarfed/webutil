@@ -123,6 +123,37 @@ https://www.crummy.com/software/BeautifulSoup/bs4/doc/#installing-a-parser
 """
 beautifulsoup_parser = None
 
+# Regexps for domains, hostnames, and URLs.
+#
+# Based on kylewm's from redwind:
+# https://github.com/snarfed/bridgy/issues/209#issuecomment-47583528
+# https://github.com/kylewm/redwind/blob/863989d48b97a85a1c1a92c6d79753d2fbb70775/redwind/util.py#L39
+#
+# I used to use a more complicated regexp based on
+# https://github.com/silas/huck/blob/master/huck/utils.py#L59 , but i kept
+# finding new input strings that would make it hang the regexp engine.
+#
+# more complicated alternatives:
+# http://stackoverflow.com/questions/720113#comment23297770_2102648
+# https://daringfireball.net/2010/07/improved_regex_for_matching_urls
+#
+# list of TLDs:
+# https://en.wikipedia.org/wiki/List_of_Internet_top-level_domains#ICANN-era_generic_top-level_domains
+#
+# Allows emoji and other unicode chars in all domain labels *except* TLDs.
+# TODO: support IDN TLDs:
+# https://en.wikipedia.org/wiki/Top-level_domain#Internationalized_country_code_TLDs
+# https://www.iana.org/domains/root/db
+PUNCT = string.punctuation.replace('-', '').replace('.', '')
+SCHEME_RE = r'\b(?:[a-z]{3,9}:/{1,3})'
+HOST_RE =  r'(?:[^\s%s])+(?::\d{2,6})?' % PUNCT
+DOMAIN_RE = r'(?:[^\s.%s]+\.)+[a-z]{2,}(?::\d{2,6})?' % PUNCT
+PATH_QUERY_RE = r'(?:(?:/[\w/.\-_~.;:%?@$#&()=+]*)|\b)'
+URL_RE = re.compile(SCHEME_RE + HOST_RE + PATH_QUERY_RE,  # scheme required
+                    re.UNICODE | re.IGNORECASE)
+LINK_RE = re.compile(SCHEME_RE + '?' + DOMAIN_RE + PATH_QUERY_RE,  # scheme optional
+                     re.UNICODE | re.IGNORECASE)
+
 
 class Struct(object):
   """A generic class that initializes its attributes from constructor kwargs."""
@@ -337,9 +368,7 @@ def favicon_for_url(url):
   return 'http://%s/favicon.ico' % urlparse(url).netloc
 
 
-# http://stackoverflow.com/questions/2532053/validate-hostname-string-in-python
-HOSTNAME_RE_STR = r'%s(\.%s)*\.?' % ((r'(?!-)[A-Za-z\d-]{1,63}(?<!-)',) * 2)
-HOSTNAME_RE = re.compile(HOSTNAME_RE_STR + '$')
+FULL_HOST_RE = re.compile(HOST_RE + '$')
 
 def domain_from_link(url):
   """Extracts and returns the meaningful domain from a URL.
@@ -361,7 +390,7 @@ def domain_from_link(url):
     for subdomain in ('www.', 'mobile.', 'm.'):
       if domain.startswith(subdomain):
         domain = domain[len(subdomain):]
-    if domain and HOSTNAME_RE.match(domain):
+    if domain and FULL_HOST_RE.match(domain):
       return domain
 
   return None
@@ -513,37 +542,6 @@ def base_url(url):
   return urllib.parse.urljoin(url, ' ')[:-1] if url else None
 
 
-# Based on kylewm's from redwind:
-# https://github.com/snarfed/bridgy/issues/209#issuecomment-47583528
-# https://github.com/kylewm/redwind/blob/863989d48b97a85a1c1a92c6d79753d2fbb70775/redwind/util.py#L39
-#
-# I used to use a more complicated regexp based on
-# https://github.com/silas/huck/blob/master/huck/utils.py#L59 , but i kept
-# finding new input strings that would make it hang the regexp engine.
-#
-# more complicated alternatives:
-# http://stackoverflow.com/questions/720113#comment23297770_2102648
-# https://daringfireball.net/2010/07/improved_regex_for_matching_urls
-#
-# list of TLDs:
-# https://en.wikipedia.org/wiki/List_of_Internet_top-level_domains#ICANN-era_generic_top-level_domains
-#
-# Note that emoji and other unicode chars are allowed in all domain segments, including TLDs!
-# https://en.wikipedia.org/wiki/Top-level_domain#Internationalized_country_code_TLDs
-_SCHEME_RE = r'\b(?:[a-z]{3,9}:/{1,3})'
-_PUNCT = string.punctuation.replace('-', '').replace('.', '')
-_HOST_RE =   r'(?:[^\s%s])+(?::\d{2,6})?' % _PUNCT
-_DOMAIN_RE = r'(?:[^\s.%s]+\.)+[^\s%s]{2,}(?::\d{2,6})?' % (_PUNCT, _PUNCT)
-_PATH_QUERY_RE = r'(?:(?:/[\w/.\-_~.;:%?@$#&()=+]*)|\b)'
-# _PATH_QUERY_RE = r'(?:(?:/[\w/.\-_~.;:%?@$#&()=+]*(?:[^(){}.!?,\s]))|/|\b)'
-_LINK_RE = re.compile(
-  _SCHEME_RE + _HOST_RE + _PATH_QUERY_RE,  # scheme required
-  re.UNICODE | re.IGNORECASE)
-_LINKIFY_RE = re.compile(
-  _SCHEME_RE + '?' + _DOMAIN_RE + _PATH_QUERY_RE,  # scheme optional
-  re.UNICODE | re.IGNORECASE)
-
-
 def extract_links(text):
   """Returns a list of unique string URLs in the given text.
 
@@ -572,7 +570,7 @@ def tokenize_links(text, skip_bare_cc_tlds=False, skip_html_links=True,
     non-link text. Roughly equivalent to the output of re.findall and re.split,
     with some post-processing.
   """
-  regexp = _LINK_RE if require_scheme else _LINKIFY_RE
+  regexp = URL_RE if require_scheme else LINK_RE
   links = regexp.findall(text)
   splits = regexp.split(text)
 
@@ -594,7 +592,7 @@ def tokenize_links(text, skip_bare_cc_tlds=False, skip_html_links=True,
                               or splits[ii].strip().endswith("='")
                               or splits[ii + 1].strip().startswith('</a')))
         # skip domains with 2-letter TLDs and no schema or path
-        or (skip_bare_cc_tlds and re.match('[a-z0-9\-]+\.[a-z]{2}$', link))):
+        or (skip_bare_cc_tlds and re.match(r'[^\s%s]+\.[a-z]{2}$' % PUNCT, link))):
       # collapse link into before text
       splits[ii] = splits[ii] + links[ii]
       links[ii] = None
