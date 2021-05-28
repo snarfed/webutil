@@ -113,6 +113,8 @@ def linkify_datastore_keys(msg):
   """Converts string datastore keys to links to the admin console viewer."""
   def linkify_key(match):
     try:
+      # Useful for logging, but also causes false positives in the search, we
+      # find and use log requests instead of real requests.
       # logging.debug('Linkifying datastore key: %s', match.group(2))
       key = ndb.Key(urlsafe=match.group(2))
       tokens = [(kind, '%s:%s' % ('id' if isinstance(id, int) else 'name', id))
