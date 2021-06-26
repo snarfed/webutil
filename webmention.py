@@ -33,6 +33,8 @@ def discover(url, **requests_kwargs):
   if not url or not isinstance(url, str) or not urlparse(url).netloc:
       raise ValueError(url)
 
+  logging.debug(f'Webmention discovery: attempting for {url}')
+
   resp = util.requests_get(url, **requests_kwargs)
   # TODO: decide whether non-2xx responses should continue with discovery
   # https://github.com/snarfed/bridgy/issues/1012
@@ -43,13 +45,13 @@ def discover(url, **requests_kwargs):
     match = LINK_HEADER_RE.search(link)
     if match:
       endpoint = util.fragmentless(urljoin(url, match.group(1)))
-      logging.debug(f'Discovered webmention endpoint for {url} in Link header: {endpoint}')
+      logging.debug(f'Webmention discovery: got endpoint in Link header: {endpoint}')
       return Endpoint(endpoint, resp)
 
   # if no header, require HTML content
   content_type = resp.headers.get('content-type')
   if content_type and not content_type.split(';')[0] =='text/html':
-    logging.debug(f'No webmention endpoint for {url} in headers and content type {content_type} is not HTML')
+    logging.debug(f'Webmention discovery: no endpoint in headers and content type {content_type} is not HTML')
     return Endpoint(None, resp)
 
   # look in the content
@@ -58,10 +60,10 @@ def discover(url, **requests_kwargs):
       ('link', 'a'), attrs={'rel': ('webmention', 'http://webmention.org/')}):
     if tag and tag.get('href'):
       endpoint = util.fragmentless(urljoin(url, tag['href']))
-      logging.debug(f'Discovered webmention endpoint for {url} in tag: {endpoint}')
+      logging.debug(f'Webmention discovery: got endpoint in tag: {endpoint}')
       return Endpoint(endpoint, resp)
 
-  logging.debug(f'No webmention endpoint found for {url} in headers or HTML')
+  logging.debug(f'Webmention discovery: no endpoint in headers or HTML')
   return Endpoint(None, resp)
 
 
