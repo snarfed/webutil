@@ -36,9 +36,11 @@ def discover(url, **requests_kwargs):
   logging.debug(f'Webmention discovery: attempting for {url}')
 
   resp = util.requests_get(url, **requests_kwargs)
-  # TODO: decide whether non-2xx responses should continue with discovery
+  # We ignore HTTP status code and allow discovery to continue even on non-2xx
+  # responses because the spec doesn't say to stop on error status codes.
+  # Background:
+  # https://www.w3.org/TR/webmention/#sender-discovers-receiver-webmention-endpoint
   # https://github.com/snarfed/bridgy/issues/1012
-  resp.raise_for_status()
 
   # look in headers
   for link in resp.headers.get('Link', '').split(','):

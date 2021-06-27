@@ -130,9 +130,18 @@ class DiscoverTest(testutil.TestCase):
       'Link': '<http://%E2%98%95/%E2%98%95?%E2%98%95=%E2%98%95>; rel="webmention"',
     })
 
-  def test_requests_exception(self):
-    with self.assertRaises(requests.HTTPError):
-      self._test('http://endpoint', '', status_code=500)
+  def test_http_500(self):
+    self._test('http://endpoint', '', status_code=500, response_headers={
+      'Link': '<http://endpoint>; rel=webmention',
+    })
+
+  def test_connection_error(self):
+    self.expect_requests_get('http://foo').AndRaise(
+      requests.ConnectionError('foo'))
+    self.mox.ReplayAll()
+
+    with self.assertRaises(requests.ConnectionError):
+      discover('http://foo')
 
 
 class SendTest(testutil.TestCase):
