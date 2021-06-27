@@ -84,10 +84,18 @@ def send(endpoint, source, target, **requests_kwargs):
     if not arg or not isinstance(arg, str) or not urlparse(arg).netloc:
       raise ValueError(arg)
 
+  logging.debug(f'webmention send: {source} -> {target}')
+
   requests_kwargs.setdefault('headers', {})['Accept'] = '*/*'
-  # following 3xx redirects translates POST to GET, which we don't want,
-  # so disable that. https://github.com/snarfed/bridgy/issues/753
-  resp = util.requests_post(endpoint, data={'source': source, 'target': target},
-                            allow_redirects=False, **requests_kwargs)
+  try:
+    # following 3xx redirects translates POST to GET, which we don't want,
+    # so disable that. https://github.com/snarfed/bridgy/issues/753
+    resp = util.requests_post(endpoint, data={'source': source, 'target': target},
+                              allow_redirects=False, **requests_kwargs)
+  except BaseException as e:
+    logging.debug(f'webmention send: got {e.__class__.__name__}')
+    raise
+
+  logging.debug(f'webmention send: got HTTP {resp.status_code}')
   resp.raise_for_status()
   return resp
