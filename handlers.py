@@ -13,7 +13,7 @@ import threading
 import urllib.parse
 
 import cachetools
-from google.cloud import ndb
+from google.cloud.ndb import context
 import jinja2
 import webapp2
 from webob import exc
@@ -49,6 +49,7 @@ def handle_exception(self, e, debug):
     raise
 
 
+# TODO: https://stackoverflow.com/a/10964868/186123
 def redirect(from_domain, to_domain):
   """:class:`webapp2.RequestHandler` decorator that 301 redirects to a new domain.
 
@@ -129,6 +130,7 @@ def cache_response(expiration,
   return decorator
 
 
+# TODO? https://flask-limiter.readthedocs.io/
 def throttle(one_request_each, cache_size=5000):
   """:class:`webapp2.RequestHandler` method decorator that rate limits requests.
 
@@ -167,7 +169,7 @@ def throttle(one_request_each, cache_size=5000):
 
 
 def ndb_context_middleware(app, client=None):
-  """WSGI middleware for per request instance info instrumentation.
+  """WSGI middleware to add an NDB context per request.
 
   Follows the WSGI standard. Details: http://www.python.org/dev/peps/pep-0333/
 
@@ -175,14 +177,22 @@ def ndb_context_middleware(app, client=None):
 
     application = handlers.ndb_context_middleware(webapp2.WSGIApplication(...)
 
+  Background: https://cloud.google.com/appengine/docs/standard/python3/migrating-to-cloud-ndb#using_a_runtime_context_with_wsgi_frameworks
+
   Args:
     client: :class:`google.cloud.ndb.Client`
   """
   def wrapper(environ, start_response):
+    if context.get_context(raise_context_error=False):
+      # someone else (eg a unit test harness) has already created a context
+      return app(environ, start_response)
+
     with client.context():
       return app(environ, start_response)
 
-  wrapper.get_response = app.get_response
+  if hasattr(app, 'get_response'):
+    wrapper.get_response = app.get_response
+
   return wrapper
 
 
@@ -246,7 +256,7 @@ class TemplateHandler(ModernHandler):
     return {
       'Cache-Control': 'max-age=300',
       'Access-Control-Allow-Origin': '*',
-      }
+    }
 
   def get(self, *args, **kwargs):
     self.response.headers['Content-Type'] = self.content_type()
