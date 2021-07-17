@@ -117,6 +117,21 @@ FOLLOW_REDIRECTS_CACHE_TIME = 60 * 60 * 24  # 1d expiration
 follow_redirects_cache = TTLCache(1000, FOLLOW_REDIRECTS_CACHE_TIME)
 follow_redirects_cache_lock = threading.RLock()
 
+# https://en.wikipedia.org/wiki/Top-level_domain#Reserved_domains
+# Currently used in granary.source.Source.original_post_discovery, not here.
+RESERVED_TLDS = {
+  'corp',
+  'example',
+  'internal',
+  'invalid',
+  'onion',
+  'test',
+}
+LOCAL_TLDS = {
+  'local',
+  'localhost',
+}
+
 """Global config, string parser nae for BeautifulSoup to use, e.g. 'lxml'.
 May be set at runtime.
 https://www.crummy.com/software/BeautifulSoup/bs4/doc/#installing-a-parser
