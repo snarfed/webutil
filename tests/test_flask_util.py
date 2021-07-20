@@ -30,8 +30,10 @@ class FlaskUtilTest(unittest.TestCase):
       self.assertEqual(404, resp.status_code)
 
   def test_get_required_param(self):
-    for ctx in (self.app.test_request_context('/?x=y&z='),
-                self.app.test_request_context(data={'x': 'y', 'z': ''})):
+    for ctx in (
+        self.app.test_request_context('/?x=y&z='),
+        self.app.test_request_context(method='POST', data={'x': 'y', 'z': ''}),
+    ):
       with ctx:
         self.assertEqual('y', get_required_param('x'))
         with self.assertRaises(BadRequest):

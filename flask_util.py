@@ -55,7 +55,7 @@ def get_required_param(name):
   aborts with status 400.
   """
   try:
-    val = request.args.get(name) or request.form.get(name)
+    val = request.values.get(name)
   except (UnicodeDecodeError, UnicodeEncodeError) as e:
     abort(400, f"Couldn't decode parameters as UTF-8: {e}")
 
