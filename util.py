@@ -91,6 +91,16 @@ try:
 except ImportError:
   prawcore = None
 
+try:
+  import tumblpy
+except ImportError:
+  tumblpy = None
+
+try:
+  import tweepy
+except ImportError:
+  tweepy = None
+
 EPOCH = datetime.datetime.utcfromtimestamp(0)
 EPOCH_ISO = EPOCH.isoformat()
 # from https://stackoverflow.com/a/53140944/186123
@@ -1245,6 +1255,14 @@ def interpret_http_exception(exception):
         (prawcore and isinstance(e, prawcore.exceptions.ResponseException))):
     code = e.response.status_code
     body = e.response.text
+
+  elif tumblpy and isinstance(e, tumblpy.TumblpyError):
+    code = e.error_code
+    body = e.msg
+
+  elif tweepy and isinstance(e, tweepy.TweepError):
+    code = '429' if isinstance(e, tweepy.RateLimitError) else '400'
+    body = e.reason
 
   elif apiclient and isinstance(e, apiclient.errors.HttpError):
     code = e.resp.status

@@ -13,6 +13,8 @@ import urllib.parse, urllib.request
 
 import prawcore.exceptions
 import requests
+import tumblpy
+import tweepy
 import urllib3
 import webapp2
 from webob import exc
@@ -798,6 +800,15 @@ class UtilTest(testutil.TestCase):
     self.assertEqual(('429', 'my body'), ihc(ex))
 
     ex = RequestError(status=429, body=b'my body')
+    self.assertEqual(('429', 'my body'), ihc(ex))
+
+    ex = tumblpy.TumblpyError('my body', error_code=429)
+    self.assertEqual(('429', 'my body'), ihc(ex))
+
+    ex = tweepy.TweepError('my body')
+    self.assertEqual(('400', 'my body'), ihc(ex))
+
+    ex = tweepy.RateLimitError('my body')
     self.assertEqual(('429', 'my body'), ihc(ex))
 
     # Flickr
