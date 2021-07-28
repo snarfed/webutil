@@ -1,11 +1,12 @@
 """Utilities for Flask. View classes, decorators, URL route converters, etc."""
+import logging
 import os
 import re
 
 from flask import render_template, request
 from flask.views import View
 from google.cloud import ndb
-from werkzeug.exceptions import abort
+from werkzeug.exceptions import abort, HTTPException
 from werkzeug.routing import BaseConverter
 
 from . import util
@@ -103,6 +104,37 @@ def not_5xx(resp):
   """
   return not (isinstance(resp, tuple) and len(resp) > 1 and
               util.is_int(resp[1]) and int(resp[1]) // 100 == 5)
+
+
+def handle_exception(e):
+  """Flask error handler that propagates HTTP exceptions into the response.
+
+  Install with:
+    app.register_error_handler(Exception, handle_exception)
+  """
+  code, body = util.interpret_http_exception(e)
+  if code:
+    return ((f'Upstream server request failed: {e}' if code in ('502', '504')
+             else f'HTTP Error {code}: {body}'),
+            int(code))
+
+  logging.error(f'{e.__class__}: {e}')
+  if isinstance(e, HTTPException):
+    return e
+  else:
+    raise e
+
+
+def default_modern_headers(resp):
+  """Include modern HTTP headers by default, but let the response override them.
+
+  Install with:
+    app.after_request(default_modern_headers)
+  """
+  for name, value in MODERN_HEADERS.items():
+    resp.headers.setdefault(name, value)
+
+  return resp
 
 
 class XrdOrJrd(View):
