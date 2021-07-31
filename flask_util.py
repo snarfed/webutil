@@ -137,6 +137,20 @@ def default_modern_headers(resp):
   return resp
 
 
+def cached(cache, timeout):
+  """Thin flask-cache wrapper that supports timedelta and cache query param.
+
+  If the `cache` URL query parameter is `false`, skips the cache.
+
+  Args:
+    cache: :class:`flask_caching.Cache`
+    timeout: :class:`datetime.timedelta`
+  """
+  return cache.cached(
+    timeout.total_seconds(),
+    unless=lambda: request.args.get('cache', '').lower() == 'false')
+
+
 class XrdOrJrd(View):
   """Renders and serves an XRD or JRD file.
 
@@ -210,4 +224,3 @@ class XrdOrJrd(View):
       template = f'{self.template_prefix()}.{self._type()}'
       return (render_template(template, **data),
               {'Content-Type': 'application/xrd+xml; charset=utf-8'})
-
