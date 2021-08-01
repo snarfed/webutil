@@ -147,7 +147,7 @@ def cached(cache, timeout):
     timeout: :class:`datetime.timedelta`
   """
   return cache.cached(
-    timeout.total_seconds(),
+    timeout.total_seconds(), query_string=True,
     unless=lambda: request.args.get('cache', '').lower() == 'false')
 
 
