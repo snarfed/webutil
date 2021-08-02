@@ -2,8 +2,9 @@
 import logging
 import os
 import re
+import urllib.parse
 
-from flask import render_template, request
+from flask import redirect, render_template, request
 from flask.views import View
 from google.cloud import ndb
 from werkzeug.exceptions import abort, HTTPException
@@ -149,6 +150,33 @@ def cached(cache, timeout):
   return cache.cached(
     timeout.total_seconds(), query_string=True,
     unless=lambda: request.args.get('cache', '').lower() == 'false')
+
+
+def canonicalize_domain(from_domains, to_domain):
+  """Returns a callable that redirects one or more domains to a canonical domain.
+
+  Preserves scheme, path, and query.
+
+  Install with eg:
+
+    app = flask.Flask(...)
+    app.before_request(canonicalize_domain(('old1.com', 'old2.org'), 'new.com'))
+
+  Args:
+    from_domains: str or sequence of str
+    to_domain: str
+  """
+  if isinstance(from_domains, str):
+    from_domains = [from_domains]
+
+  def fn():
+    parts = list(urllib.parse.urlparse(request.url))
+    # not using request.host because it includes port
+    if parts[1] in from_domains:  # netloc
+      parts[1] = to_domain
+      return redirect(urllib.parse.urlunparse(parts), code=301)
+
+  return fn
 
 
 class XrdOrJrd(View):

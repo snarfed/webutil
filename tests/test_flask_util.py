@@ -15,6 +15,7 @@ class FlaskUtilTest(unittest.TestCase):
     self.app = Flask('test_regex_converter')
     self.app.url_map.converters['regex'] = flask_util.RegexConverter
     self.app.config['TESTING'] = True
+    self.client = self.app.test_client()
 
   def test_regex_converter(self):
     @self.app.route('/<regex("abc|def"):letters>')
@@ -46,6 +47,47 @@ class FlaskUtilTest(unittest.TestCase):
       self.assertTrue(not_5xx(bad))
 
     self.assertFalse(not_5xx(('body', 500)))
+
+  def test_canonicalize_domain_get(self):
+    @self.app.route('/', defaults={'_': ''})
+    @self.app.route('/<path:_>')
+    def view(_):
+      return '', 204
+
+    self.app.before_request(flask_util.canonicalize_domain('from.com', 'to.org'))
+
+    # should redirect
+    for url in '/', '/a/b/c', '/d?x=y':
+      for scheme in 'http', 'https':
+        resp = self.client.get(url, base_url=f'{scheme}://from.com')
+        self.assertEqual(301, resp.status_code)
+        self.assertEqual(f'{scheme}://to.org{url}', resp.headers['Location'])
+
+    # shouldn't redirect
+    for base_url in 'http://abc.net', 'https://to.org':
+      resp = self.client.get('/', base_url=base_url)
+      self.assertEqual(204, resp.status_code)
+      self.assertNotIn('Location', resp.headers)
+
+  def test_canonicalize_domain_post(self):
+    @self.app.route('/<path:_>', methods=['POST'])
+    def view(_):
+      return '', 204
+
+    self.app.before_request(
+      flask_util.canonicalize_domain(('from.com', 'from.net'), 'to.org'))
+
+    # should redirect and include *args
+    for base_url in 'http://from.com', 'http://from.net':
+      resp = self.client.post('/x/y', base_url=base_url)
+      self.assertEqual(301, resp.status_code)
+      self.assertEqual('http://to.org/x/y', resp.headers['Location'])
+
+    # shouldn't redirect, should include *args
+    for base_url in 'http://abc.net', 'https://to.org':
+      resp = self.client.post('/x/y', base_url=base_url)
+      self.assertEqual(204, resp.status_code)
+      self.assertNotIn('Location', resp.headers)
 
 
 class XrdOrJrdTest(unittest.TestCase):
