@@ -10,7 +10,6 @@ import urllib.error
 import webapp2
 
 from .. import handlers
-from ..handlers import XrdOrJrdHandler
 from ..testutil import HandlerTest
 
 handlers.JINJA_ENV.loader.searchpath.append('/')
@@ -210,84 +209,3 @@ my foo: bar""", resp.text)
     self.assertEqual('*', resp.headers['Access-Control-Allow-Origin'])
     self.assertEqual('*', resp.headers['Access-Control-Allow-Methods'])
     self.assertEqual('*', resp.headers['Access-Control-Allow-Headers'])
-
-  def assert_jrd(self, resp, expected={'foo': 'bar'}):
-    self.assertEqual(200, resp.status_int)
-    self.assertEqual('application/jrd+json; charset=utf-8',
-                     resp.headers['Content-Type'])
-    self.assertEqual(expected, resp.json)
-
-  def assert_xrd(self, resp, expected='<XRD><Foo>bar</Foo></XRD>'):
-      self.assertEqual(200, resp.status_int)
-      self.assertEqual('application/xrd+xml; charset=utf-8',
-                       resp.headers['Content-Type'])
-      self.assertEqual(expected, resp.text)
-
-  def test_xrd_or_jrd_handler_default_jrd(self):
-    class Handler(XrdOrJrdHandler):
-      def template_prefix(self):
-        return os.path.join(os.path.dirname(__file__), 'test_handler_template')
-
-      def template_vars(self):
-        return {'foo': 'bar'}
-
-    app = webapp2.WSGIApplication([('.*', Handler)])
-    self.assert_jrd(app.get_response('/'))
-
-    for resp in (app.get_response('/x.xrd'),
-                 app.get_response('/x.xml'),
-                 app.get_response('/?format=xrd'),
-                 app.get_response('/?format=xml'),
-                 app.get_response('/', headers={'Accept': 'application/xrd+xml'}),
-                 app.get_response('/', headers={'Accept': 'application/xml'}),
-                 ):
-      self.assert_xrd(resp)
-
-  def test_xrd_or_jrd_handler_default_xrd(self):
-    class Handler(XrdOrJrdHandler):
-      DEFAULT_TYPE = XrdOrJrdHandler.XRD
-
-      def template_prefix(self):
-        return os.path.join(os.path.dirname(__file__), 'test_handler_template')
-
-      def template_vars(self):
-        return {'foo': 'bar'}
-
-    app = webapp2.WSGIApplication([('.*', Handler)])
-    self.assert_xrd(app.get_response('/'))
-
-    for resp in (app.get_response('/x.jrd'),
-                 app.get_response('/x.json'),
-                 app.get_response('/?format=jrd'),
-                 app.get_response('/?format=json'),
-                 app.get_response('/', headers={'Accept': 'application/jrd+json'}),
-                 app.get_response('/', headers={'Accept': 'application/json'}),
-                 ):
-      self.assert_jrd(resp)
-
-  def test_xrd_or_jrd_handler_jrd_template_false(self):
-    class Handler(XrdOrJrdHandler):
-      JRD_TEMPLATE = False
-
-      def template_vars(self):
-        return {'baz': 'bar'}
-
-    resp = webapp2.WSGIApplication([('/', Handler)]).get_response('/')
-    self.assert_jrd(resp, {'baz': 'bar'})
-
-  def test_xrd_or_jrd_handler_accept_header_order(self):
-    class Handler(XrdOrJrdHandler):
-      def template_prefix(self):
-        return os.path.join(os.path.dirname(__file__), 'test_handler_template')
-
-      def template_vars(self):
-        return {'foo': 'bar'}
-
-    app = webapp2.WSGIApplication([('.*', Handler)])
-
-    self.assert_jrd(app.get_response('/', headers={
-      'Accept': 'application/jrd+json,application/xrd+xml',
-    }))
-    self.assert_xrd(app.get_response('/', headers={
-      'Accept': 'application/xrd+xml,application/jrd+json',
-    }))
