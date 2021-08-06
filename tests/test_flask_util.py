@@ -12,7 +12,7 @@ from ..flask_util import get_required_param, not_5xx
 
 class FlaskUtilTest(unittest.TestCase):
   def setUp(self):
-    self.app = Flask('test_regex_converter')
+    self.app = Flask('test_flask_util')
     self.app.url_map.converters['regex'] = flask_util.RegexConverter
     self.app.config['TESTING'] = True
     self.client = self.app.test_client()

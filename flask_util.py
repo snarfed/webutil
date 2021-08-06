@@ -4,7 +4,7 @@ import os
 import re
 import urllib.parse
 
-from flask import redirect, render_template, request
+from flask import abort, redirect, render_template, request
 from flask.views import View
 from google.cloud import ndb
 from werkzeug.exceptions import abort, HTTPException
@@ -113,6 +113,10 @@ def handle_exception(e):
   Install with:
     app.register_error_handler(Exception, handle_exception)
   """
+  if isinstance(e, HTTPException):
+    # raised by this app itself, pass it through
+    return e
+
   code, body = util.interpret_http_exception(e)
   if code:
     return ((f'Upstream server request failed: {e}' if code in ('502', '504')
@@ -120,10 +124,19 @@ def handle_exception(e):
             int(code))
 
   logging.error(f'{e.__class__}: {e}')
-  if isinstance(e, HTTPException):
-    return e
-  else:
-    raise e
+  raise e
+
+
+def error(msg, status=400, exc_info=False):
+  """Logs and returns an HTTP error via :class:`werkzeug.exceptions.HTTPException`.
+
+  Args:
+    msg: str
+    status: int
+    exc_info: Python exception info three-tuple, eg from sys.exc_info()
+  """
+  logging.info(f'Returning {status}: {msg}', exc_info=exc_info)
+  return abort(status, msg)
 
 
 def default_modern_headers(resp):
