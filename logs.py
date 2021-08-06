@@ -1,4 +1,4 @@
-"""A handler that exposes App Engine app logs to users.
+"""A handler that serves all app logs for an App Engine HTTP request.
 
 StackDriver Logging API:
 https://cloud.google.com/logging/docs/apis
@@ -11,13 +11,14 @@ import re
 import time
 import urllib.request, urllib.parse, urllib.error
 
+from flask import abort
 from google.cloud import ndb
 from google.cloud.logging import Client
 import humanize
-import webapp2
 
 from .appengine_info import APP_ID
-from . import handlers, util
+from . import flask_util, util
+from .flask_util import error
 
 LEVELS = {
   logging.DEBUG:    'D',
@@ -28,8 +29,6 @@ LEVELS = {
 }
 
 CACHE_TIME = datetime.timedelta(days=1)
-CACHE_SIZE = 2 * 1000 * 1000  # 2 MB
-
 MAX_LOG_AGE = datetime.timedelta(days=30)
 # App Engine's launch, roughly
 MIN_START_TIME = time.mktime(datetime.datetime(2008, 4, 1).timetuple())
@@ -43,6 +42,7 @@ SANITIZE_RE = re.compile(r"""
   )
   [^ &='"]+
 """, flags=re.VERBOSE | re.IGNORECASE)
+
 
 def sanitize(msg):
   """Sanitizes access tokens and Authorization headers."""
@@ -134,30 +134,51 @@ def linkify_datastore_keys(msg):
   return DATASTORE_KEY_RE.sub(linkify_key, msg)
 
 
-class LogHandler(webapp2.RequestHandler):
-  """Searches for and renders the app logs for a single task queue request."""
-  @handlers.cache_response(CACHE_TIME, size=CACHE_SIZE)
-  def get(self):
-    """URL parameters:
+def utcfromtimestamp(val):
+    """Wrapper for datetime.utcfromtimestamp that returns HTTP 400 on overflow.
+
+    ...specifically, if datetime.utcfromtimestamp raises OverflowError because
+    the timestamp is greater than the platform's time_t can hold.
+    https://docs.python.org/3.9/library/datetime.html#datetime.datetime.utcfromtimestamp
+    """
+    try:
+      return datetime.datetime.utcfromtimestamp(val)
+    except OverflowError:
+      return error(f'start_time too big: {val}')
+
+
+def log():
+    """Flask view that searches for and renders app logs for an HTTP request.
+
+    URL parameters:
       start_time: float, seconds since the epoch
       key: string that should appear in the first app log
+
+    Install with:
+      app.add_url_rule('/log', view_func=logs.log)
+
+    Or:
+      @app.get('/log')
+      @cache.cached(600)
+      def log():
+        return logs.log()
     """
-    start_time = util.get_required_param(self, 'start_time')
+    start_time = flask_util.get_required_param('start_time')
     if not util.is_float(start_time):
-      self.abort(400, "Couldn't convert start_time to float: %r" % start_time)
+      return error("Couldn't convert start_time to float: %r" % start_time)
 
     start_time = float(start_time)
     if start_time < MIN_START_TIME:
-      self.abort(400, "start_time must be >= %s" % MIN_START_TIME)
+      return error("start_time must be >= %s" % MIN_START_TIME)
 
     client = Client()
     project = 'projects/%s' % APP_ID
-    key = urllib.parse.unquote_plus(util.get_required_param(self, 'key'))
+    key = urllib.parse.unquote_plus(flask_util.get_required_param('key'))
 
     # first, find the individual stdout log message to get the trace id
     timestamp_filter = 'timestamp>="%s" timestamp<="%s"' % (
-      self.utcfromtimestamp(start_time - 60).isoformat() + 'Z',
-      self.utcfromtimestamp(start_time + 120).isoformat() + 'Z')
+      utcfromtimestamp(start_time - 60).isoformat() + 'Z',
+      utcfromtimestamp(start_time + 120).isoformat() + 'Z')
     query = 'logName="%s/logs/stdout" jsonPayload.message:"%s" %s' % (
       project, key, timestamp_filter)
     logging.info('Searching logs with: %s', query)
@@ -166,17 +187,15 @@ class LogHandler(webapp2.RequestHandler):
       log = next(iter(client.list_entries(filter_=query, page_size=1)))
     except StopIteration:
       logging.info('No log found!')
-      self.response.out.write('No log found!')
-      return
+      return 'No log found!', 404
 
     logging.info('Got insert id %s trace %s', log.insert_id, log.trace)
 
     # now, print all logs with that trace
-    self.response.headers['Content-Type'] = 'text/html; charset=utf-8'
-    self.response.out.write("""\
+    resp = """\
 <html>
 <body style="font-family: monospace; white-space: pre">
-""")
+"""
 
     query = 'logName="%s/logs/stdout" trace="%s" resource.type="gae_app" %s' % (
       project, log.trace, timestamp_filter)
@@ -189,19 +208,8 @@ class LogHandler(webapp2.RequestHandler):
         msg = linkify_datastore_keys(util.linkify(html.escape(
           msg if msg.startswith('Created by this poll:') else sanitize(msg),
           quote=False)))
-        self.response.out.write('%s %s %s<br />' % (
-          log.severity[0], log.timestamp, msg.replace('\n', '<br />')))
+        resp += '%s %s %s<br />' % (
+          log.severity[0], log.timestamp, msg.replace('\n', '<br />'))
 
-    self.response.out.write('</body>\n</html>')
-
-  def utcfromtimestamp(self, val):
-    """Wrapper for datetime.utcfromtimestamp that returns HTTP 400 on overflow.
-
-    ...specifically, if datetime.utcfromtimestamp raises OverflowError because
-    the timestamp is greater than the platform's time_t can hold.
-    https://docs.python.org/3.9/library/datetime.html#datetime.datetime.utcfromtimestamp
-    """
-    try:
-      return datetime.datetime.utcfromtimestamp(val)
-    except OverflowError:
-      self.abort(400, f'start_time too big: {val}')
+    resp += '</body>\n</html>'
+    return resp, {'Content-Type': 'text/html; charset=utf-8'}

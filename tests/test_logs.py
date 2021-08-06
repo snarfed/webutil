@@ -3,9 +3,9 @@ import datetime
 import time
 import unittest
 
+from flask import Flask
 from google.cloud import ndb
 from mox3 import mox
-import webapp2
 
 from .. import appengine_config, logs
 
@@ -15,6 +15,12 @@ with appengine_config.ndb_client.context():
 
 
 class LogsTest(mox.MoxTestBase):
+  def setUp(self):
+    super().setUp()
+    self.app = Flask('test_logs')
+    self.app.add_url_rule('/log', view_func=logs.log)
+    self.app.config['TESTING'] = True
+    self.client = self.app.test_client()
 
   def test_url(self):
     self.assertEqual('log?start_time=172800&key=%s' % KEY_STR,
@@ -43,7 +49,6 @@ class LogsTest(mox.MoxTestBase):
     with self.assertRaises(OverflowError):
       time.gmtime(too_big)
 
-    app = webapp2.WSGIApplication([('/log', logs.LogHandler)])
-    resp = app.get_response(f'/log?key=abc&start_time={too_big}')
-    self.assertEqual(400, resp.status_int)
-    self.assertIn('start_time too big', resp.text)
+    resp = self.client.get(f'/log?key=abc&start_time={too_big}')
+    self.assertEqual(400, resp.status_code)
+    self.assertIn('start_time too big', resp.get_data(as_text=True))
