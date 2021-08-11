@@ -460,7 +460,7 @@ def domain_or_parent_in(input, domains):
 
   return False
 
-def update_scheme(url, handler):
+def update_scheme(url, request):
   """Returns a modified URL with the current request's scheme.
 
   Useful for converting URLs to https if and only if the current request itself
@@ -468,19 +468,11 @@ def update_scheme(url, handler):
 
   Args:
     url: string
-    handler: :class:`webapp2.RequestHandler`
+    handler: :class:`flask.Request` or :class:`webob.Request`
 
   Returns: string, url
   """
-  # Instagram can't serve images over SSL, so switch to their S3 or Akamai URLs,
-  # which can.
-  # https://groups.google.com/d/msg/instagram-api-developers/fB4mwYXZF1c/q9n9gPO11JQJ
-  # http://stackoverflow.com/questions/23755897#comment36547383_23755897
-  url = re.sub(r'^http://images\.(ak\.)instagram\.com',
-               'http://distillery.s3.amazonaws.com', url)
-  url = re.sub(r'^http://photos-\w\.(ak\.)instagram\.com',
-               'http://igcdn-photos-e-a.akamaihd.net', url)
-  return urllib.parse.urlunparse((handler.request.scheme,) + urlparse(url)[1:])
+  return urllib.parse.urlunparse((request.scheme,) + urlparse(url)[1:])
 
 
 def schemeless(url, slashes=True):

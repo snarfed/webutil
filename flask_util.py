@@ -121,7 +121,8 @@ def handle_exception(e):
   if code:
     return ((f'Upstream server request failed: {e}' if code in ('502', '504')
              else f'HTTP Error {code}: {body}'),
-            int(code))
+            int(code),
+            {'Content-Type': 'text/plain; charset=utf-8'})
 
   logging.error(f'{e.__class__}: {e}')
   raise e
