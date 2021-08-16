@@ -28,6 +28,7 @@ from xml.sax import saxutils
 
 from cachetools import cached, TTLCache
 from domain2idna import domain2idna
+from flask import abort
 
 try:
   import ujson
@@ -1094,8 +1095,8 @@ def decode_oauth_state(state):
   try:
     obj = json_loads(urllib.parse.unquote_plus(state)) if state else {}
   except ValueError:
-    logging.error('Invalid value for state parameter: %s' % state, stack_info=True)
-    raise exc.HTTPBadRequest('Invalid value for state parameter: %s' % state)
+    logging.error(f'Invalid value for state parameter: {state}', stack_info=True)
+    abort(400, f'Invalid value for state parameter: {state}')
 
   if not isinstance(obj, dict):
     logging.error('got a non-dict state parameter %s', state)
@@ -1519,10 +1520,10 @@ def requests_fn(fn):
   Args:
     fn: 'get', 'head', or 'post'
     gateway: boolean, whether this is in a HTTP gateway request handler context.
-      If True, errors will be raised as appropriate webob HTTP exceptions.
-      Specifically, malformed URLs result in :class:`exc.HTTPBadRequest`
+      If True, errors will be raised as appropriate Flask HTTP exceptions.
+      Malformed URLs result in :class:`werkzeug.exceptions.BadRequest`
       (HTTP 400), connection failures and HTTP 4xx and 5xx result in
-      :class:`exc.HTTPBadGateway` (HTTP 502).
+      :class:`werkzeug.exceptions.BadGateway` (HTTP 502).
   """
   def call(url, *args, **kwargs):
     logging.info('requests.%s %s %s', fn, url, _prune(kwargs))
@@ -1559,7 +1560,7 @@ def requests_fn(fn):
         # above, prevents the 'Traceback (most recent call last):' prefix that
         # triggers Stackdriver Error Reporting
         logging.warning('\n'.join(traceback.format_tb(sys.exc_info()[2])))
-        raise exc.HTTPBadRequest(msg)
+        abort(400, msg)
       raise
 
     except requests.RequestException as e:
@@ -1569,7 +1570,7 @@ def requests_fn(fn):
           msg += f' ; {e.response.text}'
         logging.warning(msg)
         logging.warning('\n'.join(traceback.format_tb(sys.exc_info()[2])))
-        raise exc.HTTPBadGateway(msg)
+        abort(502, msg)
       raise
 
     if url != resp.url:
