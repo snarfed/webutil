@@ -469,7 +469,7 @@ def update_scheme(url, request):
 
   Args:
     url: string
-    handler: :class:`flask.Request` or :class:`webob.Request`
+    request: :class:`flask.Request` or :class:`webob.Request`
 
   Returns: string, url
   """

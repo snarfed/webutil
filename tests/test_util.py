@@ -18,6 +18,7 @@ import tweepy
 import urllib3
 import webapp2
 from webob import exc
+from werkzeug.exceptions import BadGateway, BadRequest
 
 from .. import testutil, util
 from ..util import json_dumps, json_loads
@@ -228,23 +229,13 @@ class UtilTest(testutil.TestCase):
                           repr((input, domains, expected)))
 
   def test_update_scheme(self):
-    self.request = webapp2.Request.blank('/')
-    handler = webapp2.RequestHandler(self.request, None)
+    request = webapp2.Request.blank('/')
 
     for orig in 'http', 'https':
       for new in 'http', 'https':
-        handler.request.scheme = new
-        updated = util.update_scheme(orig + '://foo', handler)
+        request.scheme = new
+        updated = util.update_scheme(orig + '://foo', request)
         self.assertEqual(new + '://foo', updated)
-
-    handler.request.scheme = 'https'
-    self.assertEqual(
-      'https://distillery.s3.amazonaws.com/profiles/xyz.jpg',
-      util.update_scheme('http://images.ak.instagram.com/profiles/xyz.jpg', handler))
-    self.assertEqual(
-      'https://igcdn-photos-e-a.akamaihd.net/hphotos-ak-xpf1/123_a.jpg',
-      util.update_scheme('http://photos-e.ak.instagram.com/hphotos-ak-xpf1/123_a.jpg',
-                         handler))
 
   def test_schemeless(self):
     for expected, url in (
@@ -1282,14 +1273,14 @@ class UtilTest(testutil.TestCase):
     url = 'http://acct:abc⊙de/'
     self.expect_requests_get(url).AndRaise(ValueError())
     self.mox.ReplayAll()
-    self.assertRaises(exc.HTTPBadRequest, util.requests_get, url, gateway=True)
+    self.assertRaises(BadRequest, util.requests_get, url, gateway=True)
 
   def test_requests_get_unicode_url_ConnectionError(self):
     """https://console.cloud.google.com/errors/CPzNwYaL3tjb9gE"""
     url = 'http://acct:abc⊙de/'
     self.expect_requests_get(url).AndRaise(requests.ConnectionError())
     self.mox.ReplayAll()
-    self.assertRaises(exc.HTTPBadGateway, util.requests_get, url, gateway=True)
+    self.assertRaises(BadGateway, util.requests_get, url, gateway=True)
 
   def test_requests_get_invalid_emoji_domain_fallback_to_domain2idnaError(self):
     url = 'http://abc⊙.de/'
