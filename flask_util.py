@@ -74,7 +74,9 @@ def ndb_context_middleware(app, client=None):
 
   Install with e.g.:
 
-    application = handlers.ndb_context_middleware(webapp2.WSGIApplication(...)
+    ndb_client = ndb.Client()
+    app = Flask('my-app')
+    app.wsgi_app = flask_util.ndb_context_middleware(app.wsgi_app, ndb_client)
 
   Background: https://cloud.google.com/appengine/docs/standard/python3/migrating-to-cloud-ndb#using_a_runtime_context_with_wsgi_frameworks
 
@@ -113,9 +115,11 @@ def handle_exception(e):
   Install with:
     app.register_error_handler(Exception, handle_exception)
   """
+  logging.error(f'{e.__class__}: {e}')
+
   if isinstance(e, HTTPException):
     # raised by this app itself, pass it through
-    return e
+    return str(e), e.code
 
   code, body = util.interpret_http_exception(e)
   if code:
@@ -124,7 +128,6 @@ def handle_exception(e):
             int(code),
             {'Content-Type': 'text/plain; charset=utf-8'})
 
-  logging.error(f'{e.__class__}: {e}')
   raise e
 
 
