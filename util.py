@@ -76,6 +76,12 @@ try:
 except ImportError:
   exc = None
 
+try:
+  import werkzeug
+  import werkzeug.exceptions
+except ImportError:
+  werkzeug = None
+
 # Used in parse_html() and friends.
 try:
   import bs4
@@ -1211,6 +1217,7 @@ def interpret_http_exception(exception):
       * :class:`requests.HTTPError`
       * :class:`urllib.error.HTTPError`
       * :class:`urllib.error.URLError`
+      * :class:`werkzeug.exceptions.HTTPException`
 
   Returns:
     (string status code or None, string response body or None)
@@ -1221,6 +1228,10 @@ def interpret_http_exception(exception):
   if exc and isinstance(e, exc.WSGIHTTPException):
     code = e.code
     body = e.plain_body({})
+
+  elif werkzeug and isinstance(e, werkzeug.exceptions.HTTPException):
+    code = e.code
+    body = e.get_description()
 
   elif isinstance(e, urllib.error.HTTPError):
     code = e.code

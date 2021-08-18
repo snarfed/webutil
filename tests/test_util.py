@@ -761,6 +761,8 @@ class UtilTest(testutil.TestCase):
     self.assertEqual(('402', '402 Payment Required\n\nmy body'), ihc(
         exc.HTTPPaymentRequired(body_template='my body')))
 
+    self.assertEqual(('502', '<p>my body</p>'), ihc(BadGateway('my body')))
+
     # rate limiting
     ex = HTTPError('url', 429, 'msg', {}, io.StringIO('my body'))
     self.assertFalse(util.is_connection_failure(ex))
