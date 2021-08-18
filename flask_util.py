@@ -118,9 +118,14 @@ def handle_exception(e):
   logging.error(f'{e.__class__}: {e}')
 
   if isinstance(e, HTTPException):
-    # raised by this app itself, pass it through
+    # raised by this app itself, pass it through. use body and headers from
+    # response if available (but not status code).
     resp = e.get_response()
-    return resp if resp else str(e), e.code
+    if resp:
+      resp.status_code = e.code
+      return resp
+    else:
+      return str(e), e.code
 
   code, body = util.interpret_http_exception(e)
   if code:
