@@ -119,7 +119,8 @@ def handle_exception(e):
 
   if isinstance(e, HTTPException):
     # raised by this app itself, pass it through
-    return str(e), e.code
+    resp = e.get_response()
+    return resp if resp else str(e), e.code
 
   code, body = util.interpret_http_exception(e)
   if code:
@@ -141,7 +142,7 @@ def error(msg, status=400, exc_info=False, **kwargs):
     kwargs: passed through to :meth:`flask.abort`
   """
   logging.info(f'Returning {status}: {msg}', exc_info=exc_info)
-  return abort(status, msg, **kwargs)
+  abort(status, msg, **kwargs)
 
 
 def default_modern_headers(resp):
