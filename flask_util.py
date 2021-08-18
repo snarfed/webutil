@@ -131,16 +131,17 @@ def handle_exception(e):
   raise e
 
 
-def error(msg, status=400, exc_info=False):
+def error(msg, status=400, exc_info=False, **kwargs):
   """Logs and returns an HTTP error via :class:`werkzeug.exceptions.HTTPException`.
 
   Args:
     msg: str
     status: int
     exc_info: Python exception info three-tuple, eg from sys.exc_info()
+    kwargs: passed through to :meth:`flask.abort`
   """
   logging.info(f'Returning {status}: {msg}', exc_info=exc_info)
-  return abort(status, msg)
+  return abort(status, msg, **kwargs)
 
 
 def default_modern_headers(resp):
