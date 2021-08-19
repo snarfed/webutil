@@ -7,6 +7,7 @@ import urllib.parse
 from flask import abort, redirect, render_template, request
 from flask.views import View
 from google.cloud import ndb
+import werkzeug.exceptions
 from werkzeug.exceptions import abort, HTTPException
 from werkzeug.routing import BaseConverter
 
@@ -29,6 +30,29 @@ MODERN_HEADERS = {
   'X-Frame-Options': 'SAMEORIGIN',
   'X-XSS-Protection': '1; mode=block',
 }
+
+
+# A few extra non-error HTTPExceptions
+class Created(HTTPException):
+    code = 201
+    description = 'Created'
+
+class Accepted(HTTPException):
+    code = 202
+    description = 'Accepted'
+
+class NoContent(HTTPException):
+    code = 204
+    description = 'No Content'
+
+class NotModified(HTTPException):
+    code = 304
+    description = 'Not Modified'
+
+for cls in Created, Accepted, NoContent, NotModified:
+  # https://github.com/pallets/flask/issues/1837#issuecomment-304996942
+  werkzeug.exceptions.default_exceptions.setdefault(cls.code, cls)
+  werkzeug.exceptions._aborter.mapping.setdefault(cls.code, cls)
 
 
 class RegexConverter(BaseConverter):
@@ -147,7 +171,7 @@ def error(msg, status=400, exc_info=False, **kwargs):
     kwargs: passed through to :meth:`flask.abort`
   """
   logging.info(f'Returning {status}: {msg}', exc_info=exc_info)
-  abort(status, msg, **kwargs)
+  abort(int(status), msg, **kwargs)
 
 
 def default_modern_headers(resp):
