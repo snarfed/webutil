@@ -170,7 +170,7 @@ def error(msg, status=400, exc_info=False, **kwargs):
     exc_info: Python exception info three-tuple, eg from sys.exc_info()
     kwargs: passed through to :meth:`flask.abort`
   """
-  logging.info(f'Returning {status}: {msg}', exc_info=exc_info)
+  logging.info(f'Returning {status}: {msg} {kwargs}', exc_info=exc_info)
   abort(int(status), msg, **kwargs)
 
 
