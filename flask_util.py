@@ -8,7 +8,7 @@ from flask import abort, redirect, render_template, request
 from flask.views import View
 from google.cloud import ndb
 import werkzeug.exceptions
-from werkzeug.exceptions import abort, HTTPException
+from werkzeug.exceptions import abort, BadRequestKeyError, HTTPException
 from werkzeug.routing import BaseConverter
 
 from . import util
@@ -139,6 +139,12 @@ def handle_exception(e):
   Install with:
     app.register_error_handler(Exception, handle_exception)
   """
+  if isinstance(e, BadRequestKeyError):
+      if e.args:
+          e._description = f'Missing required parameter: {e.args[0]}'
+      else:
+          e.show_exception = True
+
   logging.error(f'{e.__class__}: {e}')
 
   if isinstance(e, HTTPException):
