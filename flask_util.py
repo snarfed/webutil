@@ -4,7 +4,7 @@ import os
 import re
 import urllib.parse
 
-from flask import abort, redirect, render_template, request
+from flask import abort, get_flashed_messages, redirect, render_template, request
 from flask.views import View
 from google.cloud import ndb
 import werkzeug.exceptions
@@ -195,16 +195,20 @@ def default_modern_headers(resp):
 def cached(cache, timeout):
   """Thin flask-cache wrapper that supports timedelta and cache query param.
 
-  If the `cache` URL query parameter is `false`, skips the cache. Also,
-  HTTP 5xx responses are not cached.
+  If the `cache` URL query parameter is `false`, skips the cache. Also, does not
+  store the response in the cache if it's an HTTP 5xx or if there are any
+  flashed messages.
 
   Args:
     cache: :class:`flask_caching.Cache`
     timeout: :class:`datetime.timedelta`
   """
-  return cache.cached(
-    timeout.total_seconds(), query_string=True, response_filter=not_5xx,
-    unless=lambda: request.args.get('cache', '').lower() == 'false')
+  def unless():
+      return (request.args.get('cache', '').lower() == 'false' or
+              get_flashed_messages())
+
+  return cache.cached(timeout.total_seconds(), query_string=True,
+                      response_filter=not_5xx, unless=unless)
 
 
 def canonicalize_domain(from_domains, to_domain):
