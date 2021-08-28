@@ -195,14 +195,15 @@ def default_modern_headers(resp):
 def cached(cache, timeout):
   """Thin flask-cache wrapper that supports timedelta and cache query param.
 
-  If the `cache` URL query parameter is `false`, skips the cache.
+  If the `cache` URL query parameter is `false`, skips the cache. Also,
+  HTTP 5xx responses are not cached.
 
   Args:
     cache: :class:`flask_caching.Cache`
     timeout: :class:`datetime.timedelta`
   """
   return cache.cached(
-    timeout.total_seconds(), query_string=True,
+    timeout.total_seconds(), query_string=True, response_filter=not_5xx,
     unless=lambda: request.args.get('cache', '').lower() == 'false')
 
 
