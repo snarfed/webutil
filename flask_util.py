@@ -118,21 +118,6 @@ def ndb_context_middleware(app, client=None):
   return wrapper
 
 
-def not_5xx(resp):
-  """Returns False if resp is an HTTP 5xx, True otherwise.
-
-  Useful to pass to flask-caching's `@cache.cached`'s `response_filter` kwarg to
-  avoid caching 5xxes.
-
-  Args:
-    resp: :class:`flask.Response`
-
-  Returns: boolean
-  """
-  return not (isinstance(resp, tuple) and len(resp) > 1 and
-              util.is_int(resp[1]) and int(resp[1]) // 100 == 5)
-
-
 def handle_exception(e):
   """Flask error handler that propagates HTTP exceptions into the response.
 
@@ -203,12 +188,17 @@ def cached(cache, timeout):
     cache: :class:`flask_caching.Cache`
     timeout: :class:`datetime.timedelta`
   """
-  def unless():
-      return (request.args.get('cache', '').lower() == 'false' or
-              get_flashed_messages())
+  def response_filter(resp):
+      """Return False if the response shouldn't be cached."""
+      is_5xx = (isinstance(resp, tuple) and len(resp) > 1 and
+                util.is_int(resp[1]) and int(resp[1]) // 100 == 5)
+      return not is_5xx and not get_flashed_messages()
 
-  return cache.cached(timeout.total_seconds(), query_string=True,
-                      response_filter=not_5xx, unless=unless)
+  return cache.cached(
+      timeout.total_seconds(), query_string=True, response_filter=response_filter,
+      unless=lambda: request.args.get('cache', '').lower() == 'false')
+
+  return not ()
 
 
 def canonicalize_domain(from_domains, to_domain):

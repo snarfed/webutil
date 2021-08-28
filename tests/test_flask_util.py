@@ -1,20 +1,26 @@
 """Unit tests for flask_util.py."""
+import datetime
 import os
 import unittest
 
-from flask import Flask, request
+from flask_caching import Cache
+from flask import Flask, flash, request
 from flask.views import View
 from werkzeug.exceptions import BadRequest
 
 from .. import flask_util
-from ..flask_util import get_required_param, not_5xx
+from ..flask_util import get_required_param
 
 
 class FlaskUtilTest(unittest.TestCase):
   def setUp(self):
     self.app = Flask('test_flask_util')
     self.app.url_map.converters['regex'] = flask_util.RegexConverter
-    self.app.config['TESTING'] = True
+    self.app.config.from_mapping({
+      'TESTING': True,
+      'SECRET_KEY': 'sooper seekret',
+      'CACHE_TYPE': 'SimpleCache',
+    })
     self.client = self.app.test_client()
 
   def test_regex_converter(self):
@@ -42,11 +48,43 @@ class FlaskUtilTest(unittest.TestCase):
         with self.assertRaises(BadRequest):
             get_required_param('a')
 
-  def test_not_5xx(self):
-    for bad in (None, 'body', ('body',), ('body', 200), ('', 400)):
-      self.assertTrue(not_5xx(bad))
+  def test_cached(self):
+    cache = Cache(self.app)
+    calls = 0
 
-    self.assertFalse(not_5xx(('body', 500)))
+    @self.app.route('/foo')
+    @flask_util.cached(cache, datetime.timedelta(days=1))
+    def foo():
+      nonlocal calls
+      calls += 1
+      if 'flash' in request.args:
+        flash('foo')
+      return 'foo', 500 if '500' in request.args else 200
+
+    self.client.get('/foo?500')
+    self.assertEqual(1, calls)
+
+    self.client.get('/foo?flash')
+    self.assertEqual(2, calls)
+
+    self.client.get('/foo?cache=false')
+    self.assertEqual(3, calls)
+
+    self.client.get('/foo?xyz')
+    self.assertEqual(4, calls)
+
+    self.client.get('/foo?abc')
+    self.assertEqual(5, calls)
+
+    self.client.get('/foo?abc')
+    self.assertEqual(5, calls)
+
+    self.client.get('/foo')
+    self.assertEqual(6, calls)
+
+    self.client.get('/foo')
+    self.assertEqual(6, calls)
+
 
   def test_canonicalize_domain_get(self):
     @self.app.route('/', defaults={'_': ''})
