@@ -72,31 +72,7 @@ try:
   logging_client = google.cloud.logging.Client()
 
   if not DEBUG:
-    from google.cloud.logging.handlers import AppEngineHandler, setup_logging
-
-    class Webapp2TraceHandler(AppEngineHandler):
-      """Log handler that adds trace id based on webapp2 request header.
-
-      https://github.com/googleapis/python-logging/issues/110#issuecomment-745534629
-      https://github.com/googleapis/python-logging/issues/149#issuecomment-782693201
-
-      Also note that AppEngineHandler is evidently deprecated, so I may need to
-      port that whole class into webutil eventually. :(
-      https://github.com/googleapis/python-logging/issues/202
-      """
-      def emit(self, record):
-        try:
-          import webapp2
-          trace = webapp2.get_request().headers.get('X-Cloud-Trace-Context')
-          if trace:
-            trace_id = trace.split('/', 1)[0]
-            record.trace = f'projects/{APP_ID}/traces/{trace_id}'
-        except (ImportError, AssertionError):
-          pass
-        return super().emit(record)
-
-    setup_logging(Webapp2TraceHandler(logging_client, name='stdout'),
-                  log_level=logging.DEBUG)
+    logging_client.setup_logging(log_level=logging.DEBUG)
     # this currently occasionally hits the 256KB stackdriver logging limit and
     # crashes in the background service. i've tried batch_size=1 and
     # SyncTransport, but no luck, same thing.
