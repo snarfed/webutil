@@ -4,7 +4,7 @@ import os
 import re
 import urllib.parse
 
-from flask import abort, get_flashed_messages, redirect, render_template, request
+from flask import abort, get_flashed_messages, make_response, redirect, render_template, request
 from flask.views import View
 from google.cloud import ndb
 import werkzeug.exceptions
@@ -190,15 +190,16 @@ def cached(cache, timeout):
   """
   def response_filter(resp):
       """Return False if the response shouldn't be cached."""
-      is_5xx = (isinstance(resp, tuple) and len(resp) > 1 and
-                util.is_int(resp[1]) and int(resp[1]) // 100 == 5)
-      return not is_5xx and not get_flashed_messages()
+      resp = make_response(resp)
+      return (resp.status_code // 100 != 5 and not get_flashed_messages() and
+              'Set-Cookie' not in resp.headers)
 
-  return cache.cached(
-      timeout.total_seconds(), query_string=True, response_filter=response_filter,
-      unless=lambda: request.args.get('cache', '').lower() == 'false')
+  def unless():
+      return bool(request.args.get('cache', '').lower() == 'false' or
+                  request.cookies)
 
-  return not ()
+  return cache.cached(timeout.total_seconds(), query_string=True,
+                      response_filter=response_filter, unless=unless)
 
 
 def canonicalize_domain(from_domains, to_domain):

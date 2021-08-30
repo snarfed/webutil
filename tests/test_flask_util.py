@@ -4,7 +4,7 @@ import os
 import unittest
 
 from flask_caching import Cache
-from flask import Flask, flash, request
+from flask import Flask, flash, make_response, request
 from flask.views import View
 from werkzeug.exceptions import BadRequest
 
@@ -57,33 +57,52 @@ class FlaskUtilTest(unittest.TestCase):
     def foo():
       nonlocal calls
       calls += 1
+
       if 'flash' in request.args:
         flash('foo')
-      return 'foo', 500 if '500' in request.args else 200
 
-    self.client.get('/foo?500')
+      resp = make_response(str(calls))
+
+      if 'set-cookie' in request.args:
+        resp.set_cookie('kooky')
+
+      if '500' in request.args:
+        resp.status_code = 500
+
+      return resp
+
+    client = self.app.test_client(use_cookies=False)
+    client.get('/foo?500')
     self.assertEqual(1, calls)
 
-    self.client.get('/foo?flash')
+    client.get('/foo?flash')
     self.assertEqual(2, calls)
 
-    self.client.get('/foo?cache=false')
+    client.get('/foo?cache=false')
     self.assertEqual(3, calls)
 
-    self.client.get('/foo?xyz')
+    client.get('/foo?xyz')
     self.assertEqual(4, calls)
 
-    self.client.get('/foo?abc')
+    client.get('/foo?abc')
     self.assertEqual(5, calls)
 
-    self.client.get('/foo?abc')
+    resp = client.get('/foo?abc')
     self.assertEqual(5, calls)
+    self.assertEqual('5', resp.get_data(as_text=True))
 
-    self.client.get('/foo')
+    client.get('/foo')
     self.assertEqual(6, calls)
 
-    self.client.get('/foo')
-    self.assertEqual(6, calls)
+    client.get('/foo', headers={'Cookie': 'bar'})
+    self.assertEqual(7, calls)
+
+    client.get('/foo?set-cookie')
+    self.assertEqual(8, calls)
+
+    resp = client.get('/foo')
+    self.assertEqual(8, calls)
+    self.assertEqual('6', resp.get_data(as_text=True))
 
 
   def test_canonicalize_domain_get(self):
