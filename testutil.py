@@ -67,6 +67,38 @@ def requests_response(body='', url=None, status=200, content_type=None,
     return resp
 
 
+def enable_flask_caching(app, cache):
+  """Test case decorator that enables a flask_caching cache.
+
+  Usage:
+
+    from app import app, cache
+
+    class FooTest(TestCase):
+      @enable_flask_caching(app, cache)
+      def test_foo(self):
+        ..
+
+  Args:
+    app: :class:`flask.Flask` app
+    cache: :class:`flask_caching.Cache`
+  """
+  def decorator(method):
+    def wrapper(self, *args, **kwargs):
+      orig_cache_type = app.config.get('CACHE_TYPE')
+      try:
+        app.config['CACHE_TYPE'] = 'SimpleCache'
+        cache.init_app(app)
+        method(self, *args, **kwargs)
+      finally:
+        app.config['CACHE_TYPE'] = orig_cache_type
+        cache.init_app(app)
+
+    return wrapper
+
+  return decorator
+
+
 class UrlopenResult(object):
   """A fake :func:`urllib.request.urlopen()` or :func:`urlfetch.fetch()` result object.
   """
