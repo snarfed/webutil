@@ -49,7 +49,59 @@ class NotModified(HTTPException):
     code = 304
     description = 'Not Modified'
 
-for cls in Created, Accepted, NoContent, NotModified:
+class PaymentRequired(HTTPException):
+    code = 402
+    description = 'Payment Required'
+
+class ProxyAuthenticationRequired(HTTPException):
+    code = 407
+    description = 'Proxy Authentication Required'
+
+class MisdirectedRequest(HTTPException):
+    code = 421
+    description = 'Misdirected Request'
+
+class UpgradeRequired(HTTPException):
+    code = 426
+    description = 'Upgrade Required'
+
+class PreconditionRequired(HTTPException):
+    code = 428
+    description = 'Precondition Required'
+
+class ClientClosedRequest(HTTPException):
+    code = 499
+    description = 'Client Closed Request'
+
+class VariantAlsoNegotiates(HTTPException):
+    code = 506
+    description = 'Variant Also Negotiates'
+
+class InsufficientStorage(HTTPException):
+    code = 507
+    description = 'Insufficient Storage'
+
+class LoopDetected(HTTPException):
+    code = 508
+    description = 'Loop Detected'
+
+class NotExtended(HTTPException):
+    code = 510
+    description = 'Not Extended'
+
+class NetworkAuthenticationRequired(HTTPException):
+    code = 511
+    description = 'Network Authentication Required'
+
+class NetworkConnectTimeoutError(HTTPException):
+    code = 599
+    description = 'Network Connect Timeout Error'
+
+for cls in (Created, Accepted, NoContent, NotModified, PaymentRequired,
+            ProxyAuthenticationRequired, MisdirectedRequest, UpgradeRequired,
+            PreconditionRequired, ClientClosedRequest, VariantAlsoNegotiates,
+            InsufficientStorage, LoopDetected, NotExtended,
+            NetworkAuthenticationRequired, NetworkConnectTimeoutError):
   # https://github.com/pallets/flask/issues/1837#issuecomment-304996942
   werkzeug.exceptions.default_exceptions.setdefault(cls.code, cls)
   werkzeug.exceptions._aborter.mapping.setdefault(cls.code, cls)
