@@ -175,11 +175,11 @@ def log():
     project = 'projects/%s' % APP_ID
     key = urllib.parse.unquote_plus(flask_util.get_required_param('key'))
 
-    # first, find the individual stdout log message to get the trace id
+    # first, find the individual log message to get the trace id
     timestamp_filter = 'timestamp>="%s" timestamp<="%s"' % (
       utcfromtimestamp(start_time - 60).isoformat() + 'Z',
       utcfromtimestamp(start_time + 120).isoformat() + 'Z')
-    query = 'logName="%s/logs/stdout" jsonPayload.message:"%s" %s' % (
+    query = 'logName="%s/logs/app" jsonPayload.message:"%s" %s' % (
       project, key, timestamp_filter)
     logging.info('Searching logs with: %s', query)
     try:
@@ -197,7 +197,7 @@ def log():
 <body style="font-family: monospace; white-space: pre">
 """
 
-    query = 'logName="%s/logs/stdout" trace="%s" resource.type="gae_app" %s' % (
+    query = 'logName="%s/logs/app" trace="%s" resource.type="gae_app" %s' % (
       project, log.trace, timestamp_filter)
     logging.info('Searching logs with: %s', query)
 
