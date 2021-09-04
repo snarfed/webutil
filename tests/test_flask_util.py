@@ -5,7 +5,6 @@ import unittest
 
 from flask_caching import Cache
 from flask import Flask, flash, make_response, request
-from flask.views import View
 from werkzeug.exceptions import BadRequest
 
 from .. import flask_util
@@ -103,7 +102,6 @@ class FlaskUtilTest(unittest.TestCase):
     resp = client.get('/foo')
     self.assertEqual(8, calls)
     self.assertEqual('6', resp.get_data(as_text=True))
-
 
   def test_canonicalize_domain_get(self):
     @self.app.route('/', defaults={'_': ''})

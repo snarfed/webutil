@@ -24,8 +24,6 @@ import heapq
 import os
 import threading
 
-import webapp2
-
 from . import handlers
 
 CONCURRENTS_SIZE = 20

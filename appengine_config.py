@@ -1,7 +1,8 @@
 """App Engine config. dev_appserver vs prod, logging, Google API clients, etc."""
+import logging
 import os
 
-from .appengine_info import APP_ID, DEBUG
+from .appengine_info import DEBUG
 
 # Use lxml for BeautifulSoup explicitly.
 from . import util
@@ -63,7 +64,6 @@ except ImportError:
   pass
 
 # Stackdriver Logging
-import logging
 # needed for visible logging in dev_appserver
 logging.getLogger().setLevel(logging.DEBUG)
 

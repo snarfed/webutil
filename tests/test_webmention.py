@@ -1,12 +1,8 @@
 # -*- coding: utf-8 -*-
 """Unit tests for webmention.py."""
-from urllib.error import HTTPError, URLError
-import urllib.parse, urllib.request
-
 import requests
-import urllib3
 
-from .. import testutil, util
+from .. import testutil
 from ..webmention import discover, send
 
 

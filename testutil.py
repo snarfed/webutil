@@ -1,6 +1,4 @@
 """Unit test utilities."""
-import base64
-import datetime
 import difflib
 import email
 import io
@@ -289,7 +287,7 @@ class TestCase(mox.MoxTestBase, Asserts):
     warnings.filterwarnings('ignore', module='mf2util',
                             message="The 'warn' function is deprecated")
     # local/lib/python3.6/site-packages/mox3/mox.py:909: DeprecationWarning: inspect.getargspec() is deprecated, use inspect.signature() or inspect.getfullargspec()
-    warnings.filterwarnings('ignore', module='mox', message='inspect\.getargspec')
+    warnings.filterwarnings('ignore', module='mox', message=r'inspect\.getargspec')
     # local/lib/python3.8/site-packages/webmentiontools/send.py:65: GuessedAtParserWarning: No parser was explicitly specified, so I'm using the best available HTML parser for this system ("lxml"). This usually isn't a problem, but if you run this code on another system, or in a different virtual environment, it may use a different parser and behave differently.
     warnings.filterwarnings('ignore', category=GuessedAtParserWarning)
 
@@ -360,7 +358,7 @@ class TestCase(mox.MoxTestBase, Asserts):
 
     if 'stream' not in kwargs:
       kwargs['stream'] = True
-    elif kwargs['stream'] == None:
+    elif kwargs['stream'] is None:
       del kwargs['stream']
 
     if method is requests.head:
@@ -374,7 +372,6 @@ class TestCase(mox.MoxTestBase, Asserts):
           missing, set(actual.items()), set(headers.items()))
         return True
       kwargs['headers'] = mox.Func(check_headers)
-
 
     files = kwargs.get('files')
     if files:

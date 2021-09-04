@@ -1,7 +1,6 @@
 """Unit tests for logs.py. Woefully incomplete."""
 import datetime
 import time
-import unittest
 
 from flask import Flask
 from google.cloud import ndb

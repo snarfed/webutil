@@ -4,11 +4,8 @@ Includes classes for serving templates with common variables and XRD[S] and JRD
 files like host-meta and friends.
 """
 import calendar
-import datetime
 import functools
 import logging
-import os
-import re
 import threading
 import urllib.parse
 
@@ -19,7 +16,6 @@ import webapp2
 from webob import exc
 
 from . import util
-from .util import json_dumps, json_loads
 
 JINJA_ENV = jinja2.Environment(
   loader=jinja2.FileSystemLoader(('.', 'templates')),
@@ -276,7 +272,7 @@ class TemplateHandler(ModernHandler):
         if len(values) == 1:
           values = values[0]
         vars[key] = values
-    except UnicodeDecodeError as e:
+    except UnicodeDecodeError:
       logging.warning('Bad query param', exc_info=True)
       self.response.status = 400
       self.response.write("Couldn't decode query parameters as UTF-8")

@@ -8,7 +8,7 @@ from flask import abort, get_flashed_messages, make_response, redirect, render_t
 from flask.views import View
 from google.cloud import ndb
 import werkzeug.exceptions
-from werkzeug.exceptions import abort, BadRequestKeyError, HTTPException
+from werkzeug.exceptions import BadRequestKeyError, HTTPException
 from werkzeug.routing import BaseConverter
 
 from . import util
@@ -96,6 +96,7 @@ class NetworkAuthenticationRequired(HTTPException):
 class NetworkConnectTimeoutError(HTTPException):
     code = 599
     description = 'Network Connect Timeout Error'
+
 
 for cls in (Created, Accepted, NoContent, NotModified, PaymentRequired,
             ProxyAuthenticationRequired, MisdirectedRequest, UpgradeRequired,

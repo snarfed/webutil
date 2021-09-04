@@ -6,7 +6,6 @@ import calendar
 import collections
 from collections.abc import Iterator
 import contextlib
-import copy
 import base64
 import datetime
 import http.client
@@ -116,7 +115,6 @@ ISO8601_DURATION_RE = re.compile(
 
 # default HTTP request timeout
 HTTP_TIMEOUT = 15
-import socket
 socket.setdefaulttimeout(HTTP_TIMEOUT)
 # monkey-patch socket.getdefaulttimeout() because it often gets reset, e.g. by
 # socket.setblocking() and maybe other operations.
@@ -184,7 +182,7 @@ beautifulsoup_parser = None
 # I tried changing \b to '(?:^|[\s%s])' % PUNCT, but that broke other things.
 PUNCT = string.punctuation.replace('-', '').replace('.', '')
 SCHEME_RE = r'\b(?:[a-z]{3,9}:/{1,3})'
-HOST_RE =  r'(?:[^\s%s])+(?::\d{2,6})?' % PUNCT
+HOST_RE = r'(?:[^\s%s])+(?::\d{2,6})?' % PUNCT
 DOMAIN_RE = r'(?:[^\s.%s]+\.)+[a-z]{2,}(?::\d{2,6})?' % PUNCT
 PATH_QUERY_RE = r'(?:(?:/[\w/.\-_~.;:%?@$#&()=+]*)|\b)'
 URL_RE = re.compile(SCHEME_RE + HOST_RE + PATH_QUERY_RE,  # scheme required
@@ -355,7 +353,7 @@ def tag_uri(domain, name, year=None):
   return 'tag:%s%s:%s' % (domain, year, name)
 
 
-_TAG_URI_RE = re.compile('tag:([^,]+)(?:,\d+)?:(.+)$')
+_TAG_URI_RE = re.compile(r'tag:([^,]+)(?:,\d+)?:(.+)$')
 
 def parse_tag_uri(uri):
   """Returns the domain and name in a tag URI string.
@@ -466,6 +464,7 @@ def domain_or_parent_in(input, domains):
       return True
 
   return False
+
 
 def update_scheme(url, request):
   """Returns a modified URL with the current request's scheme.
@@ -928,7 +927,7 @@ def ellipsize(str, words=14, chars=140):
   split = str.split()
   if len(split) <= words and len(str) <= chars:
     return str
-  return ' '.join(split[:words])[:chars-3] + '...'
+  return ' '.join(split[:words])[:chars - 3] + '...'
 
 
 def add_query_params(url, params):
@@ -994,6 +993,7 @@ def remove_query_param(url, param):
   parsed[4] = urllib.parse.urlencode(rest)
   url = urllib.parse.urlunparse(parsed)
   return url, removed
+
 
 def get_required_param(handler, name):
   try:
@@ -1346,7 +1346,7 @@ def interpret_http_exception(exception):
         # this one below comes with HTTP 400, but actually seems to be transient.
         # 'Cannot call API on behalf of this user' in message or
         'Permissions error' == message
-       )) or
+      )) or
       (type == 'FacebookApiException' and 'Permissions error' in message) or
       # https://developers.facebook.com/docs/graph-api/using-graph-api#errorcodes
       # https://developers.facebook.com/docs/graph-api/using-graph-api#errorsubcodes

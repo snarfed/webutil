@@ -52,7 +52,7 @@ def discover(url, **requests_kwargs):
 
   # if no header, require HTML content
   content_type = resp.headers.get('content-type')
-  if content_type and not content_type.split(';')[0] =='text/html':
+  if content_type and not content_type.split(';')[0] == 'text/html':
     logging.debug(f'Webmention discovery: no endpoint in headers and content type {content_type} is not HTML')
     return Endpoint(None, resp)
 
@@ -65,7 +65,7 @@ def discover(url, **requests_kwargs):
       logging.debug(f'Webmention discovery: got endpoint in tag: {endpoint}')
       return Endpoint(endpoint, resp)
 
-  logging.debug(f'Webmention discovery: no endpoint in headers or HTML')
+  logging.debug('Webmention discovery: no endpoint in headers or HTML')
   return Endpoint(None, resp)
 
 

@@ -514,7 +514,9 @@ class UtilTest(testutil.TestCase):
   #       '<a href="http://www.example.com/?feature_embedded">'))
 
   def test_linkify_pretty(self):
-    lp = lambda url: util.linkify(url, pretty=True, max_length=6)
+    def lp(url):
+      return util.linkify(url, pretty=True, max_length=6)
+
     self.assertEqual('', lp(''))
     self.assertEqual('asdf qwert', lp('asdf qwert'))
     self.assertEqual('x <a href="http://foo.co">foo.co</a> y', lp('x http://foo.co y'))
@@ -594,7 +596,7 @@ class UtilTest(testutil.TestCase):
     ):
       self.assertEqual(expected, util.maybe_timestamp_to_rfc3339(input))
 
-  def test_maybe_timestamp_to_rfc3339(self):
+  def test_maybe_timestamp_to_iso8601(self):
     for input, expected in (
       (None, None),
       ('', ''),
@@ -646,7 +648,7 @@ class UtilTest(testutil.TestCase):
       # note encoding declaration at top of file
       ('http://a.com?x=R+%C3%87', 'http://a.com', {'x': 'R Ç'}),
       ('http://a.com?x=R+%C3%87&x=R+%C3%87', 'http://a.com?x=R+%C3%87', {'x': 'R Ç'}),
-      ):
+    ):
       self.assertEqual(expected, util.add_query_params(url, params))
 
     for expected, req, params in (
@@ -657,7 +659,7 @@ class UtilTest(testutil.TestCase):
       (urllib.request.Request('http://a.com?x=y', data='my data', headers={'X': 'Y'}),
        urllib.request.Request('http://a.com', data='my data', headers={'X': 'Y'}),
        [('x', 'y')]),
-      ):
+    ):
       actual = util.add_query_params(req, params)
       self.assertIsInstance(actual, urllib.request.Request)
       self.assertEqual(expected.get_full_url(), actual.get_full_url())
@@ -776,7 +778,9 @@ class UtilTest(testutil.TestCase):
         requests.HTTPError(response=util.Struct(status_code='429', text='my body'))))
 
     # facebook page rate limiting
-    json_str = lambda obj: io.StringIO(str(json_dumps(obj)))
+    def json_str(obj):
+      return io.StringIO(str(json_dumps(obj)))
+
     body = {'error': {
       'type': 'OAuthException',
       'code': 32,
@@ -823,10 +827,10 @@ class UtilTest(testutil.TestCase):
         'error_message': 'The access_token provided is invalid.'
       }},
       # facebook, https://github.com/snarfed/bridgy/issues/59#issuecomment-34549314
-      {'error' : {
-        'type' : 'OAuthException',
-        'code' : 100,
-        'message' : 'This authorization code has expired.'
+      {'error': {
+        'type': 'OAuthException',
+        'code': 100,
+        'message': 'This authorization code has expired.'
       }},
       # facebook, https://github.com/snarfed/bridgy/issues/436
       {'error': {
@@ -907,15 +911,15 @@ class UtilTest(testutil.TestCase):
       }},
       # facebook deprecated API, https://github.com/snarfed/bridgy/issues/480
       {'error': {
-        'message' : '(#12) notes API is deprecated for versions v2.0 and higher',
-        'code' : 12,
-        'type' : 'OAuthException',
+        'message': '(#12) notes API is deprecated for versions v2.0 and higher',
+        'code': 12,
+        'type': 'OAuthException',
       }},
       # facebook too many IDs
       {'error': {
-        'message' : '(#100) Too many IDs. Maximum: 50. Provided: 54.',
-        'code' : 100,
-        'type' : 'OAuthException',
+        'message': '(#100) Too many IDs. Maximum: 50. Provided: 54.',
+        'code': 100,
+        'type': 'OAuthException',
       }},
     ):
       for code, expected in (400, 400), (500, 502):
@@ -927,11 +931,11 @@ class UtilTest(testutil.TestCase):
     # facebook temporarily unavailable with is_transient
     # https://github.com/snarfed/bridgy/issues/450
     fb_transient = {'error': {
-      'message' : '(#2) Service temporarily unavailable',
+      'message': '(#2) Service temporarily unavailable',
       # also seen:
       # 'message': 'An unexpected error has occurred. Please retry your request later.',
-      'code' : 2,
-      'type' : 'OAuthException',
+      'code': 2,
+      'type': 'OAuthException',
       'is_transient': True,
     }}
     for code in (400, 500):
@@ -1224,7 +1228,7 @@ class UtilTest(testutil.TestCase):
     self.mox.ReplayAll()
 
     with self.assertRaises(requests.HTTPError) as e:
-      resp = util.requests_post_with_redirects('http://first')
+      util.requests_post_with_redirects('http://first')
 
     self.assert_equals('abc', e.exception.response.text)
     self.assert_equals(400, e.exception.response.status_code)
@@ -1237,7 +1241,7 @@ class UtilTest(testutil.TestCase):
     self.mox.ReplayAll()
 
     with self.assertRaises(requests.HTTPError) as e:
-      resp = util.requests_post_with_redirects('http://ok')
+      util.requests_post_with_redirects('http://ok')
 
     self.assert_equals('abc', e.exception.response.text)
     self.assert_equals(400, e.exception.response.status_code)
@@ -1250,7 +1254,7 @@ class UtilTest(testutil.TestCase):
     self.mox.ReplayAll()
 
     with self.assertRaises(requests.TooManyRedirects) as e:
-      resp = util.requests_post_with_redirects('http://xyz')
+      util.requests_post_with_redirects('http://xyz')
 
     self.assert_equals('abc', e.exception.response.text)
     self.assert_equals(302, e.exception.response.status_code)

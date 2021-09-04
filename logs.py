@@ -11,7 +11,6 @@ import re
 import time
 import urllib.request, urllib.parse, urllib.error
 
-from flask import abort
 from google.cloud import ndb
 from google.cloud.logging import Client
 import humanize
@@ -127,7 +126,7 @@ def linkify_datastore_keys(msg):
         match.group(3), match.group(4))
       logging.debug('Returning %s', html)
       return html
-    except BaseException as e:
+    except BaseException:
       # logging.debug("Couldn't linkify candidate datastore key.")   # too noisy
       return match.group(0)
 

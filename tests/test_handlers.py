@@ -36,6 +36,7 @@ class HandlersTest(HandlerTest):
     class Handler(webapp2.RequestHandler):
       handle_exception = handlers.handle_exception
       err = None
+
       def get(self):
         raise self.err
 

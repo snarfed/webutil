@@ -1,7 +1,5 @@
 """App Engine datastore model base classes and utilites.
 """
-import functools
-
 from google.cloud import ndb
 
 
