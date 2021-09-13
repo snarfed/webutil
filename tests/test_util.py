@@ -996,6 +996,7 @@ class UtilTest(testutil.TestCase):
         urllib3.exceptions.TimeoutError(),
         Exception('Connection closed unexpectedly by server at URL: ...'),
         ssl.SSLError(),
+        prawcore.exceptions.RequestException(None, None, None),
     ):
       self.assertTrue(util.is_connection_failure(e), repr(e))
 

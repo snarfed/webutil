@@ -1400,6 +1400,7 @@ def is_connection_failure(exception):
       http.client.ImproperConnectionState,
       http.client.IncompleteRead,
       http.client.NotConnected,
+      prawcore.exceptions.RequestException,
       socket.timeout,
       ssl.SSLError,
   ]
