@@ -346,11 +346,8 @@ def tag_uri(domain, name, year=None):
 
   Background on tag URIs: http://taguri.org/
   """
-  if year is not None:
-    year = ',%s' % year
-  else:
-    year = ''
-  return 'tag:%s%s:%s' % (domain, year, name)
+  year = ',%s' % year if year else ''
+  return f'tag:{domain}{year}:{name}'
 
 
 _TAG_URI_RE = re.compile(r'tag:([^,]+)(?:,\d+)?:(.+)$')
@@ -426,8 +423,8 @@ def domain_from_link(url):
     for subdomain in ('www.', 'mobile.', 'm.'):
       if domain.startswith(subdomain):
         domain = domain[len(subdomain):]
-    if domain and FULL_HOST_RE.match(domain):
-      return domain
+  if domain and FULL_HOST_RE.match(domain):
+    return domain
 
   return None
 
@@ -912,11 +909,11 @@ def as_utc(input):
 
   Doesn't support DST!
   """
-  if input.tzinfo:
-    utc = input - input.tzinfo.utcoffset(False)
-    return utc.replace(tzinfo=None)
-  else:
+  if not input.tzinfo:
     return input
+
+  utc = input - input.tzinfo.utcoffset(False)
+  return utc.replace(tzinfo=None)
 
 
 def ellipsize(str, words=14, chars=140):
@@ -1629,7 +1626,7 @@ def requests_post_with_redirects(url, *args, **kwargs):
 
   Raises: TooManyRedirects
   """
-  for i in range(requests.models.DEFAULT_REDIRECT_LIMIT):
+  for _ in range(requests.models.DEFAULT_REDIRECT_LIMIT):
     resp = requests_post(url, *args, allow_redirects=False, **kwargs)
     url = resp.headers.get('Location')
     if resp.is_redirect and url:
@@ -1775,8 +1772,8 @@ class UrlCanonicalizer(object):
     domain = parsed.hostname
     if not domain:
       return None
-    elif self.domain and not (domain == self.domain or
-                              domain.endswith('.' + self.domain)):
+    elif (self.domain and domain != self.domain
+          and not domain.endswith('.' + self.domain)):
       return None
     if domain.startswith('www.'):
       domain = domain[4:]

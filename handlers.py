@@ -46,7 +46,7 @@ def handle_exception(self, e, debug):
 
 
 # TODO: https://stackoverflow.com/a/10964868/186123
-def redirect(from_domain, to_domain):
+def redirect(from_domains, to_domain):
   """:class:`webapp2.RequestHandler` decorator that 301 redirects to a new domain.
 
   Preserves scheme, path, and query.
@@ -55,18 +55,18 @@ def redirect(from_domain, to_domain):
     from_domain: string or sequence of strings
     to_domain: strings
   """
-  if isinstance(from_domain, str):
-    from_domain = [from_domain]
+  if isinstance(from_domains, str):
+    from_domains = [from_domains]
 
   def decorator(method):
     def wrapper(self, *args, **kwargs):
-      parts = list(urllib.parse.urlparse(self.request.url))
       # not using self.request.host because it includes port
-      if parts[1] in from_domain:  # netloc
-        parts[1] = to_domain
-        return self.redirect(urllib.parse.urlunparse(parts), permanent=True)
-      else:
+      parts = list(urllib.parse.urlparse(self.request.url))
+      if parts[1] not in from_domains:  # netloc
         return method(self, *args, **kwargs)
+
+      parts[1] = to_domain
+      return self.redirect(urllib.parse.urlunparse(parts), permanent=True)
 
     return wrapper
 

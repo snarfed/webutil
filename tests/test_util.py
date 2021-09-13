@@ -85,7 +85,7 @@ class UtilTest(testutil.TestCase):
 
     # iterator and generator
     self.assertEqual(['a', 'b'], list(util.trim_nulls(iter(['a', None, 'b']))))
-    self.assertEqual(['a', 'b'], list(util.trim_nulls(x for x in ['a', None, 'b'])))
+    self.assertEqual(['a', 'b'], list(util.trim_nulls(iter(['a', None, 'b']))))
 
     # ignore
     self.assertEqual({'a': None}, util.trim_nulls({'a': None}, ignore=('a',)))
@@ -667,7 +667,7 @@ class UtilTest(testutil.TestCase):
       self.assertEqual(expected.headers, actual.headers)
 
     query_string = ''
-    for i in range(2):
+    for _ in range(2):
       query_string = util.add_query_params(query_string, {'x': 'Ryan Çelik'})
       for key, val in urllib.parse.parse_qsl(query_string[1:]):
         self.assertEqual('x', key)
@@ -736,7 +736,7 @@ class UtilTest(testutil.TestCase):
     self.assert_equals(data, cd.get_multi({1, 3}))
 
     # get_multi should handle a generator args ok
-    self.assert_equals(data, cd.get_multi(k for k in [1, 3]))
+    self.assert_equals(data, cd.get_multi(iter([1, 3])))
     self.assert_equals(data, cd.get_multi(list(range(4))))
 
   def test_is_int(self):
@@ -1043,7 +1043,7 @@ class UtilTest(testutil.TestCase):
       self.assertEqual(expected, util.base_url(url))
 
   def test_follow_redirects(self):
-    for i in range(2):
+    for _ in range(2):
       self.expect_requests_head('http://will/redirect',
                                 redirected_url='http://final/url')
     self.mox.ReplayAll()
@@ -1248,7 +1248,7 @@ class UtilTest(testutil.TestCase):
     self.assert_equals(400, e.exception.response.status_code)
 
   def test_requests_post_with_redirects_too_many_redirects(self):
-    for i in range(requests.models.DEFAULT_REDIRECT_LIMIT):
+    for _ in range(requests.models.DEFAULT_REDIRECT_LIMIT):
       self.expect_requests_post(
         'http://xyz', 'abc', allow_redirects=False, status_code=302,
         response_headers={'Location': 'http://xyz'})
@@ -1272,7 +1272,7 @@ class UtilTest(testutil.TestCase):
     for i in range(2):
       self.assertEqual(422, util.requests_get('http://xyz').status_code, i)
 
-    for i in range(2):
+    for _ in range(2):
       self.assertEqual(200, util.requests_get('http://xyz').status_code)
 
   def test_requests_get_unicode_url_ValueError(self):
