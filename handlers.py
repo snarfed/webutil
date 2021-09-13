@@ -62,11 +62,11 @@ def redirect(from_domain, to_domain):
     def wrapper(self, *args, **kwargs):
       parts = list(urllib.parse.urlparse(self.request.url))
       # not using self.request.host because it includes port
-      if parts[1] in from_domain:  # netloc
-        parts[1] = to_domain
-        return self.redirect(urllib.parse.urlunparse(parts), permanent=True)
-      else:
+      if parts[1] not in from_domain:
         return method(self, *args, **kwargs)
+
+      parts[1] = to_domain
+      return self.redirect(urllib.parse.urlunparse(parts), permanent=True)
 
     return wrapper
 

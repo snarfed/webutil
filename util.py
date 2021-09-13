@@ -346,10 +346,7 @@ def tag_uri(domain, name, year=None):
 
   Background on tag URIs: http://taguri.org/
   """
-  if year is not None:
-    year = ',%s' % year
-  else:
-    year = ''
+  year = ',%s' % year if year is not None else ''
   return 'tag:%s%s:%s' % (domain, year, name)
 
 
@@ -426,8 +423,8 @@ def domain_from_link(url):
     for subdomain in ('www.', 'mobile.', 'm.'):
       if domain.startswith(subdomain):
         domain = domain[len(subdomain):]
-    if domain and FULL_HOST_RE.match(domain):
-      return domain
+  if domain and FULL_HOST_RE.match(domain):
+    return domain
 
   return None
 
@@ -912,11 +909,11 @@ def as_utc(input):
 
   Doesn't support DST!
   """
-  if input.tzinfo:
-    utc = input - input.tzinfo.utcoffset(False)
-    return utc.replace(tzinfo=None)
-  else:
+  if not input.tzinfo:
     return input
+
+  utc = input - input.tzinfo.utcoffset(False)
+  return utc.replace(tzinfo=None)
 
 
 def ellipsize(str, words=14, chars=140):
@@ -1195,13 +1192,11 @@ def sniff_json_or_form_encoded(value):
   """
   if not value:
     return {}
-  elif value[0] in ('{', '['):
+  elif value[0] in ('{', '[') or '=' not in value:
     return json_loads(value)
-  elif '=' in value:
+  else:
     return {k: v[0] if len(v) == 1 else v
             for k, v in urllib.parse.parse_qs(value).items()}
-  else:
-    return json_loads(value)
 
 
 def interpret_http_exception(exception):
@@ -1333,26 +1328,18 @@ def interpret_http_exception(exception):
     message = repr(message)
   err_code = error.get('code')
   err_subcode = error.get('error_subcode')
-  if ((type == 'OAuthException' and
-       # have to use message, not error code, since some error codes are for
-       # both auth and non-auth errors, e.g. we've gotten code 100 for both
-       # "This authorization code has expired." and "Too many IDs. ..."
-       ('token provided is invalid.' in message or
-        'authorization code has expired.' in message or
-        'the user is not a confirmed user.' in message or
-        'user must be an administrator of the page' in message or
-        'user is enrolled in a blocking, logged-in checkpoint' in message or
-        'access token belongs to a Page that has been deleted.' in message or
-        # this one below comes with HTTP 400, but actually seems to be transient.
-        # 'Cannot call API on behalf of this user' in message or
-        'Permissions error' == message
-      )) or
-      (type == 'FacebookApiException' and 'Permissions error' in message) or
-      # https://developers.facebook.com/docs/graph-api/using-graph-api#errorcodes
-      # https://developers.facebook.com/docs/graph-api/using-graph-api#errorsubcodes
-      (err_code in (102, 190) and err_subcode in (458, 459, 460, 463, 467, 490)) or
-      (err_code == 326 and 'this account is temporarily locked' in message)
-    ):
+  if (type == 'OAuthException' and
+      ('token provided is invalid.' in message
+       or 'authorization code has expired.' in message
+       or 'the user is not a confirmed user.' in message
+       or 'user must be an administrator of the page' in message
+       or 'user is enrolled in a blocking, logged-in checkpoint' in message
+       or 'access token belongs to a Page that has been deleted.' in message
+       or message == 'Permissions error')
+      or (type == 'FacebookApiException' and 'Permissions error' in message)
+      or (err_code in (102, 190)
+          and err_subcode in (458, 459, 460, 463, 467, 490)) or
+      (err_code == 326 and 'this account is temporarily locked' in message)):
     code = '401'
 
   if error.get('is_transient'):
@@ -1629,7 +1616,7 @@ def requests_post_with_redirects(url, *args, **kwargs):
 
   Raises: TooManyRedirects
   """
-  for i in range(requests.models.DEFAULT_REDIRECT_LIMIT):
+  for _ in range(requests.models.DEFAULT_REDIRECT_LIMIT):
     resp = requests_post(url, *args, allow_redirects=False, **kwargs)
     url = resp.headers.get('Location')
     if resp.is_redirect and url:
@@ -1693,11 +1680,9 @@ def follow_redirects(url, **kwargs):
     logging.warning("Couldn't resolve URL %s : %s", url, e)
 
   content_type = resolved.headers.get('content-type')
-  if (not resolved.ok or
-      not content_type):  # Content-Type of error response isn't useful
-    if resolved.url:
-      type, _ = mimetypes.guess_type(resolved.url)
-      resolved.headers['content-type'] = type or 'text/html'
+  if ((not resolved.ok or not content_type)) and resolved.url:
+    type, _ = mimetypes.guess_type(resolved.url)
+    resolved.headers['content-type'] = type or 'text/html'
 
   refresh = resolved.headers.get('refresh')
   if refresh:
@@ -1775,8 +1760,8 @@ class UrlCanonicalizer(object):
     domain = parsed.hostname
     if not domain:
       return None
-    elif self.domain and not (domain == self.domain or
-                              domain.endswith('.' + self.domain)):
+    elif (self.domain and domain != self.domain
+          and not domain.endswith('.' + self.domain)):
       return None
     if domain.startswith('www.'):
       domain = domain[4:]

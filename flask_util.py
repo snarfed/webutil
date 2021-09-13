@@ -344,14 +344,13 @@ class XrdOrJrd(View):
     return self.DEFAULT_TYPE
 
   def dispatch_request(self, **kwargs):
-    data = self.template_vars(**kwargs)
-    if not isinstance(data, dict):
-      return data
+      data = self.template_vars(**kwargs)
+      if not isinstance(data, dict):
+        return data
 
-    # Content-Types are from https://tools.ietf.org/html/rfc7033#section-10.2
-    if self._type() == self.JRD:
-      return data, {'Content-Type': 'application/jrd+json'}
-    else:
+        # Content-Types are from https://tools.ietf.org/html/rfc7033#section-10.2
+      if self._type() == self.JRD:
+          return data, {'Content-Type': 'application/jrd+json'}
       template = f'{self.template_prefix()}.{self._type()}'
       return (render_template(template, **data),
               {'Content-Type': 'application/xrd+xml; charset=utf-8'})
