@@ -1,15 +1,6 @@
 """Renders vital stats about a single App Engine instance.
 
-Intended for developers, not users. Uses the Runtime API:
-https://developers.google.com/appengine/docs/python/backends/runtimeapi
-
-Note that the Runtime API isn't implemented in dev_appserver, so all stats will
-be reported as 0.
-
-(The docs say it's deprecated because it's part of Backends, which is replaced
-by Modules, but I haven't found a corresponding part of the Modules API.)
-
-To turn on concurrent request recording, add the middleware and InfoHandler to your WSGI application, eg:
+Intended for developers, not users. To turn on concurrent request recording, add the middleware and InfoHandler to your WSGI application, eg:
 
   from oauth_dropins.webutil.instance_info import concurrent_requests_wsgi_middleware, InfoHandler
 
