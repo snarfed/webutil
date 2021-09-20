@@ -245,11 +245,8 @@ def cached(cache, timeout, http_5xx=False):
   def response_filter(resp):
       """Return False if the response shouldn't be cached."""
       resp = make_response(resp)
-
-      if not http_5xx and resp.status_code // 100 == 5:
-          return True
-
-      return not get_flashed_messages() and 'Set-Cookie' not in resp.headers
+      return (not get_flashed_messages() and 'Set-Cookie' not in resp.headers and
+              (http_5xx or resp.status_code // 100 != 5))
 
   def unless():
       return bool(request.args.get('cache', '').lower() == 'false' or

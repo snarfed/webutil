@@ -77,34 +77,37 @@ class FlaskUtilTest(unittest.TestCase):
     client.get('/foo?500')
     self.assertEqual(1, calls)
 
-    client.get('/foo?flash')
+    client.get('/foo?500')
     self.assertEqual(2, calls)
 
-    client.get('/foo?cache=false')
+    client.get('/foo?flash')
     self.assertEqual(3, calls)
 
-    client.get('/foo?xyz')
+    client.get('/foo?cache=false')
     self.assertEqual(4, calls)
 
+    client.get('/foo?xyz')
+    self.assertEqual(5, calls)
+
     client.get('/foo?abc')
-    self.assertEqual(5, calls)
-
-    resp = client.get('/foo?abc')
-    self.assertEqual(5, calls)
-    self.assertEqual('5', resp.get_data(as_text=True))
-
-    client.get('/foo')
     self.assertEqual(6, calls)
 
-    client.get('/foo', headers={'Cookie': 'bar'})
+    resp = client.get('/foo?abc')
+    self.assertEqual(6, calls)
+    self.assertEqual('6', resp.get_data(as_text=True))
+
+    client.get('/foo')
     self.assertEqual(7, calls)
 
-    client.get('/foo?set-cookie')
+    client.get('/foo', headers={'Cookie': 'bar'})
     self.assertEqual(8, calls)
 
+    client.get('/foo?set-cookie')
+    self.assertEqual(9, calls)
+
     resp = client.get('/foo')
-    self.assertEqual(8, calls)
-    self.assertEqual('6', resp.get_data(as_text=True))
+    self.assertEqual(9, calls)
+    self.assertEqual('7', resp.get_data(as_text=True))
 
     @self.app.route('/error')
     @flask_util.cached(cache, datetime.timedelta(days=1), http_5xx=True)
@@ -113,11 +116,11 @@ class FlaskUtilTest(unittest.TestCase):
 
     resp = client.get('/error?500')
     self.assertEqual(500, resp.status_code)
-    self.assertEqual(9, calls)
+    self.assertEqual(10, calls)
 
-    client.get('/error?500')
+    resp = client.get('/error?500')
     self.assertEqual(500, resp.status_code)
-    self.assertEqual(9, calls)
+    self.assertEqual(10, calls)
 
   def test_canonicalize_domain_get(self):
     @self.app.route('/', defaults={'_': ''})
