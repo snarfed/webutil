@@ -230,7 +230,7 @@ def default_modern_headers(resp):
   return resp
 
 
-def cached(cache, timeout):
+def cached(cache, timeout, http_5xx=False):
   """Thin flask-cache wrapper that supports timedelta and cache query param.
 
   If the `cache` URL query parameter is `false`, skips the cache. Also, does not
@@ -240,12 +240,16 @@ def cached(cache, timeout):
   Args:
     cache: :class:`flask_caching.Cache`
     timeout: :class:`datetime.timedelta`
+    http_5xx: bool, whether to cache HTTP 5xx (server error) responses.
   """
   def response_filter(resp):
       """Return False if the response shouldn't be cached."""
       resp = make_response(resp)
-      return (resp.status_code // 100 != 5 and not get_flashed_messages() and
-              'Set-Cookie' not in resp.headers)
+
+      if not http_5xx and resp.status_code // 100 == 5:
+          return True
+
+      return not get_flashed_messages() and 'Set-Cookie' not in resp.headers
 
   def unless():
       return bool(request.args.get('cache', '').lower() == 'false' or

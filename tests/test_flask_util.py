@@ -51,9 +51,7 @@ class FlaskUtilTest(unittest.TestCase):
     cache = Cache(self.app)
     calls = 0
 
-    @self.app.route('/foo')
-    @flask_util.cached(cache, datetime.timedelta(days=1))
-    def foo():
+    def view():
       nonlocal calls
       calls += 1
 
@@ -69,6 +67,11 @@ class FlaskUtilTest(unittest.TestCase):
         resp.status_code = 500
 
       return resp
+
+    @self.app.route('/foo')
+    @flask_util.cached(cache, datetime.timedelta(days=1))
+    def foo():
+      return view()
 
     client = self.app.test_client(use_cookies=False)
     client.get('/foo?500')
@@ -102,6 +105,19 @@ class FlaskUtilTest(unittest.TestCase):
     resp = client.get('/foo')
     self.assertEqual(8, calls)
     self.assertEqual('6', resp.get_data(as_text=True))
+
+    @self.app.route('/error')
+    @flask_util.cached(cache, datetime.timedelta(days=1), http_5xx=True)
+    def error():
+      return view()
+
+    resp = client.get('/error?500')
+    self.assertEqual(500, resp.status_code)
+    self.assertEqual(9, calls)
+
+    client.get('/error?500')
+    self.assertEqual(500, resp.status_code)
+    self.assertEqual(9, calls)
 
   def test_canonicalize_domain_get(self):
     @self.app.route('/', defaults={'_': ''})
