@@ -802,10 +802,10 @@ class UtilTest(testutil.TestCase):
     ex = tumblpy.TumblpyError('my body', error_code=429)
     self.assertEqual(('429', 'my body'), ihc(ex))
 
-    ex = tweepy.TweepError('my body')
+    ex = tweepy.HTTPException(testutil.requests_response('my body'))
     self.assertEqual(('400', 'my body'), ihc(ex))
 
-    ex = tweepy.RateLimitError('my body')
+    ex = tweepy.TooManyRequests(testutil.requests_response('my body'))
     self.assertEqual(('429', 'my body'), ihc(ex))
 
     # Flickr

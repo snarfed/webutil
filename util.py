@@ -1261,13 +1261,13 @@ def interpret_http_exception(exception):
     code = e.error_code
     body = e.msg
 
-  elif tweepy and isinstance(e, tweepy.TweepError):
-    code = '429' if isinstance(e, tweepy.RateLimitError) else '400'
-    body = e.reason
+  elif tweepy and isinstance(e, tweepy.HTTPException):
+    code = '429' if isinstance(e, tweepy.TooManyRequests) else '400'
+    body = e.response.text
 
   elif apiclient and isinstance(e, apiclient.errors.HttpError):
     code = e.resp.status
-    body = e.content.decode('utf-8')
+    body = e.response.text
 
   elif AccessTokenRefreshError and isinstance(e, AccessTokenRefreshError):
     body = str(e)
