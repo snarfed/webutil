@@ -34,7 +34,7 @@ try:
   json = ujson
 except ImportError:
   ujson = None
-  import json
+  import json  # type: ignore
 
 # These are used in interpret_http_exception() and is_connection_failure(). They
 # use dependencies that we may or may not have, so degrade gracefully if they're
