@@ -927,7 +927,7 @@ def ellipsize(str, words=14, chars=140):
   return ' '.join(split[:words])[:chars - 3] + '...'
 
 
-def add_query_params(url, params):
+def add_query_params(url: str, params: Union[dict, Sequence]) -> str:
   """Adds new query parameters to a URL. Encodes as UTF-8 and URL-safe.
 
   Args:
@@ -938,11 +938,6 @@ def add_query_params(url, params):
   Returns:
     string URL
   """
-  is_request = isinstance(url, urllib.request.Request)
-  if is_request:
-    req = url
-    url = req.get_full_url()
-
   if isinstance(params, dict):
     params = list(params.items())
 
@@ -951,12 +946,8 @@ def add_query_params(url, params):
   # query params are in index 4
   params = [(k, str(v).encode('utf-8')) for k, v in params]
   parsed[4] += ('&' if parsed[4] else '') + urllib.parse.urlencode(params)
-  updated = urllib.parse.urlunparse(parsed)
 
-  if is_request:
-    return urllib.request.Request(updated, data=req.data, headers=req.headers)
-  else:
-    return updated
+  return urllib.parse.urlunparse(parsed)
 
 
 def remove_query_param(url, param):

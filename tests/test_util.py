@@ -651,21 +651,6 @@ class UtilTest(testutil.TestCase):
     ):
       self.assertEqual(expected, util.add_query_params(url, params))
 
-    for expected, req, params in (
-      (urllib.request.Request('http://a.com?x=y'), urllib.request.Request('http://a.com'),
-       [('x', 'y')]),
-      (urllib.request.Request('http://a.com?x=y&u=v'), urllib.request.Request('http://a.com?x=y'),
-       [('u', 'v')]),
-      (urllib.request.Request('http://a.com?x=y', data='my data', headers={'X': 'Y'}),
-       urllib.request.Request('http://a.com', data='my data', headers={'X': 'Y'}),
-       [('x', 'y')]),
-    ):
-      actual = util.add_query_params(req, params)
-      self.assertIsInstance(actual, urllib.request.Request)
-      self.assertEqual(expected.get_full_url(), actual.get_full_url())
-      self.assertEqual(expected.data, actual.data)
-      self.assertEqual(expected.headers, actual.headers)
-
     query_string = ''
     for _ in range(2):
       query_string = util.add_query_params(query_string, {'x': 'Ryan Çelik'})
