@@ -1,4 +1,4 @@
-"""App Engine config. dev_appserver vs prod, logging, Google API clients, etc."""
+"""App Engine config. local vs prod, logging, Google API clients, etc."""
 import logging
 import os
 
@@ -16,7 +16,7 @@ util.beautifulsoup_parser = 'lxml'
 #   warnings.filterwarnings('ignore', module='google.auth',
 #     message='Your application has authenticated using end user credentials')
 
-# make oauthlib let us use non-SSL http://localhost in dev_appserver etc
+# make oauthlib let us use non-SSL http://localhost when running locally
 # https://oauthlib.readthedocs.io/en/latest/oauth2/security.html#envvar-OAUTHLIB_INSECURE_TRANSPORT
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = 'true'
 
@@ -29,9 +29,6 @@ if DEBUG:
   os.environ.setdefault('CLOUDSDK_CORE_PROJECT', 'app')
   os.environ.setdefault('DATASTORE_DATASET', 'app')
   os.environ.setdefault('GOOGLE_CLOUD_PROJECT', 'app')
-  # work around that these APIs don't natively support dev_appserver.py
-  # https://github.com/googleapis/python-ndb/issues/238
-  # https://github.com/googleapis/python-ndb/issues/376#issuecomment-604991109
   os.environ.setdefault('DATASTORE_EMULATOR_HOST', 'localhost:8089')
 
 # NDB (Cloud Datastore)
@@ -64,7 +61,7 @@ except ImportError:
   pass
 
 # Stackdriver Logging
-# needed for visible logging in dev_appserver
+# needed to make logging visible locally
 logging.getLogger().setLevel(logging.DEBUG)
 
 try:
