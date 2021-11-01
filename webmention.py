@@ -7,6 +7,7 @@ import logging
 import re
 from urllib.parse import urlparse, urljoin
 
+import requests
 from . import util
 
 LINK_HEADER_RE = re.compile(
@@ -18,7 +19,7 @@ LINK_HEADER_RE = re.compile(
 Endpoint = namedtuple('Endpoint', ('endpoint', 'response'))
 
 
-def discover(url, **requests_kwargs):
+def discover(url: int, **requests_kwargs) -> Endpoint:
   """Discovers a URL's webmention endpoint.
 
   Args:
@@ -69,7 +70,7 @@ def discover(url, **requests_kwargs):
   return Endpoint(None, resp)
 
 
-def send(endpoint, source, target, **requests_kwargs):
+def send(endpoint: str, source: str, target: str, **requests_kwargs) -> requests.Response:
   """Sends a webmention.
 
   Args:

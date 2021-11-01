@@ -649,7 +649,7 @@ class UtilTest(testutil.TestCase):
       ('http://a.com?x=R+%C3%87', 'http://a.com', {'x': 'R Ç'}),
       ('http://a.com?x=R+%C3%87&x=R+%C3%87', 'http://a.com?x=R+%C3%87', {'x': 'R Ç'}),
     ):
-      self.assertEqual(expected, util.add_query_params(url, params))
+      self.assertEqual(expected, util.add_query_params(3, params))
 
     query_string = ''
     for _ in range(2):
@@ -1160,19 +1160,19 @@ class UtilTest(testutil.TestCase):
 
     for bad in 1, [], (), {}:
       with self.assertRaises(TypeError):
-        util.decode_oauth_state(bad)
+        util.decode_oauth_state(bad)  # type: ignore
 
     self.assertEqual({}, util.decode_oauth_state(None))
 
-    for obj, str in (
+    for obj, val in (
         ({}, '{}'),
         ({'foo': 'bar', 'baz': None}, '{"foo":"bar"}'),
         ({'b': 1, 'a': 2}, '{"a":2,"b":1}'),
     ):
-      self.assert_equals(str, urllib.parse.unquote(util.encode_oauth_state(obj)))
-      self.assert_equals(obj, util.decode_oauth_state(str))
+      self.assert_equals(val, urllib.parse.unquote(util.encode_oauth_state(obj)))
+      self.assert_equals(obj, util.decode_oauth_state(val))
       self.assert_equals(obj, util.decode_oauth_state(util.encode_oauth_state(obj)))
-      self.assert_equals(str, urllib.parse.unquote(util.encode_oauth_state(util.decode_oauth_state(str))))
+      self.assert_equals(val, urllib.parse.unquote(util.encode_oauth_state(util.decode_oauth_state(val))))
 
   def test_sniff_json_or_form_encoded(self):
     for expected, input in (

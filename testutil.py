@@ -47,7 +47,8 @@ def requests_response(body='', url=None, status=200, content_type=None,
       else:
         if isinstance(redirected_url, str):
           redirected_url = [redirected_url]
-        assert isinstance(redirected_url, (list, tuple))
+        elif not isinstance(redirected_url, list):
+          redirected_url = list(redirected_url)
         resp.url = redirected_url[-1]
         for u in [url] + redirected_url[:-1]:
           resp.history.append(requests.Response())

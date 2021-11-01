@@ -21,13 +21,14 @@ import string
 import sys
 import threading
 import traceback
+from typing import Any, Iterable, Mapping, Optional, Sequence, Union
 import urllib.error, urllib.parse, urllib.request
 from urllib.parse import urlparse
 from xml.sax import saxutils
 
 from cachetools import cached, TTLCache
 from domain2idna import domain2idna
-from flask import abort
+import flask
 
 try:
   import ujson
@@ -203,7 +204,7 @@ class CacheDict(dict):
   Useful as a simple in memory replacement for App Engine's memcache API for
   e.g. get_activities_response() in granary.
   """
-  def get_multi(self, keys):
+  def get_multi(self, keys) -> dict:
     keys = set(keys)
     return {k: v for k, v in list(self.items()) if k in keys}
 
@@ -214,7 +215,7 @@ class CacheDict(dict):
     super(CacheDict, self).update(updates)
 
 
-def to_xml(value):
+def to_xml(value: Mapping) -> str:
   """Renders a dict (usually from JSON) as an XML snippet."""
   if isinstance(value, dict):
     if not value:
@@ -255,17 +256,17 @@ def trim_nulls(value, ignore=()):
     return value
 
 
-def uniquify(input):
+def uniquify(input: Optional[Iterable]) -> list:
   """Returns a list with duplicate items removed.
 
   Like list(set(...)), but preserves order.
   """
   if not input:
     return []
-  return list(collections.OrderedDict([x, 0] for x in input).keys())
+  return list(collections.OrderedDict((x, 0) for x in input).keys())
 
 
-def get_list(obj, key):
+def get_list(obj: Mapping, key) -> list:
   """Returns a value from a dict as a list.
 
   If the value is a list or tuple, it's converted to a list. If it's something
@@ -278,7 +279,7 @@ def get_list(obj, key):
           else [])
 
 
-def pop_list(obj, key):
+def pop_list(obj: Mapping, key) -> list:
   """Like get_list(), but also removes the item."""
   val = get_list(obj, key)
   obj.pop(key, None)
@@ -321,17 +322,22 @@ def get_first(obj, key, default=None):
   return val[0] if isinstance(val, (list, tuple)) else val
 
 
-def get_url(val, key=None):
+def get_url(val: Union[Mapping, str, None], key=None) -> Optional[str]:
   """Returns val['url'] if val is a dict, otherwise val.
 
   If key is not None, looks in val[key] instead of val.
   """
   if key is not None:
     val = get_first(val, key)
-  return val.get('url') if isinstance(val, dict) else val
+
+  url = val.get('url') if isinstance(val, dict) else val
+  if url is not None:
+    assert isinstance(url, str)
+
+  return url
 
 
-def get_urls(obj, key, inner_key=None):
+def get_urls(obj: Mapping[str, str], key, inner_key=None) -> Sequence[str]:
   """Returns elem['url'] if dict, otherwise elem, for each elem in obj[key].
 
   If inner_key is provided, the returned values are elem[inner_key]['url'].
@@ -339,7 +345,7 @@ def get_urls(obj, key, inner_key=None):
   return dedupe_urls(get_url(elem, key=inner_key) for elem in get_list(obj, key))
 
 
-def tag_uri(domain, name, year=None):
+def tag_uri(domain: str, name: str, year=None) -> str:
   """Returns a tag URI string for the given domain and name.
 
   Example return value: 'tag:twitter.com,2012:snarfed_org/172417043893731329'
@@ -352,7 +358,7 @@ def tag_uri(domain, name, year=None):
 
 _TAG_URI_RE = re.compile(r'tag:([^,]+)(?:,\d+)?:(.+)$')
 
-def parse_tag_uri(uri):
+def parse_tag_uri(uri: str) -> Optional[Sequence[str]]:
   """Returns the domain and name in a tag URI string.
 
   Inverse of :func:`tag_uri()`.
@@ -365,7 +371,8 @@ def parse_tag_uri(uri):
   return match.groups() if match else None
 
 
-def parse_acct_uri(uri, hosts=None):
+def parse_acct_uri(uri: str, hosts: Optional[Sequence[str]] = None
+                   ) -> tuple[str, str]:
   """Parses acct: URIs of the form acct:user@example.com .
 
   Background: http://hueniverse.com/2009/08/making-the-case-for-a-new-acct-uri-scheme/
@@ -397,13 +404,13 @@ def parse_acct_uri(uri, hosts=None):
   return username, host
 
 
-def favicon_for_url(url):
+def favicon_for_url(url: str) -> str:
   return 'http://%s/favicon.ico' % urlparse(url).netloc
 
 
 FULL_HOST_RE = re.compile(HOST_RE + '$')
 
-def domain_from_link(url):
+def domain_from_link(url: str) -> Optional[str]:
   """Extracts and returns the meaningful domain from a URL.
 
   Strips www., mobile., and m. from the beginning of the domain.
@@ -429,7 +436,7 @@ def domain_from_link(url):
   return None
 
 
-def domain_or_parent_in(input, domains):
+def domain_or_parent_in(input: str, domains: Sequence[str]) -> bool:
   """Returns True if an input domain or its parent is in a set of domains.
 
   Examples:
@@ -463,7 +470,7 @@ def domain_or_parent_in(input, domains):
   return False
 
 
-def update_scheme(url, request):
+def update_scheme(url: str, request) -> str:
   """Returns a modified URL with the current request's scheme.
 
   Useful for converting URLs to https if and only if the current request itself
@@ -478,7 +485,7 @@ def update_scheme(url, request):
   return urllib.parse.urlunparse((request.scheme,) + urlparse(url)[1:])
 
 
-def schemeless(url, slashes=True):
+def schemeless(url: str, slashes: bool = True):
   """Strips the scheme (e.g. 'https:') from a URL.
 
   Args:
@@ -495,7 +502,7 @@ def schemeless(url, slashes=True):
   return url
 
 
-def fragmentless(url):
+def fragmentless(url: str) -> str:
   """Strips the fragment (e.g. '#foo') from a URL.
 
   Args:
@@ -507,7 +514,7 @@ def fragmentless(url):
   return urllib.parse.urlunparse(urlparse(url)[:5] + ('',))
 
 
-def clean_url(url):
+def clean_url(url: str) -> Optional[str]:
   """Removes transient query params (e.g. utm_*) from a URL.
 
   The utm_* (Urchin Tracking Metrics?) params come from Google Analytics.
@@ -539,7 +546,7 @@ def clean_url(url):
   return urllib.parse.urlunparse(parts)
 
 
-def quote_path(url):
+def quote_path(url: str) -> Optional[str]:
   """Quotes (URL-encodes) just the path part of a URL.
 
   Args:
@@ -557,7 +564,7 @@ def quote_path(url):
   return urllib.parse.urlunparse(parts)
 
 
-def base_url(url):
+def base_url(url: str) -> Optional[str]:
   """Returns the base of a given URL.
 
   For example, returns 'http://site/posts/' for 'http://site/posts/123'.
@@ -568,7 +575,7 @@ def base_url(url):
   return urllib.parse.urljoin(url, ' ')[:-1] if url else None
 
 
-def extract_links(text):
+def extract_links(text: str) -> Sequence[str]:
   """Returns a list of unique string URLs in the given text.
 
   URLs in the returned list are in the order they first appear in the text.
@@ -579,8 +586,11 @@ def extract_links(text):
   return uniquify(tokenize_links(text, skip_html_links=False, require_scheme=True)[0])
 
 
-def tokenize_links(text, skip_bare_cc_tlds=False, skip_html_links=True,
-                   require_scheme=False):
+def tokenize_links(text: str,
+                   skip_bare_cc_tlds: bool = False,
+                   skip_html_links: bool = True,
+                   require_scheme: bool = False,
+                   ) -> tuple[Sequence[str], Sequence[str]]:
   """Splits text into link and non-link text.
 
   Args:
@@ -636,7 +646,8 @@ def tokenize_links(text, skip_bare_cc_tlds=False, skip_html_links=True,
   return links, splits
 
 
-def linkify(text, pretty=False, skip_bare_cc_tlds=False, **kwargs):
+def linkify(text: str, pretty: bool = False, skip_bare_cc_tlds: bool = False,
+            **kwargs) -> str:
   """Adds HTML links to URLs in the given plain text.
 
   For example: ``linkify('Hello http://tornadoweb.org!')`` would return
@@ -673,8 +684,14 @@ def linkify(text, pretty=False, skip_bare_cc_tlds=False, **kwargs):
   return ''.join(result)
 
 
-def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
-                new_tab=False, max_length=None):
+def pretty_link(url: str,
+                text: Optional[str] = None,
+                keep_host: bool = True,
+                glyphicon: Optional[str] = None,
+                attrs: Optional[Mapping] = None,
+                new_tab: bool = False,
+                max_length: Optional[int] = None,
+                ) -> str:
   """Renders a pretty, short HTML link to a URL.
 
   If text is not provided, the link text is the URL without the leading
@@ -742,15 +759,14 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
 
 
 class SimpleTzinfo(datetime.tzinfo):
-  """A simple, DST-unaware tzinfo subclass.
-  """
+  """A simple, DST-unaware tzinfo subclass."""
 
   offset = datetime.timedelta(0)
 
-  def utcoffset(self, dt):
+  def utcoffset(self, dt: Optional[datetime.datetime]) -> datetime.timedelta:
     return self.offset
 
-  def dst(self, dt):
+  def dst(self, dt: Optional[datetime.datetime]) -> datetime.timedelta:
     return datetime.timedelta(0)
 
 UTC = SimpleTzinfo()
@@ -758,7 +774,7 @@ UTC = SimpleTzinfo()
 
 TIMEZONE_OFFSET_RE = re.compile(r'[+-]\d{2}:?\d{2}$')
 
-def parse_iso8601(val):
+def parse_iso8601(val: str) -> datetime.datetime:
   """Parses an ISO 8601 or RFC 3339 date/time string and returns a datetime.
 
   Time zone designator is optional. If present, the returned datetime will be
@@ -799,7 +815,7 @@ def parse_iso8601(val):
   return datetime.datetime.strptime(val, '%Y-%m-%d %H:%M:%S.%f').replace(tzinfo=tz)
 
 
-def parse_iso8601_duration(input):
+def parse_iso8601_duration(input: str) -> Optional[datetime.timedelta]:
   """Parses an ISO 8601 duration.
 
   Note: converts months to 30 days each. (ISO 8601 doesn't seem to define the
@@ -822,7 +838,7 @@ def parse_iso8601_duration(input):
   if not match:
     return None
 
-  def g(i):
+  def g(i: int):
     val = match.group(i)
     return int(val[:-1]) if val else 0
 
@@ -831,7 +847,7 @@ def parse_iso8601_duration(input):
                             hours=g(6), minutes=g(7), seconds=g(8))
 
 
-def to_iso8601_duration(input):
+def to_iso8601_duration(input: datetime.timedelta) -> str:
   """Converts a timedelta to an ISO 8601 duration.
 
   Returns a fairly strict format: 'PnMTnS'. Fractional seconds are silently
@@ -853,7 +869,7 @@ def to_iso8601_duration(input):
   return 'P%sDT%sS' % (input.days, input.seconds)
 
 
-def maybe_iso8601_to_rfc3339(input):
+def maybe_iso8601_to_rfc3339(input: str) -> str:
   """Tries to convert an ISO 8601 date/time string to RFC 3339.
 
   The formats are similar, but not identical, eg. RFC 3339 includes a colon in
@@ -870,7 +886,8 @@ def maybe_iso8601_to_rfc3339(input):
     return input
 
 
-def maybe_timestamp_to_rfc3339(input):
+def maybe_timestamp_to_rfc3339(input: Union[int, float, str]
+                               ) -> Union[int, float, str]:
   """Tries to convert a string or int UNIX timestamp to RFC 3339.
 
   Assumes UNIX timestamps are always UTC. (They're generally supposed to be.)
@@ -882,48 +899,50 @@ def maybe_timestamp_to_rfc3339(input):
     return input
 
 
-def maybe_timestamp_to_iso8601(input):
+def maybe_timestamp_to_iso8601(input: Union[int, float, str]
+                               ) -> Union[int, float, str]:
   """Tries to convert a string or int UNIX timestamp to ISO 8601.
 
   Assumes UNIX timestamps are always UTC. (They're generally supposed to be.)
   """
   ret = maybe_timestamp_to_rfc3339(input)
-  return ret if ret == input else ret.replace('+00:00', 'Z')
+  if isinstance(ret, str):
+    return ret.replace('+00:00', 'Z')
+  return ret
 
 
-def to_utc_timestamp(input):
+def to_utc_timestamp(input: Optional[datetime.datetime]) -> Optional[float]:
   """Converts a datetime to a float POSIX timestamp (seconds since epoch)."""
   if not input:
     return None
 
   timetuple = list(input.timetuple())
   # timetuple() usually strips microsecond
-  timetuple[5] += input.microsecond / 1000000
-  return calendar.timegm(timetuple)
+  timetuple[5] += input.microsecond / 1000000  # type: ignore # call-overload
+  return calendar.timegm(tuple(timetuple))
 
 
-def as_utc(input):
+def as_utc(input: datetime.datetime) -> datetime.datetime:
   """Converts a timezone-aware datetime to a naive UTC datetime.
 
   If input is timezone-naive, it's returned as is.
 
   Doesn't support DST!
   """
-  if not input.tzinfo:
+  if not input.tzinfo or not (offset := input.tzinfo.utcoffset(None)):
     return input
 
-  utc = input - input.tzinfo.utcoffset(False)
-  return utc.replace(tzinfo=None)
+  return (input - offset).replace(tzinfo=None)
 
 
-def ellipsize(str, words=14, chars=140):
-  """Truncates and ellipsizes str if it's longer than words or chars.
+def ellipsize(val: str, words: int = 14, chars: int = 140) -> str:
+  """Truncates and ellipsizes val if it's longer than words or chars.
 
   Words are simply tokenized on whitespace, nothing smart.
   """
-  split = str.split()
-  if len(split) <= words and len(str) <= chars:
-    return str
+  split = val.split()
+  if len(split) <= words and len(val) <= chars:
+    return val
   return ' '.join(split[:words])[:chars - 3] + '...'
 
 
@@ -950,7 +969,7 @@ def add_query_params(url: str, params: Union[dict, Sequence]) -> str:
   return urllib.parse.urlunparse(parsed)
 
 
-def remove_query_param(url, param):
+def remove_query_param(url: str, param: str) -> tuple[str, Optional[str]]:
   """Removes query parameter(s) from a URL. Decodes URL escapes and UTF-8.
 
   If the query parameter is not present in the URL, the URL is returned
@@ -983,7 +1002,7 @@ def remove_query_param(url, param):
   return url, removed
 
 
-def get_required_param(handler, name):
+def get_required_param(handler: flask.Request, name: str) -> str:
   try:
     val = handler.request.get(name)
   except (UnicodeDecodeError, UnicodeEncodeError) as e:
@@ -995,7 +1014,9 @@ def get_required_param(handler, name):
   return val
 
 
-def dedupe_urls(urls, key=None):
+def dedupe_urls(urls: Iterable[Union[str, Mapping, None]],
+                key: Optional[str] = None,
+                ) -> Sequence[str]:
   """Normalizes and de-dupes http(s) URLs.
 
   Converts domain to lower case, adds trailing slash when path is empty, and
@@ -1056,7 +1077,7 @@ def dedupe_urls(urls, key=None):
   return result
 
 
-def encode_oauth_state(obj):
+def encode_oauth_state(obj: Mapping) -> str:
   """The state parameter is passed to various source authorization
   endpoints and returned in a callback. This encodes a JSON object
   so that it can be safely included as a query string parameter.
@@ -1074,7 +1095,7 @@ def encode_oauth_state(obj):
   return urllib.parse.quote_plus(json_dumps(trim_nulls(obj), sort_keys=True))
 
 
-def decode_oauth_state(state):
+def decode_oauth_state(state: str) -> Mapping:
   """Decodes a state parameter encoded by :meth:`encode_state_parameter`.
 
   Args:
@@ -1090,7 +1111,7 @@ def decode_oauth_state(state):
     obj = json_loads(urllib.parse.unquote_plus(state)) if state else {}
   except ValueError:
     logging.error(f'Invalid value for state parameter: {state}', stack_info=True)
-    abort(400, f'Invalid value for state parameter: {state}')
+    flask.abort(400, f'Invalid value for state parameter: {state}')
 
   if not isinstance(obj, dict):
     logging.error('got a non-dict state parameter %s', state)
@@ -1099,7 +1120,7 @@ def decode_oauth_state(state):
   return obj
 
 
-def if_changed(cache, updates, key, value):
+def if_changed(cache: Mapping, updates: dict, key, value):
   """Returns a value if it's different from the cached value, otherwise None.
 
   Values that evaluate to False are considered equivalent to None, in order to
@@ -1135,22 +1156,19 @@ def if_changed(cache, updates, key, value):
   return value
 
 
-def generate_secret():
+def generate_secret() -> str:
   """Generates a URL-safe random secret string.
 
   Uses App Engine's `os.urandom()`, which is designed to be cryptographically
   secure: http://code.google.com/p/googleappengine/issues/detail?id=1055
 
-  Args:
-    bytes: integer, length of string to generate
-
   Returns:
     random string
   """
-  return base64.urlsafe_b64encode(os.urandom(16))
+  return base64.urlsafe_b64encode(os.urandom(16)).decode()
 
 
-def is_int(arg):
+def is_int(arg) -> bool:
   """Returns True if arg can be converted to an integer, False otherwise."""
   try:
     as_int = int(arg)
@@ -1159,7 +1177,7 @@ def is_int(arg):
     return False
 
 
-def is_float(arg):
+def is_float(arg) -> bool:
   """Returns True if arg can be converted to a float, False otherwise."""
   try:
     as_float = float(arg)
@@ -1168,12 +1186,12 @@ def is_float(arg):
     return False
 
 
-def is_base64(arg):
+def is_base64(arg) -> bool:
   """Returns True if arg is a base64 encoded string, False otherwise."""
-  return isinstance(arg, str) and re.match('^[a-zA-Z0-9_=-]*$', arg)
+  return isinstance(arg, str) and re.match('^[a-zA-Z0-9_=-]*$', arg) is not None
 
 
-def sniff_json_or_form_encoded(value):
+def sniff_json_or_form_encoded(value: str) -> Union[Mapping, str]:
   """Detects whether value is JSON or form-encoded, parses and returns it.
 
   Args:
@@ -1192,7 +1210,8 @@ def sniff_json_or_form_encoded(value):
     return json_loads(value)
 
 
-def interpret_http_exception(exception):
+def interpret_http_exception(exception: Exception
+                             ) -> tuple[Optional[str], Optional[str]]:
   """Extracts the status code and response from different HTTP exception types.
 
   Args:
@@ -1378,7 +1397,7 @@ def ignore_http_4xx_error():
       raise
 
 
-def is_connection_failure(exception):
+def is_connection_failure(exception: Exception) -> bool:
   """Returns True if the given exception is a network connection failure.
 
   ...False otherwise.
@@ -1428,7 +1447,7 @@ class FileLimiter(object):
 
   From http://stackoverflow.com/a/29838711/186123 . Thanks SO!
   """
-  def __init__(self, file_obj, read_limit):
+  def __init__(self, file_obj, read_limit: int):
     self.read_limit = read_limit
     self.amount_seen = 0
     self.file_obj = file_obj
@@ -1437,7 +1456,7 @@ class FileLimiter(object):
     # So that requests doesn't try to chunk an upload but will instead stream it
     self.len = read_limit
 
-  def read(self, amount=-1):
+  def read(self, amount: int = -1) -> bytes:
     if self.amount_seen >= self.read_limit:
       return b''
 
@@ -1451,14 +1470,16 @@ class FileLimiter(object):
     return data
 
 
-def read(filename):
+def read(filename: str) -> Union[str, None]:
   """Returns the contents of filename, or None if it doesn't exist."""
-  if os.path.exists(filename):
-    with open(filename, encoding='utf-8') as f:
-      return f.read().strip()
+  if not os.path.exists(filename):
+    return None
+
+  with open(filename, encoding='utf-8') as f:
+    return f.read().strip()
 
 
-def load_file_lines(file):
+def load_file_lines(file: Iterable) -> set[str]:
   """Reads lines from a file and returns them as a set.
 
   Leading and trailing whitespace is trimmed. Blank lines and lines beginning
@@ -1560,7 +1581,7 @@ def requests_fn(fn):
         # above, prevents the 'Traceback (most recent call last):' prefix that
         # triggers Stackdriver Error Reporting
         logging.warning('\n'.join(traceback.format_tb(sys.exc_info()[2])))
-        abort(400, msg)
+        flask.abort(400, msg)
       raise
 
     except requests.RequestException as e:
@@ -1570,7 +1591,7 @@ def requests_fn(fn):
           msg += f' ; {e.response.text}'
         logging.warning(msg)
         logging.warning('\n'.join(traceback.format_tb(sys.exc_info()[2])))
-        abort(502, msg)
+        flask.abort(502, msg)
       raise
 
     if url != resp.url:
@@ -1641,7 +1662,7 @@ def _prune(kwargs):
 
 @cached(follow_redirects_cache, lock=follow_redirects_cache_lock,
         key=lambda url, **kwargs: url)
-def follow_redirects(url, **kwargs):
+def follow_redirects(url: str, **kwargs) -> requests.Response:
   """Fetches a URL with HEAD, repeating if necessary to follow redirects.
 
   Caches results for 1 day by default. To bypass the cache, use
@@ -1710,9 +1731,11 @@ class UrlCanonicalizer(object):
   If we HEAD the URL to follow redirects and it returns 4xx or 5xx, we return
   None.
   """
-  def __init__(self, scheme='https', domain=None, subdomain=None, approve=None,
-               reject=None, query=False, fragment=False, trailing_slash=False,
-               redirects=True, headers=None):
+  def __init__(self, scheme: str ='https', domain: Optional[str] = None,
+               subdomain: Optional[str] = None, approve: Optional[str] = None,
+               reject: Optional[str] = None, query: bool = False,
+               fragment: bool = False, trailing_slash: bool = False,
+               redirects: bool = True, headers: Mapping = None):
     """Constructor.
 
     Args:
@@ -1744,10 +1767,10 @@ class UrlCanonicalizer(object):
     self.headers = headers
 
   @staticmethod
-  def to_unicode(val):
+  def to_unicode(val: Optional[Union[str, bytes]]) -> Optional[str]:
     return val.decode() if isinstance(val, bytes) else val
 
-  def __call__(self, url, redirects=None):
+  def __call__(self, url: str, redirects: Optional[bool] = None):
     """Canonicalizes a string URL.
 
     Returns the canonical form of a string URL, or None if it can't be
@@ -1836,10 +1859,10 @@ class WideUnicode(str):
     # use UTF-32LE to avoid a byte order marker at the beginning of the string
     self.__utf32le = str(self).encode('utf-32le')
 
-  def __len__(self):
+  def __len__(self) -> int:
     return len(self.__utf32le) // 4
 
-  def __getitem__(self, key):
+  def __getitem__(self, key: Union[int, slice]) -> str:
     length = len(self)
 
     if isinstance(key, int):
@@ -1853,11 +1876,12 @@ class WideUnicode(str):
 
     return WideUnicode(self.__utf32le[start * 4:stop * 4].decode('utf-32le'))
 
-  def __getslice__(self, i, j):
+  def __getslice__(self, i: int, j: int) -> str:
     return self.__getitem__(slice(i, j))
 
 
-def parse_html(input, **kwargs):
+def parse_html(input: Union[str, requests.Response], **kwargs
+               ) -> bs4.BeautifulSoup:
   """Parses an HTML string with BeautifulSoup.
 
   Uses the HTML parser currently set in the beautifulsoup_parser global.
@@ -1896,7 +1920,8 @@ def parse_html(input, **kwargs):
   return bs4.BeautifulSoup(input, **kwargs)
 
 
-def parse_mf2(input, url=None, id=None):
+def parse_mf2(input: Union[str, bs4.BeautifulSoup, requests.Response],
+              url: Optional[str] = None, id: Optional[str] = None):
   """Parses microformats2 out of HTML.
 
   Currently uses mf2py.
@@ -1926,7 +1951,8 @@ def parse_mf2(input, url=None, id=None):
   return mf2py.parse(url=url, doc=input, img_with_alt=True)
 
 
-def fetch_mf2(url, get_fn=requests_get, gateway=False, **kwargs):
+def fetch_mf2(url: str, get_fn=requests_get, gateway: bool = False, **kwargs
+              ) -> Mapping:
   """Fetches an HTML page over HTTP, parses it, and returns its microformats2.
 
   Args:
