@@ -331,10 +331,7 @@ def get_url(val: Any, key=None) -> Optional[str]:
     val = get_first(val, key)
 
   url = val.get('url') if isinstance(val, dict) else val
-  if url is not None:
-    assert isinstance(url, str)
-
-  return url
+  return url if isinstance(url, str) else None
 
 
 def get_urls(obj: Mapping, key, inner_key=None) -> Sequence[Union[str, Mapping]]:
@@ -844,8 +841,8 @@ def parse_iso8601_duration(input: Optional[str]) -> Optional[datetime.timedelta]
     val = groups[i]
     return int(val[:-1]) if val else 0
 
-  return datetime.timedelta(weeks=g(3), days=365 * g(1) + 30 * g(2) + g(4),
-                            hours=g(6), minutes=g(7), seconds=g(8))
+  return datetime.timedelta(weeks=g(2), days=365 * g(0) + 30 * g(1) + g(3),
+                            hours=g(5), minutes=g(6), seconds=g(7))
 
 
 def to_iso8601_duration(input: datetime.timedelta) -> str:
@@ -1252,14 +1249,14 @@ def interpret_http_exception(exception: BaseException
     body = e.get_description()
 
   elif isinstance(e, urllib.error.HTTPError):
-    code = e.code
+    code = str(e.code)
     try:
       body = e.read() or e.body
       if body:
         # store a copy inside the exception because e.fp.seek(0) to reset isn't
         # always available.
         e.body = body
-        body = body.decode('utf-8')
+        body = body.decode()
     except (AttributeError, KeyError):
       if not body:
         body = str(e.reason)
@@ -1932,7 +1929,8 @@ def parse_html(input: Union[str, requests.Response], **kwargs
 
 
 def parse_mf2(input: Union[str, bs4.BeautifulSoup, requests.Response],
-              url: Optional[str] = None, id: Optional[str] = None):
+              url: Optional[str] = None, id: Optional[str] = None
+              ) -> Optional[Mapping]:
   """Parses microformats2 out of HTML.
 
   Currently uses mf2py.
@@ -1978,7 +1976,7 @@ def fetch_mf2(url: str, get_fn=requests_get, gateway: bool = False, **kwargs
   resp = get_fn(url, gateway=gateway, **kwargs)
   resp.raise_for_status()
 
-  mf2 = parse_mf2(resp)
+  mf2: dict = parse_mf2(resp)
   assert 'url' not in mf2
   mf2['url'] = resp.url
   return mf2

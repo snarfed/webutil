@@ -327,8 +327,8 @@ class TestCase(mox.MoxTestBase, Asserts):
       self._is_head_mocked = True
 
   def expect_requests_head(self, *args, **kwargs):
-    kwargs['method'] = requests.head
     self.unstub_requests_head()
+    kwargs['method'] = requests.head
     return self._expect_requests_call(*args, **kwargs)
 
   def expect_requests_get(self, *args, **kwargs):
@@ -346,8 +346,7 @@ class TestCase(mox.MoxTestBase, Asserts):
   def _expect_requests_call(self, url, response='', status_code=200,
                             content_type='text/html', method=requests.get,
                             redirected_url=None, response_headers=None,
-                            headers: Optional[dict] = None,
-                            files: Optional[dict] = None, **kwargs):
+                            **kwargs):
     """
     Args:
       redirected_url: string URL or sequence of string URLs for multiple redirects
@@ -373,20 +372,21 @@ class TestCase(mox.MoxTestBase, Asserts):
 
     headers = kwargs.get('headers')
     if headers and not isinstance(headers, mox.Comparator):
+      expected = set(headers.items())
       def check_headers(actual: dict):
-        headers: dict
-        missing = set(headers.items()) - set(actual.items())
+        missing = expected - set(actual.items())
         assert not missing, 'Missing request headers: %s\n(Got %s, %s)' % (
-          missing, set(actual.items()), set(headers.items()))
+          missing, set(actual.items()), expected)
         return True
       kwargs['headers'] = mox.Func(check_headers)
 
+    files = kwargs.get('files')
     if files:
+      expected = list(files.items())
       def check_files(actual: dict):
-        files: dict
-        self.assertEqual(list(actual.keys()), list(files.keys()))
-        for name, expected in files.items():
-          self.assertEqual(expected, actual[name].read())
+        self.assertEqual(list(actual.keys()), [name for name, _ in expected])
+        for name, contents in expected:
+          self.assertEqual(contents, actual[name].read())
         return True
       kwargs['files'] = mox.Func(check_files)
 
