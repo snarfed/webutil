@@ -6,6 +6,7 @@ import os
 import pprint
 import re
 import traceback
+from typing import Optional
 import urllib.error, urllib.parse, urllib.request
 import warnings
 
@@ -326,22 +327,27 @@ class TestCase(mox.MoxTestBase, Asserts):
       self._is_head_mocked = True
 
   def expect_requests_head(self, *args, **kwargs):
+    kwargs['method'] = requests.head
     self.unstub_requests_head()
-    return self._expect_requests_call(*args, method=requests.head, **kwargs)
+    return self._expect_requests_call(*args, **kwargs)
 
   def expect_requests_get(self, *args, **kwargs):
-    return self._expect_requests_call(*args, method=requests.get, **kwargs)
+    kwargs['method'] = requests.get
+    return self._expect_requests_call(*args, **kwargs)
 
   def expect_requests_post(self, *args, **kwargs):
-    return self._expect_requests_call(*args, method=requests.post, **kwargs)
+    kwargs['method'] = requests.post
+    return self._expect_requests_call(*args, **kwargs)
 
   def expect_requests_delete(self, *args, **kwargs):
-    return self._expect_requests_call(*args, method=requests.delete, **kwargs)
+    kwargs['method'] = requests.delete
+    return self._expect_requests_call(*args, **kwargs)
 
   def _expect_requests_call(self, url, response='', status_code=200,
                             content_type='text/html', method=requests.get,
                             redirected_url=None, response_headers=None,
-                            **kwargs):
+                            headers: Optional[dict] = None,
+                            files: Optional[dict] = None, **kwargs):
     """
     Args:
       redirected_url: string URL or sequence of string URLs for multiple redirects
@@ -367,16 +373,17 @@ class TestCase(mox.MoxTestBase, Asserts):
 
     headers = kwargs.get('headers')
     if headers and not isinstance(headers, mox.Comparator):
-      def check_headers(actual):
+      def check_headers(actual: dict):
+        headers: dict
         missing = set(headers.items()) - set(actual.items())
         assert not missing, 'Missing request headers: %s\n(Got %s, %s)' % (
           missing, set(actual.items()), set(headers.items()))
         return True
       kwargs['headers'] = mox.Func(check_headers)
 
-    files = kwargs.get('files')
     if files:
-      def check_files(actual):
+      def check_files(actual: dict):
+        files: dict
         self.assertEqual(list(actual.keys()), list(files.keys()))
         for name, expected in files.items():
           self.assertEqual(expected, actual[name].read())

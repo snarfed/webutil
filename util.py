@@ -21,7 +21,7 @@ import string
 import sys
 import threading
 import traceback
-from typing import Any, Iterable, Mapping, Optional, Sequence, Union
+from typing import Any, Iterable, List, Mapping, Optional, Sequence, Union
 import urllib.error, urllib.parse, urllib.request
 from urllib.parse import urlparse
 from xml.sax import saxutils
@@ -322,7 +322,7 @@ def get_first(obj, key, default=None):
   return val[0] if isinstance(val, (list, tuple)) else val
 
 
-def get_url(val: Union[Mapping, str, None], key=None) -> Optional[str]:
+def get_url(val: Any, key=None) -> Optional[str]:
   """Returns val['url'] if val is a dict, otherwise val.
 
   If key is not None, looks in val[key] instead of val.
@@ -337,7 +337,7 @@ def get_url(val: Union[Mapping, str, None], key=None) -> Optional[str]:
   return url
 
 
-def get_urls(obj: Mapping[str, str], key, inner_key=None) -> Sequence[str]:
+def get_urls(obj: Mapping, key, inner_key=None) -> Sequence[Union[str, Mapping]]:
   """Returns elem['url'] if dict, otherwise elem, for each elem in obj[key].
 
   If inner_key is provided, the returned values are elem[inner_key]['url'].
@@ -514,7 +514,7 @@ def fragmentless(url: str) -> str:
   return urllib.parse.urlunparse(urlparse(url)[:5] + ('',))
 
 
-def clean_url(url: str) -> Optional[str]:
+def clean_url(url: Optional[str]) -> Optional[str]:
   """Removes transient query params (e.g. utm_*) from a URL.
 
   The utm_* (Urchin Tracking Metrics?) params come from Google Analytics.
@@ -575,7 +575,7 @@ def base_url(url: str) -> Optional[str]:
   return urllib.parse.urljoin(url, ' ')[:-1] if url else None
 
 
-def extract_links(text: str) -> Sequence[str]:
+def extract_links(text: Optional[str]) -> Sequence[str]:
   """Returns a list of unique string URLs in the given text.
 
   URLs in the returned list are in the order they first appear in the text.
@@ -815,7 +815,7 @@ def parse_iso8601(val: str) -> datetime.datetime:
   return datetime.datetime.strptime(val, '%Y-%m-%d %H:%M:%S.%f').replace(tzinfo=tz)
 
 
-def parse_iso8601_duration(input: str) -> Optional[datetime.timedelta]:
+def parse_iso8601_duration(input: Optional[str]) -> Optional[datetime.timedelta]:
   """Parses an ISO 8601 duration.
 
   Note: converts months to 30 days each. (ISO 8601 doesn't seem to define the
@@ -838,12 +838,13 @@ def parse_iso8601_duration(input: str) -> Optional[datetime.timedelta]:
   if not match:
     return None
 
+  groups = match.groups()
+
   def g(i: int):
-    val = match.group(i)
+    val = groups[i]
     return int(val[:-1]) if val else 0
 
-  return datetime.timedelta(weeks=g(3),
-                            days=365 * g(1) + 30 * g(2) + g(4),
+  return datetime.timedelta(weeks=g(3), days=365 * g(1) + 30 * g(2) + g(4),
                             hours=g(6), minutes=g(7), seconds=g(8))
 
 
@@ -869,7 +870,7 @@ def to_iso8601_duration(input: datetime.timedelta) -> str:
   return 'P%sDT%sS' % (input.days, input.seconds)
 
 
-def maybe_iso8601_to_rfc3339(input: str) -> str:
+def maybe_iso8601_to_rfc3339(input: Optional[str]) -> Optional[str]:
   """Tries to convert an ISO 8601 date/time string to RFC 3339.
 
   The formats are similar, but not identical, eg. RFC 3339 includes a colon in
@@ -880,18 +881,24 @@ def maybe_iso8601_to_rfc3339(input: str) -> str:
 
   http://www.rfc-editor.org/rfc/rfc3339.txt
   """
+  if not input:
+    return input
+
   try:
     return parse_iso8601(input).isoformat('T')
   except (AssertionError, ValueError, TypeError):
     return input
 
 
-def maybe_timestamp_to_rfc3339(input: Union[int, float, str]
-                               ) -> Union[int, float, str]:
+def maybe_timestamp_to_rfc3339(input: Union[int, float, str, None]
+                               ) -> Union[int, float, str, None]:
   """Tries to convert a string or int UNIX timestamp to RFC 3339.
 
   Assumes UNIX timestamps are always UTC. (They're generally supposed to be.)
   """
+  if input is None:
+    return None
+
   try:
     dt = datetime.datetime.utcfromtimestamp(float(input)).replace(tzinfo=UTC)
     return dt.isoformat('T', 'milliseconds' if dt.microsecond else 'seconds')
@@ -899,8 +906,8 @@ def maybe_timestamp_to_rfc3339(input: Union[int, float, str]
     return input
 
 
-def maybe_timestamp_to_iso8601(input: Union[int, float, str]
-                               ) -> Union[int, float, str]:
+def maybe_timestamp_to_iso8601(input: Union[int, float, str, None]
+                               ) -> Union[int, float, str, None]:
   """Tries to convert a string or int UNIX timestamp to ISO 8601.
 
   Assumes UNIX timestamps are always UTC. (They're generally supposed to be.)
@@ -1016,7 +1023,7 @@ def get_required_param(handler: flask.Request, name: str) -> str:
 
 def dedupe_urls(urls: Iterable[Union[str, Mapping, None]],
                 key: Optional[str] = None,
-                ) -> Sequence[str]:
+                ) -> Sequence[Union[str, Mapping]]:
   """Normalizes and de-dupes http(s) URLs.
 
   Converts domain to lower case, adds trailing slash when path is empty, and
@@ -1042,7 +1049,8 @@ def dedupe_urls(urls: Iterable[Union[str, Mapping, None]],
       looking for the 'url' key
 
   Returns:
-    sequence of string URLs
+    sequence of string URLs and/or dict objects with 'url' keys, corresponding
+      to the input URLs
   """
   seen = set()
   result = []
@@ -1055,12 +1063,14 @@ def dedupe_urls(urls: Iterable[Union[str, Mapping, None]],
     p = urllib.parse.urlsplit(url)
     # normalize domain (hostname attr is lower case) and path
     norm = [p.scheme, p.hostname, p.path or '/', p.query, p.fragment]
+    https = urllib.parse.urlunsplit(['https'] + norm[1:])  # type: ignore
+    http = urllib.parse.urlunsplit(['http'] + norm[1:])  # type: ignore
 
-    if p.scheme == 'http' and urllib.parse.urlunsplit(['https'] + norm[1:]) in result:
+    if p.scheme == 'http' and https in result:
       continue
     elif p.scheme == 'https':
       try:
-        result.remove(urllib.parse.urlunsplit(['http'] + norm[1:]))
+        result.remove(http)
       except ValueError:
         pass
 
@@ -1095,7 +1105,7 @@ def encode_oauth_state(obj: Mapping) -> str:
   return urllib.parse.quote_plus(json_dumps(trim_nulls(obj), sort_keys=True))
 
 
-def decode_oauth_state(state: str) -> Mapping:
+def decode_oauth_state(state: Optional[str]) -> Mapping:
   """Decodes a state parameter encoded by :meth:`encode_state_parameter`.
 
   Args:
@@ -1210,7 +1220,7 @@ def sniff_json_or_form_encoded(value: str) -> Union[Mapping, str]:
     return json_loads(value)
 
 
-def interpret_http_exception(exception: Exception
+def interpret_http_exception(exception: BaseException
                              ) -> tuple[Optional[str], Optional[str]]:
   """Extracts the status code and response from different HTTP exception types.
 
@@ -1230,7 +1240,8 @@ def interpret_http_exception(exception: Exception
     (string status code or None, string response body or None)
   """
   e = exception
-  code = body = None
+  code: Optional[str] = None
+  body: Optional[str] = None
 
   if exc and isinstance(e, exc.WSGIHTTPException):
     code = e.code
@@ -1255,7 +1266,7 @@ def interpret_http_exception(exception: Exception
 
     # yes, flickr returns 400s when they're down. kinda ridiculous. fix that.
     if (code == '418' or
-        (code == '400' and
+        (code == '400' and body and
          'Sorry, the Flickr API service is not currently available' in body)):
       code = '504'
 
