@@ -192,7 +192,7 @@ LINK_RE = re.compile(SCHEME_RE + '?' + DOMAIN_RE + PATH_QUERY_RE,  # scheme opti
                      re.UNICODE | re.IGNORECASE)
 
 
-class Struct(object):
+class Struct:
   """A generic class that initializes its attributes from constructor kwargs."""
   def __init__(self, **kwargs):
     vars(self).update(**kwargs)
@@ -1450,7 +1450,7 @@ def is_connection_failure(exception: Exception) -> bool:
   return False
 
 
-class FileLimiter(object):
+class FileLimiter:
   """A file object wrapper that reads up to a limit and then reports EOF.
 
   From http://stackoverflow.com/a/29838711/186123 . Thanks SO!
@@ -1730,7 +1730,7 @@ def follow_redirects(url: str, **kwargs) -> requests.Response:
   return resolved
 
 
-class UrlCanonicalizer(object):
+class UrlCanonicalizer:
   """Converts URLs to their canonical form.
 
   If an input URL matches approve or reject, it's automatically approved as is
@@ -1763,9 +1763,9 @@ class UrlCanonicalizer(object):
         redirects (default True)
       headers: passed through to the requests.head call for following redirects
     """
-    self.scheme = self.to_unicode(scheme)
-    self.domain = self.to_unicode(domain)
-    self.subdomain = self.to_unicode(subdomain)
+    self.scheme = self._to_unicode(scheme)
+    self.domain = self._to_unicode(domain)
+    self.subdomain = self._to_unicode(subdomain)
     self.approve = re.compile(approve) if approve else None
     self.reject = re.compile(reject) if reject else None
     self.query = query
@@ -1775,7 +1775,7 @@ class UrlCanonicalizer(object):
     self.headers = headers
 
   @staticmethod
-  def to_unicode(val: Optional[Union[str, bytes]]) -> Optional[str]:
+  def _to_unicode(val: Optional[Union[str, bytes]]) -> Optional[str]:
     return val.decode() if isinstance(val, bytes) else val
 
   def __call__(self, url: str, redirects: Optional[bool] = None):
@@ -1784,7 +1784,8 @@ class UrlCanonicalizer(object):
     Returns the canonical form of a string URL, or None if it can't be
     canonicalized, eg its domain doesn't match.
     """
-    url = self.to_unicode(url)
+    url = self._to_unicode(url)
+    assert isinstance(url, str)
     if self.approve and self.approve.match(url):
       return url
     elif self.reject and self.reject.match(url):

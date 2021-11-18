@@ -5,6 +5,7 @@ from datetime import timedelta
 import os
 import socket
 import traceback
+from typing import Mapping
 import urllib.error
 
 import webapp2
@@ -12,17 +13,17 @@ import webapp2
 from .. import handlers
 from ..testutil import HandlerTest
 
-handlers.JINJA_ENV.loader.searchpath.append('/')
+handlers.JINJA_ENV.loader.searchpath.append('/')  # type: ignore
 
 
 class FakeTemplateHandler(handlers.TemplateHandler):
-  def template_file(self):
+  def template_file(self) -> str:
     return os.path.join(os.path.dirname(__file__), 'test_handler_get.tmpl')
 
-  def template_vars(self):
+  def template_vars(self, *args, **kwargs) -> Mapping:
     return {'foo': 'bar'}
 
-  def content_type(self):
+  def content_type(self) -> str:
     return 'text/baz'
 
   def handle_exception(self, e, debug):
@@ -35,7 +36,6 @@ class HandlersTest(HandlerTest):
   def test_handle_exception(self):
     class Handler(webapp2.RequestHandler):
       handle_exception = handlers.handle_exception
-      err = None
 
       def get(self):
         raise self.err
@@ -43,16 +43,16 @@ class HandlersTest(HandlerTest):
     app = webapp2.WSGIApplication([('/', Handler)])
 
     # HTTP exception
-    Handler.err = urllib.error.HTTPError('/', 408, 'foo bar', None, None)
+    Handler.err = urllib.error.HTTPError('/', 408, 'foo bar', {}, None)
     resp = app.get_response('/')
     self.assertEqual(408, resp.status_int)
     self.assertEqual('HTTP Error 408: foo bar', resp.text)
 
     # network failure
-    Handler.err = socket.timeout('foo bar')
+    Handler.err = socket.timeout(0, 'foo bar')
     resp = app.get_response('/')
     self.assertEqual(504, resp.status_int)
-    self.assertEqual('Upstream server request failed: foo bar', resp.text)
+    self.assertEqual('Upstream server request failed: [Errno 0] foo bar', resp.text)
 
     # other exception
     Handler.err = AssertionError('foo')

@@ -1,15 +1,18 @@
 """Utilities for Flask. View classes, decorators, URL route converters, etc."""
+from datetime import timedelta
 import logging
 import os
 import re
+from typing import Callable, Container, Literal, Mapping, Tuple, Union
 import urllib.parse
 
-from flask import abort, get_flashed_messages, make_response, redirect, render_template, request
+from flask import abort, Flask, get_flashed_messages, make_response, redirect, render_template, Response, request
 from flask.views import View
+import flask_caching
 from google.cloud import ndb
 import werkzeug.exceptions
 from werkzeug.exceptions import BadRequestKeyError, HTTPException
-from werkzeug.routing import BaseConverter
+from werkzeug.routing import BaseConverter, Map
 
 from . import util
 
@@ -104,8 +107,8 @@ for cls in (Created, Accepted, NoContent, NotModified, PaymentRequired,
             InsufficientStorage, LoopDetected, NotExtended,
             NetworkAuthenticationRequired, NetworkConnectTimeoutError):
   # https://github.com/pallets/flask/issues/1837#issuecomment-304996942
-  werkzeug.exceptions.default_exceptions.setdefault(cls.code, cls)
-  werkzeug.exceptions._aborter.mapping.setdefault(cls.code, cls)
+  werkzeug.exceptions.default_exceptions.setdefault(cls.code, cls)  # type: ignore
+  werkzeug.exceptions._aborter.mapping.setdefault(cls.code, cls)  # type: ignore
 
 
 class RegexConverter(BaseConverter):
@@ -122,12 +125,12 @@ class RegexConverter(BaseConverter):
     app = Flask(...)
     app.url_map.converters['regex'] = RegexConverter
   """
-  def __init__(self, url_map, *items):
+  def __init__(self, url_map: Map, *items):
     super(RegexConverter, self).__init__(url_map)
     self.regex = items[0]
 
 
-def get_required_param(name):
+def get_required_param(name: str) -> str:
   """Returns the given request parameter.
 
   If it's not in a query parameter or POST field, the current HTTP request
@@ -144,7 +147,7 @@ def get_required_param(name):
   return val
 
 
-def ndb_context_middleware(app, client=None):
+def ndb_context_middleware(app: Flask, client: ndb.Client):
   """WSGI middleware to add an NDB context per request.
 
   Follows the WSGI standard. Details: http://www.python.org/dev/peps/pep-0333/
@@ -171,7 +174,7 @@ def ndb_context_middleware(app, client=None):
   return wrapper
 
 
-def handle_exception(e):
+def handle_exception(e: BaseException):
   """Flask error handler that propagates HTTP exceptions into the response.
 
   Install with:
@@ -205,7 +208,7 @@ def handle_exception(e):
   raise e
 
 
-def error(msg, status=400, exc_info=False, **kwargs):
+def error(msg: str, status: int = 400, exc_info: bool = False, **kwargs):
   """Logs and returns an HTTP error via :class:`werkzeug.exceptions.HTTPException`.
 
   Args:
@@ -218,7 +221,7 @@ def error(msg, status=400, exc_info=False, **kwargs):
   abort(int(status), msg, **kwargs)
 
 
-def default_modern_headers(resp):
+def default_modern_headers(resp: Response) -> Response:
   """Include modern HTTP headers by default, but let the response override them.
 
   Install with:
@@ -230,7 +233,8 @@ def default_modern_headers(resp):
   return resp
 
 
-def cached(cache, timeout, http_5xx=False):
+def cached(cache: flask_caching.Cache, timeout: timedelta, http_5xx: bool = False
+           ) -> flask_caching.Cache:
   """Thin flask-cache wrapper that supports timedelta and cache query param.
 
   If the `cache` URL query parameter is `false`, skips the cache. Also, does not
@@ -256,7 +260,8 @@ def cached(cache, timeout, http_5xx=False):
                       response_filter=response_filter, unless=unless)
 
 
-def canonicalize_domain(from_domains, to_domain):
+def canonicalize_domain(from_domains: Union[str, Container[str]], to_domain: str
+                        ) -> Callable:
   """Returns a callable that redirects one or more domains to a canonical domain.
 
   Preserves scheme, path, and query.
@@ -308,18 +313,18 @@ class XrdOrJrd(View):
   XRD = 'xrd'
   DEFAULT_TYPE = JRD  # either JRD or XRD
 
-  def template_prefix(self):
+  def template_prefix(self) -> str:
     """Returns template filename, without extension."""
     raise NotImplementedError()
 
-  def template_vars(self, **kwargs):
+  def template_vars(self, **kwargs) -> Mapping:
     """Returns a dict with template variables.
 
     URL route variables are passed through as kwargs.
     """
     raise NotImplementedError()
 
-  def _type(self):
+  def _type(self) -> str:
     """Returns XRD or JRD."""
     format = request.args.get('format', '').lower()
     ext = os.path.splitext(request.path)[1]

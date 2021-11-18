@@ -19,7 +19,7 @@ class DiscoverTest(testutil.TestCase):
   def test_bad_url(self):
     for bad in (None, 123, '', 'asdf'):
       with self.assertRaises(ValueError):
-        discover(bad)
+        discover(bad)  # type: ignore
 
   def test_no_endpoint(self):
     self._test(None, '')
@@ -156,11 +156,11 @@ class SendTest(testutil.TestCase):
   def test_bad_url(self):
     for bad in (None, 123, '', 'asdf'):
       with self.assertRaises(ValueError):
-        send(bad, 'http://x', 'http://x')
+        send(bad, 'http://x', 'http://x')  # type: ignore
       with self.assertRaises(ValueError):
-        send('http://x', bad, 'http://x')
+        send('http://x', bad, 'http://x')  # type: ignore
       with self.assertRaises(ValueError):
-        send('http://x', 'http://x', bad)
+        send('http://x', 'http://x', bad)  # type: ignore
 
   def test_success(self):
     self._test()

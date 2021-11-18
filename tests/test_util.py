@@ -992,7 +992,7 @@ class UtilTest(testutil.TestCase):
     for e in (None, 3, 'asdf', IOError(), http.client.HTTPException('unknown'),
               URLError('asdf'), HTTPError('url', 403, 'msg', {}, None),
               ):
-      self.assertFalse(util.is_connection_failure(e), repr(e))
+      self.assertFalse(util.is_connection_failure(e), repr(e))  # type: ignore
 
   def test_file_limiter(self):
     buf = io.StringIO('abcdefghijk')

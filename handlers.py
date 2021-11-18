@@ -4,13 +4,16 @@ Includes classes for serving templates with common variables and XRD[S] and JRD
 files like host-meta and friends.
 """
 import calendar
+import datetime
 import functools
 import logging
 import threading
+from typing import Container, Mapping, Union
 import urllib.parse
 
 import cachetools
-from google.cloud.ndb import context
+import flask
+from google.cloud import ndb
 import jinja2
 import webapp2
 from webob import exc
@@ -27,7 +30,7 @@ JINJA_ENV.globals.update({
 })
 
 
-def handle_exception(self, e, debug):
+def handle_exception(self, e: BaseException, debug):
   """A webapp2 exception handler that propagates HTTP exceptions into the response.
 
   Use this as a :meth:`webapp2.RequestHandler.handle_exception()` method by
@@ -46,14 +49,14 @@ def handle_exception(self, e, debug):
 
 
 # TODO: https://stackoverflow.com/a/10964868/186123
-def redirect(from_domains, to_domain):
+def redirect(from_domains: Union[str, Container[str]], to_domain: str):
   """:class:`webapp2.RequestHandler` decorator that 301 redirects to a new domain.
 
   Preserves scheme, path, and query.
 
   Args:
-    from_domain: string or sequence of strings
-    to_domain: strings
+    from_domain: str or sequence of str
+    to_domain: str
   """
   if isinstance(from_domains, str):
     from_domains = [from_domains]
@@ -73,9 +76,9 @@ def redirect(from_domains, to_domain):
   return decorator
 
 
-def cache_response(expiration,
-                   size=20 * 1000 * 1000,  # 20 MB
-                   headers=None):
+def cache_response(expiration: datetime.timedelta,
+                   size: int = 20 * 1000 * 1000,  # 20 MB
+                   headers: Container[str] = ()):
   """:class:`webapp2.RequestHandler` method decorator that caches the response in memory.
 
   Includes a `cache_clear()` function that clears all cached responses.
@@ -88,12 +91,17 @@ def cache_response(expiration,
   Args:
     expiration: :class:`datetime.timedelta`
     size: integer, bytes. defaults to 20 MB.
-    headers: sequencey of string HTTP headers to include in the cache key
+    headers: sequence of string HTTP headers to include in the cache key
   """
   lock = threading.RLock()
+
+  def response_size(response):
+    return len(response.body)
+
   ttlcache = cachetools.TTLCache(
     size, expiration.total_seconds(),
-    getsizeof=lambda response: len(response.body))
+    getsizeof=response_size)
+    # getsizeof=lambda response: len(response.body))
 
   def decorator(method):
     @functools.wraps(method)
@@ -127,7 +135,7 @@ def cache_response(expiration,
 
 
 # TODO? https://flask-limiter.readthedocs.io/
-def throttle(one_request_each, cache_size=5000):
+def throttle(one_request_each: datetime.timedelta, cache_size: int = 5000):
   """:class:`webapp2.RequestHandler` method decorator that rate limits requests.
 
   Accepts at most one request with a given URL (including query parameters)
@@ -164,7 +172,7 @@ def throttle(one_request_each, cache_size=5000):
   return decorator
 
 
-def ndb_context_middleware(app, client=None):
+def ndb_context_middleware(app: flask.Flask, client: ndb.Client):
   """WSGI middleware to add an NDB context per request.
 
   Follows the WSGI standard. Details: http://www.python.org/dev/peps/pep-0333/
@@ -179,7 +187,7 @@ def ndb_context_middleware(app, client=None):
     client: :class:`google.cloud.ndb.Client`
   """
   def wrapper(environ, start_response):
-    if context.get_context(raise_context_error=False):
+    if ndb.context.get_context(raise_context_error=False):
       # someone else (eg a unit test harness) has already created a context
       return app(environ, start_response)
 
@@ -226,11 +234,11 @@ class TemplateHandler(ModernHandler):
   Subclasses must override :meth:`template_file()` and may also override
   :meth:`template_vars()` and :meth:`content_type()`.
   """
-  def template_file(self):
+  def template_file(self) -> str:
     """Returns the string template file path."""
     raise NotImplementedError()
 
-  def template_vars(self, *args, **kwargs):
+  def template_vars(self, *args, **kwargs) -> Mapping:
     """Returns a dict of template variable string keys and values.
 
     Args:
@@ -238,11 +246,11 @@ class TemplateHandler(ModernHandler):
     """
     return {}
 
-  def content_type(self):
+  def content_type(self) -> str:
     """Returns the string content type."""
     return 'text/html; charset=utf-8'
 
-  def headers(self):
+  def headers(self) -> Mapping:
     """Returns dict of HTTP response headers. Subclasses may override.
 
     To advertise XRDS, use::

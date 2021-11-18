@@ -30,6 +30,7 @@ class FlaskUtilTest(unittest.TestCase):
     with self.app.test_client() as client:
       resp = client.get('/def')
       self.assertEqual(200, resp.status_code)
+      assert request.view_args
       self.assertEqual('def', request.view_args['letters'])
 
       resp = client.get('/xyz')

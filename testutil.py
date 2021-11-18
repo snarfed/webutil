@@ -1,16 +1,19 @@
 """Unit test utilities."""
 import difflib
 import email
+import flask
+import flask_caching
 import io
 import os
 import pprint
 import re
 import traceback
-from typing import Optional
+from typing import Callable, Container, Mapping, Optional, Sequence, Union
 import urllib.error, urllib.parse, urllib.request
 import warnings
 
 from bs4 import GuessedAtParserWarning
+from google.cloud import ndb
 from mox3 import mox
 import requests
 import webapp2
@@ -22,9 +25,14 @@ RE_TYPE = (re.Pattern if hasattr(re, 'Pattern')  # python >=3.7
            else re._pattern_type)                # python <3.7
 
 
-def requests_response(body='', url=None, status=200, content_type=None,
-                      redirected_url=None, headers=None, allow_redirects=None,
-                      encoding=None):
+def requests_response(body: str = '',
+                      url: Optional[str] = None,
+                      status: int = 200,
+                      content_type: Optional[str] = None,
+                      redirected_url: Union[str, Sequence[str], None] = None,
+                      headers: Mapping = None,
+                      allow_redirects: bool = None,
+                      encoding: Optional[str] = None):
     """
     Args:
       redirected_url: string URL or sequence of string URLs for multiple redirects
@@ -50,8 +58,10 @@ def requests_response(body='', url=None, status=200, content_type=None,
           redirected_url = [redirected_url]
         elif not isinstance(redirected_url, list):
           redirected_url = list(redirected_url)
+        if url:
+            redirected_url.insert(0, url)
         resp.url = redirected_url[-1]
-        for u in [url] + redirected_url[:-1]:
+        for u in redirected_url[:-1]:
           resp.history.append(requests.Response())
           resp.history[-1].url = u
 
@@ -67,7 +77,7 @@ def requests_response(body='', url=None, status=200, content_type=None,
     return resp
 
 
-def enable_flask_caching(app, cache):
+def enable_flask_caching(app: flask.Flask, cache: flask_caching.Cache):
   """Test case decorator that enables a flask_caching cache.
 
   Usage:
@@ -99,20 +109,21 @@ def enable_flask_caching(app, cache):
   return decorator
 
 
-class UrlopenResult(object):
+class UrlopenResult:
   """A fake :func:`urllib.request.urlopen()` or :func:`urlfetch.fetch()` result object.
   """
-  def __init__(self, status_code, content, url=None, headers={}):
-    self.status_code = status_code
+  def __init__(self, status: int, content: str, url: Optional[str] = None,
+               headers: Mapping = {}):
+    self.status = status
     self.content = io.StringIO(str(content))
     self.url = url
     self.headers = headers
 
-  def read(self, length=-1):
+  def read(self, length: int = -1):
     return self.content.read(length)
 
   def getcode(self):
-    return self.status_code
+    return self.status
 
   def geturl(self):
     return self.url
@@ -122,11 +133,14 @@ class UrlopenResult(object):
         '\n'.join('%s: %s' % item for item in self.headers.items()))
 
 
-class Asserts(object):
+class Asserts:
   """Test case mixin class with extra assert helpers."""
 
-  def assert_entities_equal(self, a, b, ignore=frozenset(), keys_only=False,
-                            in_order=False):
+  def assert_entities_equal(self,
+                            a: Union[ndb.Model, Sequence[ndb.Model]],
+                            b: Union[ndb.Model, Sequence[ndb.Model]],
+                            ignore: Container = frozenset(),
+                            keys_only: bool = False, in_order: bool = False):
     """Asserts that a and b are equivalent entities or lists of entities.
 
     ...specifically, that they have the same property values, and if they both
@@ -173,12 +187,13 @@ class Asserts(object):
       if not keys_only:
         self.assert_equals(props(x), props(y), x_key)
 
-  def entity_keys(self, entities):
+  def entity_keys(self, entities: Union[ndb.Model, Sequence[ndb.Model]]
+                  ) -> Sequence[ndb.Key]:
     """Returns a list of keys for a list of entities.
     """
     return [e.key() for e in entities]
 
-  def assert_equals(self, expected, actual, msg=None, in_order=False):
+  def assert_equals(self, expected, actual, msg=None, in_order: bool = False):
     """Pinpoints individual element differences in lists and dicts.
 
     If in_order is False, ignores order in lists and tuples.
@@ -197,7 +212,7 @@ Expected value:
 Actual value:
 %s""" % (msg, ''.join(e.args), expected, actual))
 
-  def _assert_equals(self, expected, actual, in_order=False):
+  def _assert_equals(self, expected, actual, in_order: bool = False):
     """Recursive helper for assert_equals().
     """
     key = None
@@ -238,7 +253,7 @@ Actual value:
       args = ('[%s] ' % key if key is not None else '') + ''.join(e.args)
       raise AssertionError(args)
 
-  def assert_multiline_equals(self, expected, actual, ignore_blanks=False):
+  def assert_multiline_equals(self, expected, actual, ignore_blanks: bool = False):
     """Compares two multi-line strings and reports a diff style output.
 
     Ignores leading and trailing whitespace on each line, and squeezes repeated
@@ -252,7 +267,7 @@ Actual value:
     if exp != act:
       self.fail(''.join(difflib.Differ().compare(exp, act)))
 
-  def assert_multiline_in(self, expected, actual, ignore_blanks=False):
+  def assert_multiline_in(self, expected, actual, ignore_blanks: bool = False):
     """Checks that a multi-line string is in another and reports a diff output.
 
     Ignores leading and trailing whitespace on each line, and squeezes repeated
@@ -271,7 +286,7 @@ not found in:
 %s""" % (exp, act))
 
   @staticmethod
-  def _normalize_lines(val, ignore_blanks=False):
+  def _normalize_lines(val: str, ignore_blanks: bool = False):
     lines = [l.strip() + '\n' for l in val.splitlines(True)]
     return [l for i, l in enumerate(lines)
             if not (ignore_blanks and l == '\n') and
@@ -326,27 +341,31 @@ class TestCase(mox.MoxTestBase, Asserts):
       self.mox.StubOutWithMock(requests, 'head', use_mock_anything=True)
       self._is_head_mocked = True
 
-  def expect_requests_head(self, *args, **kwargs):
+  def expect_requests_head(self, *args, **kwargs) -> mox.MockMethod:
     self.unstub_requests_head()
     kwargs['method'] = requests.head
     return self._expect_requests_call(*args, **kwargs)
 
-  def expect_requests_get(self, *args, **kwargs):
+  def expect_requests_get(self, *args, **kwargs) -> mox.MockMethod:
     kwargs['method'] = requests.get
     return self._expect_requests_call(*args, **kwargs)
 
-  def expect_requests_post(self, *args, **kwargs):
+  def expect_requests_post(self, *args, **kwargs) -> mox.MockMethod:
     kwargs['method'] = requests.post
     return self._expect_requests_call(*args, **kwargs)
 
-  def expect_requests_delete(self, *args, **kwargs):
+  def expect_requests_delete(self, *args, **kwargs) -> mox.MockMethod:
     kwargs['method'] = requests.delete
     return self._expect_requests_call(*args, **kwargs)
 
-  def _expect_requests_call(self, url, response='', status_code=200,
-                            content_type='text/html', method=requests.get,
-                            redirected_url=None, response_headers=None,
-                            **kwargs):
+  def _expect_requests_call(self, url: str, response: str = '',
+                            status_code: int = 200,
+                            content_type: str = 'text/html',
+                            method: Callable = requests.get,
+                            redirected_url: Union[str, Sequence[str], None] = None,
+                            response_headers: Optional[Mapping] = None,
+                            **kwargs
+                            ) -> mox.MockMethod:
     """
     Args:
       redirected_url: string URL or sequence of string URLs for multiple redirects
@@ -394,8 +413,12 @@ class TestCase(mox.MoxTestBase, Asserts):
     call.AndReturn(resp)
     return call
 
-  def expect_urlopen(self, url, response=None, status=200, data=None,
-                     headers=None, response_headers={}, **kwargs):
+  def expect_urlopen(self, url: str, response: Optional[str] = None,
+                     status: int = 200,
+                     data: Union[str, bytes, None] = None,
+                     headers: Optional[Mapping] = None,
+                     response_headers: Mapping = {}, **kwargs
+                     ) -> mox.MockMethod:
     """Stubs out :func:`urllib.request.urlopen()` and sets up an expected call.
 
     If status isn't 2xx, makes the expected call raise a
@@ -403,7 +426,7 @@ class TestCase(mox.MoxTestBase, Asserts):
 
     If data is set, url *must* be a :class:`urllib.request.Request`.
 
-    If response is unset, returns the expected call.
+    Returns the expected call.
 
     Args:
       url: string, :class:`re.RegexObject` or :class:`urllib.request.Request` or
@@ -447,11 +470,13 @@ class TestCase(mox.MoxTestBase, Asserts):
 
     call = util.urllib.request.urlopen(mox.Func(check_request), **kwargs)
     if status // 100 != 2:
+      response_io = None
       if response:
-        response = urllib.request.addinfourl(io.StringIO(str(response)),
-                                             response_headers, url, status)
+        response_io = io.BytesIO(str(response).encode())
+        response = urllib.request.addinfourl(response_io, response_headers, url,
+                                             status)
       call.AndRaise(urllib.error.HTTPError('url', status, 'message',
-                                           response_headers, response))
+                                           response_headers, response_io))
     elif response is not None:
       call.AndReturn(UrlopenResult(status, response, url=url,
                                    headers=response_headers))

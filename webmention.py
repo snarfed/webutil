@@ -19,7 +19,7 @@ LINK_HEADER_RE = re.compile(
 Endpoint = namedtuple('Endpoint', ('endpoint', 'response'))
 
 
-def discover(url: int, **requests_kwargs) -> Endpoint:
+def discover(url: str, **requests_kwargs) -> Endpoint:
   """Discovers a URL's webmention endpoint.
 
   Args:
