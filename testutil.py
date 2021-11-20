@@ -391,20 +391,20 @@ class TestCase(mox.MoxTestBase, Asserts):
 
     headers = kwargs.get('headers')
     if headers and not isinstance(headers, mox.Comparator):
-      expected = set(headers.items())
+      expected_headers = set(headers.items())
       def check_headers(actual: dict):
-        missing = expected - set(actual.items())
+        missing = expected_headers - set(actual.items())
         assert not missing, 'Missing request headers: %s\n(Got %s, %s)' % (
-          missing, set(actual.items()), expected)
+          missing, set(actual.items()), expected_headers)
         return True
       kwargs['headers'] = mox.Func(check_headers)
 
     files = kwargs.get('files')
     if files:
-      expected = list(files.items())
+      expected_files = list(files.items())
       def check_files(actual: dict):
-        self.assertEqual(list(actual.keys()), [name for name, _ in expected])
-        for name, contents in expected:
+        self.assertEqual(list(actual.keys()), [name for name, _ in expected_files])
+        for name, contents in expected_files:
           self.assertEqual(contents, actual[name].read())
         return True
       kwargs['files'] = mox.Func(check_files)
@@ -413,7 +413,7 @@ class TestCase(mox.MoxTestBase, Asserts):
     call.AndReturn(resp)
     return call
 
-  def expect_urlopen(self, url: str, response: Optional[str] = None,
+  def expect_urlopen(self, url: str, response: str = '',
                      status: int = 200,
                      data: Union[str, bytes, None] = None,
                      headers: Optional[Mapping] = None,
@@ -470,14 +470,11 @@ class TestCase(mox.MoxTestBase, Asserts):
 
     call = util.urllib.request.urlopen(mox.Func(check_request), **kwargs)
     if status // 100 != 2:
-      response_io = None
-      if response:
-        response_io = io.BytesIO(str(response).encode())
-        response = urllib.request.addinfourl(response_io, response_headers, url,
-                                             status)
+      response_aiu = urllib.request.addinfourl(
+          io.BytesIO(str(response).encode()), response_headers, url, status)
       call.AndRaise(urllib.error.HTTPError('url', status, 'message',
-                                           response_headers, response_io))
-    elif response is not None:
+                                           response_headers, response_aiu))
+    else:
       call.AndReturn(UrlopenResult(status, response, url=url,
                                    headers=response_headers))
 
