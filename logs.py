@@ -43,12 +43,12 @@ SANITIZE_RE = re.compile(r"""
 """, flags=re.VERBOSE | re.IGNORECASE)
 
 
-def sanitize(msg):
+def sanitize(msg: str) -> str:
   """Sanitizes access tokens and Authorization headers."""
   return SANITIZE_RE.sub(r'\1...', msg)
 
 
-def url(when, key):
+def url(when: datetime.datetime, key: ndb.Key) -> str:
   """Returns the relative URL (no scheme or host) to a log page.
 
   Args:
@@ -59,7 +59,8 @@ def url(when, key):
     calendar.timegm(when.utctimetuple()), key.urlsafe().decode())
 
 
-def maybe_link(when, key, time_class='dt-updated', link_class=''):
+def maybe_link(when: datetime.datetime, key: ndb.Key,
+               time_class: str = 'dt-updated', link_class: str = ''):
   """Returns an HTML snippet with a timestamp and maybe a log page link.
 
   Example:
@@ -108,9 +109,9 @@ def maybe_link(when, key, time_class='dt-updated', link_class=''):
 BASE64 = 'A-Za-z0-9-_='
 DATASTORE_KEY_RE = re.compile("([^%s])(([%s]{8})[%s]{24,})([^%s])" % ((BASE64,) * 4))
 
-def linkify_datastore_keys(msg):
+def linkify_datastore_keys(msg: str) -> str:
   """Converts string datastore keys to links to the admin console viewer."""
-  def linkify_key(match):
+  def linkify_key(match: re.Match) -> str:
     try:
       # Useful for logging, but also causes false positives in the search, we
       # find and use log requests instead of real requests.
@@ -133,7 +134,7 @@ def linkify_datastore_keys(msg):
   return DATASTORE_KEY_RE.sub(linkify_key, msg)
 
 
-def utcfromtimestamp(val):
+def utcfromtimestamp(val: float) -> datetime.datetime:
     """Wrapper for datetime.utcfromtimestamp that returns HTTP 400 on overflow.
 
     ...specifically, if datetime.utcfromtimestamp raises OverflowError because

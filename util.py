@@ -1006,7 +1006,7 @@ def remove_query_param(url: str, param: str) -> tuple[str, Optional[str]]:
   return url, removed
 
 
-def get_required_param(handler: flask.Request, name: str) -> str:
+def get_required_param(handler, name: str) -> str:
   try:
     val = handler.request.get(name)
   except (UnicodeDecodeError, UnicodeEncodeError) as e:
@@ -1931,7 +1931,7 @@ def parse_html(input: Union[str, requests.Response], **kwargs
 
 def parse_mf2(input: Union[str, bs4.BeautifulSoup, requests.Response],
               url: Optional[str] = None, id: Optional[str] = None
-              ) -> Optional[Mapping]:
+              ) -> Mapping:
   """Parses microformats2 out of HTML.
 
   Currently uses mf2py.
@@ -1954,9 +1954,7 @@ def parse_mf2(input: Union[str, bs4.BeautifulSoup, requests.Response],
 
   if id:
     logging.info('Extracting and parsing just DOM element %s', id)
-    input = input.find(id=id)
-    if not input:
-      return None
+    input = input.find(id=id) or ''
 
   return mf2py.parse(url=url, doc=input, img_with_alt=True)
 
