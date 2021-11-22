@@ -3,7 +3,7 @@ from datetime import timedelta
 import logging
 import os
 import re
-from typing import Callable, Container, Literal, Mapping, Tuple, Union
+from typing import Callable, Container, Mapping, Tuple, Union
 import urllib.parse
 
 from flask import abort, Flask, get_flashed_messages, make_response, redirect, render_template, Response, request

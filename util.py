@@ -21,7 +21,7 @@ import string
 import sys
 import threading
 import traceback
-from typing import Any, Iterable, List, Mapping, Optional, Sequence, Union
+from typing import Any, Iterable, List, Mapping, Optional, Pattern, Sequence, Set, Tuple, Union
 import urllib.error, urllib.parse, urllib.request
 from urllib.parse import urlparse
 from xml.sax import saxutils
@@ -369,7 +369,7 @@ def parse_tag_uri(uri: str) -> Optional[Sequence[str]]:
 
 
 def parse_acct_uri(uri: str, hosts: Optional[Sequence[str]] = None
-                   ) -> tuple[str, str]:
+                   ) -> Tuple[str, str]:
   """Parses acct: URIs of the form acct:user@example.com .
 
   Background: http://hueniverse.com/2009/08/making-the-case-for-a-new-acct-uri-scheme/
@@ -587,7 +587,7 @@ def tokenize_links(text: str,
                    skip_bare_cc_tlds: bool = False,
                    skip_html_links: bool = True,
                    require_scheme: bool = False,
-                   ) -> tuple[Sequence[str], Sequence[str]]:
+                   ) -> Tuple[Sequence[str], Sequence[str]]:
   """Splits text into link and non-link text.
 
   Args:
@@ -933,7 +933,11 @@ def as_utc(input: datetime.datetime) -> datetime.datetime:
 
   Doesn't support DST!
   """
-  if not input.tzinfo or not (offset := input.tzinfo.utcoffset(None)):
+  if not input.tzinfo:
+    return input
+
+  offset = input.tzinfo.utcoffset(None)
+  if not offset:
     return input
 
   return (input - offset).replace(tzinfo=None)
@@ -973,7 +977,7 @@ def add_query_params(url: str, params: Union[dict, Sequence]) -> str:
   return urllib.parse.urlunparse(parsed)
 
 
-def remove_query_param(url: str, param: str) -> tuple[str, Optional[str]]:
+def remove_query_param(url: str, param: str) -> Tuple[str, Optional[str]]:
   """Removes query parameter(s) from a URL. Decodes URL escapes and UTF-8.
 
   If the query parameter is not present in the URL, the URL is returned
@@ -1218,7 +1222,7 @@ def sniff_json_or_form_encoded(value: str) -> Union[Mapping, str]:
 
 
 def interpret_http_exception(exception: BaseException
-                             ) -> tuple[Optional[str], Optional[str]]:
+                             ) -> Tuple[Optional[str], Optional[str]]:
   """Extracts the status code and response from different HTTP exception types.
 
   Args:
@@ -1487,7 +1491,7 @@ def read(filename: str) -> Union[str, None]:
     return f.read().strip()
 
 
-def load_file_lines(file: Iterable) -> set[str]:
+def load_file_lines(file: Iterable) -> Set[str]:
   """Reads lines from a file and returns them as a set.
 
   Leading and trailing whitespace is trimmed. Blank lines and lines beginning
@@ -1740,8 +1744,10 @@ class UrlCanonicalizer:
   None.
   """
   def __init__(self, scheme: str ='https', domain: Optional[str] = None,
-               subdomain: Optional[str] = None, approve: Optional[str] = None,
-               reject: Optional[str] = None, query: bool = False,
+               subdomain: Optional[str] = None,
+               approve: Union[str, Pattern, None] = None,
+               reject: Union[str, Pattern, None] = None,
+               query: bool = False,
                fragment: bool = False, trailing_slash: bool = False,
                redirects: bool = True, headers: Mapping = None):
     """Constructor.
