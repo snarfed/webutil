@@ -117,7 +117,7 @@ class UrlopenResult(object):
 
   def info(self):
     return email.message_from_string(
-        '\n'.join('{key}: {val}' for key, val in self.headers.items()))
+        '\n'.join(f'{key}: {val}' for key, val in self.headers.items()))
 
 
 class Asserts(object):
