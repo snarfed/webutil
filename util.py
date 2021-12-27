@@ -223,7 +223,7 @@ def to_xml(value):
     for key, vals in sorted(value.items()):
       if not isinstance(vals, (list, tuple)):
         vals = [vals]
-      elems.extend('<%s>%s</%s>' % (key, to_xml(val), key) for val in vals)
+      elems.extend(f'<{key}>{to_xml(val)}</{key}>' for val in vals)
     return '\n' + '\n'.join(elems) + '\n'
   else:
     if value is None:
@@ -346,7 +346,7 @@ def tag_uri(domain, name, year=None):
 
   Background on tag URIs: http://taguri.org/
   """
-  year = ',%s' % year if year else ''
+  year = f',{year}' if year else ''
   return f'tag:{domain}{year}:{name}'
 
 
@@ -381,24 +381,22 @@ def parse_acct_uri(uri, hosts=None):
   """
   parsed = urlparse(uri)
   if parsed.scheme and parsed.scheme != 'acct':
-    raise ValueError('Acct URI %s has unsupported scheme: %s' %
-                     (uri, parsed.scheme))
+    raise ValueError(f'Acct URI {uri} has unsupported scheme: {parsed.scheme}')
 
   try:
     username, host = parsed.path.split('@')
     assert host
   except (ValueError, AssertionError):
-    raise ValueError('Bad acct URI: %s' % uri)
+    raise ValueError(f'Bad acct URI: {uri}')
 
   if hosts is not None and host not in hosts:
-    raise ValueError('Acct URI %s has unsupported host %s; expected %r.' %
-                     (uri, host, hosts))
+    raise ValueError(f'Acct URI {uri} has unsupported host {host}; expected {hosts!r}.')
 
   return username, host
 
 
 def favicon_for_url(url):
-  return 'http://%s/favicon.ico' % urlparse(url).netloc
+  return f'http://{urlparse(url).netloc}/favicon.ico'
 
 
 FULL_HOST_RE = re.compile(HOST_RE + '$')
@@ -668,7 +666,7 @@ def linkify(text, pretty=False, skip_bare_cc_tlds=False, **kwargs):
     if pretty:
       result.append(pretty_link(href, **kwargs))
     else:
-      result.append('<a href="%s">%s</a>' % (href, url))
+      result.append(f'<a href="{href}">{url}</a>')
   result.append(splits[-1])
   return ''.join(result)
 
@@ -728,9 +726,9 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
 
   escaped_text = saxutils.escape(text)
   if glyphicon is not None:
-    escaped_text += ' <span class="glyphicon glyphicon-%s"></span>' % glyphicon
+    escaped_text += f' <span class="glyphicon glyphicon-{glyphicon}"></span>'
 
-  attr_str = (''.join('%s="%s" ' % (attr, val) for attr, val in list(attrs.items()))
+  attr_str = (''.join(f'{attr}="{val}" ' for attr, val in list(attrs.items()))
               if attrs else '')
   target = 'target="_blank" ' if new_tab else ''
   return ('<a %s%shref="%s">%s</a>' %
@@ -848,9 +846,9 @@ def to_iso8601_duration(input):
   Raises: :class:`TypeError` if delta is not a :class:`datetime.timedelta`
   """
   if not isinstance(input, datetime.timedelta):
-    raise TypeError('Expected datetime.timedelta, got %s' % input.__class__)
+    raise TypeError(f'Expected datetime.timedelta, got {input.__class__}')
 
-  return 'P%sDT%sS' % (input.days, input.seconds)
+  return f'P{input.days}DT{input.seconds}S'
 
 
 def maybe_iso8601_to_rfc3339(input):
@@ -996,10 +994,10 @@ def get_required_param(handler, name):
   try:
     val = handler.request.get(name)
   except (UnicodeDecodeError, UnicodeEncodeError) as e:
-    handler.abort(400, "Couldn't decode query parameters as UTF-8: %s" % e)
+    handler.abort(400, f"Couldn't decode query parameters as UTF-8: {e}")
 
   if not val:
-    handler.abort(400, 'Missing required parameter: %s' % name)
+    handler.abort(400, f'Missing required parameter: {name}')
 
   return val
 
@@ -1077,7 +1075,7 @@ def encode_oauth_state(obj):
     a string
   """
   if not isinstance(obj, dict):
-    raise TypeError('Expected dict, got %s' % obj.__class__)
+    raise TypeError(f'Expected dict, got {obj.__class__}')
 
   logging.debug('encoding state %r', obj)
   return urllib.parse.quote_plus(json_dumps(trim_nulls(obj), sort_keys=True))
@@ -1092,7 +1090,7 @@ def decode_oauth_state(state):
   Returns: dict
   """
   if not isinstance(state, str) and state is not None:
-    raise TypeError('Expected str, got %s' % state.__class__)
+    raise TypeError(f'Expected str, got {state.__class__}')
 
   logging.debug('decoding state %r', state)
   try:
@@ -1426,7 +1424,7 @@ def is_connection_failure(exception):
     # TODO: exc_info might not be for exception, e.g. if the json_loads() in
     # interpret_http_exception() fails. need to pass through the whole
     # sys.exc_info() tuple here, not just the exception object.
-    logging.info('Connection failure: %s' % exception, stack_info=True)
+    logging.info(f'Connection failure: {exception}', stack_info=True)
     return True
 
   return False
@@ -1596,8 +1594,7 @@ def requests_fn(fn):
       if length > MAX_HTTP_RESPONSE_SIZE:
         resp.close()
         resp.status_code = HTTP_RESPONSE_TOO_BIG_STATUS_CODE
-        resp._text = ('Content-Length %s is larger than our limit %s.' %
-                      (length, MAX_HTTP_RESPONSE_SIZE))
+        resp._text = f'Content-Length {length} is larger than our limit {MAX_HTTP_RESPONSE_SIZE}.'
         resp._content = resp._text.encode('utf-8')
         if gateway:
           resp.raise_for_status()
@@ -1778,7 +1775,7 @@ class UrlCanonicalizer(object):
     if domain.startswith('www.'):
       domain = domain[4:]
     if self.subdomain and domain.count('.') == 1:
-      domain = '%s.%s' % (self.subdomain, domain)
+      domain = f'{self.subdomain}.{domain}'
 
     scheme = self.scheme or parsed.scheme
     query = parsed.query if self.query else ''

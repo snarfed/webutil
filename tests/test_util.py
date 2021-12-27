@@ -202,7 +202,7 @@ class UtilTest(testutil.TestCase):
                       'mobile.asdf.com/foo?bar#baz', '//asdf.com/foo/bar',
                       'https://m.asdf.com/foo?bar#baz'):
       actual = util.domain_from_link(good_link)
-      self.assertEqual('asdf.com', actual, '%s returned %s' % (good_link, actual))
+      self.assertEqual('asdf.com', actual, f'{good_link} returned {actual}')
 
     self.assertEqual('asdf.com.', util.domain_from_link('http://asdf.com./x'))
     self.assertEqual('⊙.de', util.domain_from_link('http://⊙.de/x'))
@@ -350,7 +350,7 @@ class UtilTest(testutil.TestCase):
                  '<a href="xyz">http://foo.com</a>',
                  ):
       self.assertEqual(['http://foo.com'], util.extract_links(text),
-                        'Failed on %r' % text)
+                        f'Failed on {text!r}')
 
     self.assertEqual(
       ['http://foo.com', 'https://www.bar.com'],
@@ -383,7 +383,7 @@ class UtilTest(testutil.TestCase):
                       util.extract_links('(http://example/outside_parens)'))
 
     # preserve order
-    self.assertEqual(['http://%s' % c for c in ('a', 'b', 'c', 'd')],
+    self.assertEqual([f'http://{c}' for c in ('a', 'b', 'c', 'd')],
                       util.extract_links('http://a http://b http://c http://d'))
 
     # emoji in domain

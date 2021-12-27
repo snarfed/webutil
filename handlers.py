@@ -38,9 +38,9 @@ def handle_exception(self, e, debug):
   code, body = util.interpret_http_exception(e)
   if code:
     self.response.set_status(int(code))
-    self.response.write('Upstream server request failed: %s' % e
+    self.response.write(f'Upstream server request failed: {e}'
                         if code in ('502', '504')
-                        else 'HTTP Error %s: %s' % (code, body))
+                        else f'HTTP Error {code}: {body}')
   else:
     raise
 

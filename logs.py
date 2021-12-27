@@ -55,8 +55,7 @@ def url(when, key):
     when: datetime
     key: ndb.Key
   """
-  return 'log?start_time=%s&key=%s' % (
-    calendar.timegm(when.utctimetuple()), key.urlsafe().decode())
+  return f'log?start_time={calendar.timegm(when.utctimetuple())}&key={key.urlsafe().decode()}'
 
 
 def maybe_link(when, key, time_class='dt-updated', link_class=''):
@@ -92,12 +91,10 @@ def maybe_link(when, key, time_class='dt-updated', link_class=''):
   # https://github.com/jmoiron/humanize/issues/9#issuecomment-322917865
   now = datetime.datetime.now(tz=when.tzinfo)
 
-  time = '<time class="%s" datetime="%s" title="%s %s">%s</time>' % (
-    time_class, when.isoformat(), when.ctime(), when.tzname(),
-    humanize.naturaltime(when, when=now))
+  time = f'<time class="{time_class}" datetime="{when.isoformat()}" title="{when.ctime()} {when.tzname()}">{humanize.naturaltime(when, when=now)}</time>'
 
   if now > when > now - MAX_LOG_AGE:
-    return '<a class="%s" href="/%s">%s</a>' % (link_class, url(when, key), time)
+    return f'<a class="{link_class}" href="/{url(when, key)}">{time}</a>'
 
   return time
 
@@ -116,14 +113,12 @@ def linkify_datastore_keys(msg):
       # find and use log requests instead of real requests.
       # logging.debug('Linkifying datastore key: %s', match.group(2))
       key = ndb.Key(urlsafe=match.group(2))
-      tokens = [(kind, '%s:%s' % ('id' if isinstance(id, int) else 'name', id))
+      tokens = [(kind, f"{'id' if isinstance(id, int) else 'name'}:{id}")
                 for kind, id in key.pairs()]
-      key_str = '0/|' + '|'.join('%d/%s|%d/%s' % (len(kind), kind, len(id), id)
+      key_str = '0/|' + '|'.join(f'{len(kind)}/{kind}|{len(id)}/{id}'
                                  for kind, id in tokens)
       key_quoted = urllib.parse.quote(urllib.parse.quote(key_str, safe=''), safe='')
-      html = "%s<a title='%s' href='https://console.cloud.google.com/datastore/entities;kind=%s;ns=__$DEFAULT$__/edit;key=%s?project=%s'>%s...</a>%s" % (
-        match.group(1), match.group(2), key.kind(), key_quoted, APP_ID,
-        match.group(3), match.group(4))
+      html = f"{match.group(1)}<a title='{match.group(2)}' href='https://console.cloud.google.com/datastore/entities;kind={key.kind()};ns=__$DEFAULT$__/edit;key={key_quoted}?project={APP_ID}'>{match.group(3)}...</a>{match.group(4)}"
       logging.debug('Returning %s', html)
       return html
     except BaseException:
@@ -164,22 +159,21 @@ def log():
     """
     start_time = flask_util.get_required_param('start_time')
     if not util.is_float(start_time):
-      return error("Couldn't convert start_time to float: %r" % start_time)
+      return error(f"Couldn't convert start_time to float: {start_time!r}")
 
     start_time = float(start_time)
     if start_time < MIN_START_TIME:
-      return error("start_time must be >= %s" % MIN_START_TIME)
+      return error(f'start_time must be >= {MIN_START_TIME}')
 
     client = Client()
-    project = 'projects/%s' % APP_ID
+    project = f'projects/{APP_ID}'
     key = urllib.parse.unquote_plus(flask_util.get_required_param('key'))
 
     # first, find the individual log message to get the trace id
-    timestamp_filter = 'timestamp>="%s" timestamp<="%s"' % (
-      utcfromtimestamp(start_time - 60).isoformat() + 'Z',
-      utcfromtimestamp(start_time + 120).isoformat() + 'Z')
-    query = 'logName="%s/logs/app" jsonPayload.message:"%s" %s' % (
-      project, key, timestamp_filter)
+    timestamp_filter = (
+      f"timestamp>=\"{utcfromtimestamp(start_time - 60).isoformat() + 'Z'}\" "
+      f"timestamp<=\"{utcfromtimestamp(start_time + 120).isoformat() + 'Z'}\"")
+    query = f'logName="{project}/logs/app" jsonPayload.message:"{key}" {timestamp_filter}'
     logging.info('Searching logs with: %s', query)
     try:
       # https://googleapis.dev/python/logging/latest/client.html#google.cloud.logging_v2.client.Client.list_entries
@@ -196,8 +190,7 @@ def log():
 <body style="font-family: monospace; white-space: pre">
 """
 
-    query = 'logName="%s/logs/app" trace="%s" resource.type="gae_app" %s' % (
-      project, log.trace, timestamp_filter)
+    query = f'logName="{project}/logs/app" trace="{log.trace}" resource.type="gae_app" {timestamp_filter}'
     logging.info('Searching logs with: %s', query)
 
     # sanitize and render each line

@@ -117,7 +117,7 @@ class UrlopenResult(object):
 
   def info(self):
     return email.message_from_string(
-        '\n'.join('%s: %s' % item for item in self.headers.items()))
+        '\n'.join('{key}: {val}' for key, val in self.headers.items()))
 
 
 class Asserts(object):
@@ -149,7 +149,7 @@ class Asserts(object):
       b = list(sorted(b, key=lambda e: e.key))
 
     self.assertEqual(len(a), len(b),
-                     'Different lengths:\n expected %s\n actual %s' % (a, b))
+                     f'Different lengths:\n expected {a}\n actual {b}')
 
     for x, y in zip(a, b):
       x_key = None
@@ -188,12 +188,11 @@ class Asserts(object):
         expected = pprint.pformat(expected)
       if not isinstance(actual, str):
         actual = pprint.pformat(actual)
-      raise AssertionError("""\
-%s: %s
+      raise AssertionError(f"""{msg}: {''.join(e.args)}
 Expected value:
-%s
+{expected}
 Actual value:
-%s""" % (msg, ''.join(e.args), expected, actual))
+{actual}""")
 
   def _assert_equals(self, expected, actual, in_order=False):
     """Recursive helper for assert_equals().
@@ -203,7 +202,7 @@ Actual value:
     try:
       if isinstance(expected, RE_TYPE):
         if not re.match(expected, actual):
-          self.fail("%r doesn't match %s" % (expected, actual))
+          self.fail(f"{expected!r} doesn't match {actual}")
       elif isinstance(expected, dict) and isinstance(actual, dict):
         for key in set(expected.keys()) | set(actual.keys()):
           self._assert_equals(expected.get(key), actual.get(key), in_order=in_order)
@@ -220,8 +219,7 @@ Actual value:
           actual = sorted(actual, key=hash_or_json)
 
         self.assertEqual(len(expected), len(actual),
-                         'Different lengths:\n expected %s\n actual %s' %
-                         (len(expected), len(actual)))
+                         f'Different lengths:\n expected {len(expected)}\n actual {len(actual)}')
         for key, (e, a) in enumerate(zip(expected, actual)):
           self._assert_equals(e, a, in_order=in_order)
       elif (isinstance(expected, str) and isinstance(actual, str) and
@@ -233,7 +231,7 @@ Actual value:
     except AssertionError as e:
       # fill in where this failure came from. this recursively builds,
       # backwards, all the way up to the root.
-      args = ('[%s] ' % key if key is not None else '') + ''.join(e.args)
+      args = (f'[{key}] ' if key is not None else '') + ''.join(e.args)
       raise AssertionError(args)
 
   def assert_multiline_equals(self, expected, actual, ignore_blanks=False):
@@ -261,12 +259,11 @@ Actual value:
     """
     exp = ''.join(self._normalize_lines(expected, ignore_blanks=ignore_blanks)).strip()
     act = ''.join(self._normalize_lines(actual, ignore_blanks=ignore_blanks))
-    self.assertIn(exp, act, """\
-%s
+    self.assertIn(exp, act, f"""{exp}
 
 not found in:
 
-%s""" % (exp, act))
+{act}""")
 
   @staticmethod
   def _normalize_lines(val, ignore_blanks=False):
@@ -368,8 +365,7 @@ class TestCase(mox.MoxTestBase, Asserts):
     if headers and not isinstance(headers, mox.Comparator):
       def check_headers(actual):
         missing = set(headers.items()) - set(actual.items())
-        assert not missing, 'Missing request headers: %s\n(Got %s, %s)' % (
-          missing, set(actual.items()), set(headers.items()))
+        assert not missing, f'Missing request headers: {missing}\n(Got {set(actual.items())}, {set(headers.items())})'
         return True
       kwargs['headers'] = mox.Func(check_headers)
 
@@ -426,7 +422,7 @@ class TestCase(mox.MoxTestBase, Asserts):
             self.assertTrue(headers.equals(req.header_items()))
           elif headers is not None:
             missing = set(headers.items()) - set(req.header_items())
-            assert not missing, 'Missing request headers: %s' % missing
+            assert not missing, f'Missing request headers: {missing}'
 
       except AssertionError:
         traceback.print_exc()

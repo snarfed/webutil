@@ -78,7 +78,7 @@ class HandlersTest(HandlerTest):
       for scheme in 'http', 'https':
         resp = app.get_response(url, base_url=scheme + '://from.com')
         self.assertEqual(301, resp.status_int)
-        self.assertEqual('%s://to.org%s' % (scheme, url), resp.headers['Location'])
+        self.assertEqual(f'{scheme}://to.org{url}', resp.headers['Location'])
 
     # should redirect and include *args
     for url in 'http://from.com', 'http://from.net':
@@ -117,7 +117,7 @@ my foo: bar""", resp.text)
       def get(self):
         Handler.calls += 1
         self.response.set_status(204)
-        self.response.out.write('got %s' % self.request.url)
+        self.response.out.write(f'got {self.request.url}')
 
     app = webapp2.WSGIApplication([('.*', Handler)])
 
