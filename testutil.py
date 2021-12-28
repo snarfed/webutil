@@ -280,7 +280,7 @@ class TestCase(mox.MoxTestBase, Asserts):
   def setUp(self):
     # suppress a few warnings
     # local/lib/python3.8/site-packages/mf2util.py:556: DeprecationWarning: The 'warn' function is deprecated, use 'warning' instead
-    # logging.warn('Failed to parse datetime %s', date_str)
+    # logging.warn(f'Failed to parse datetime {date_str}')
     warnings.filterwarnings('ignore', module='mf2util',
                             message="The 'warn' function is deprecated")
     # local/lib/python3.6/site-packages/mox3/mox.py:909: DeprecationWarning: inspect.getargspec() is deprecated, use inspect.signature() or inspect.getfullargspec()

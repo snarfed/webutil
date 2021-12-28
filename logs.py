@@ -111,7 +111,7 @@ def linkify_datastore_keys(msg):
     try:
       # Useful for logging, but also causes false positives in the search, we
       # find and use log requests instead of real requests.
-      # logging.debug('Linkifying datastore key: %s', match.group(2))
+      # logging.debug(f'Linkifying datastore key: {'match.group(2)}')
       key = ndb.Key(urlsafe=match.group(2))
       tokens = [(kind, f"{'id' if isinstance(id, int) else 'name'}:{id}")
                 for kind, id in key.pairs()]
@@ -119,7 +119,7 @@ def linkify_datastore_keys(msg):
                                  for kind, id in tokens)
       key_quoted = urllib.parse.quote(urllib.parse.quote(key_str, safe=''), safe='')
       html = f"{match.group(1)}<a title='{match.group(2)}' href='https://console.cloud.google.com/datastore/entities;kind={key.kind()};ns=__$DEFAULT$__/edit;key={key_quoted}?project={APP_ID}'>{match.group(3)}...</a>{match.group(4)}"
-      logging.debug('Returning %s', html)
+      logging.debug(f'Returning {html}')
       return html
     except BaseException:
       # logging.debug("Couldn't linkify candidate datastore key.")   # too noisy
@@ -174,7 +174,7 @@ def log():
       f"timestamp>=\"{utcfromtimestamp(start_time - 60).isoformat() + 'Z'}\" "
       f"timestamp<=\"{utcfromtimestamp(start_time + 120).isoformat() + 'Z'}\"")
     query = f'logName="{project}/logs/app" jsonPayload.message:"{key}" {timestamp_filter}'
-    logging.info('Searching logs with: %s', query)
+    logging.info(f'Searching logs with: {query}')
     try:
       # https://googleapis.dev/python/logging/latest/client.html#google.cloud.logging_v2.client.Client.list_entries
       log = next(iter(client.list_entries(filter_=query, page_size=1)))
@@ -182,7 +182,7 @@ def log():
       logging.info('No log found!')
       return 'No log found!', 404
 
-    logging.info('Got insert id %s trace %s', log.insert_id, log.trace)
+    logging.info(f'Got insert id {log.insert_id} trace {log.trace}')
 
     # now, print all logs with that trace
     resp = """\
@@ -191,7 +191,7 @@ def log():
 """
 
     query = f'logName="{project}/logs/app" trace="{log.trace}" resource.type="gae_app" {timestamp_filter}'
-    logging.info('Searching logs with: %s', query)
+    logging.info(f'Searching logs with: {query}')
 
     # sanitize and render each line
     for log in client.list_entries(filter_=query, page_size=1000):

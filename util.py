@@ -1077,7 +1077,7 @@ def encode_oauth_state(obj):
   if not isinstance(obj, dict):
     raise TypeError(f'Expected dict, got {obj.__class__}')
 
-  logging.debug('encoding state %r', obj)
+  logging.debug(f'encoding state {obj!r}')
   return urllib.parse.quote_plus(json_dumps(trim_nulls(obj), sort_keys=True))
 
 
@@ -1092,7 +1092,7 @@ def decode_oauth_state(state):
   if not isinstance(state, str) and state is not None:
     raise TypeError(f'Expected str, got {state.__class__}')
 
-  logging.debug('decoding state %r', state)
+  logging.debug(f'decoding state {state!r}', )
   try:
     obj = json_loads(urllib.parse.unquote_plus(state)) if state else {}
   except ValueError:
@@ -1100,7 +1100,7 @@ def decode_oauth_state(state):
     abort(400, f'Invalid value for state parameter: {state}')
 
   if not isinstance(obj, dict):
-    logging.error('got a non-dict state parameter %s', state)
+    logging.error(f'got a non-dict state parameter {state}')
     return {}
 
   return obj
@@ -1286,7 +1286,7 @@ def interpret_http_exception(exception):
     code = str(code)
   orig_code = code
   if code or body:
-    logging.warning('Error %s, response body: %s', code, repr(body))
+    logging.warning(f'Error {code}, response body: {body!r}')
 
   if isinstance(body, bytes):
     # good faith effort to decode as UTF-8 or ASCII
@@ -1370,7 +1370,7 @@ def interpret_http_exception(exception):
       body = str(e)
 
   if orig_code != code:
-    logging.info('Converting code %s to %s', orig_code, code)
+    logging.info(f'Converting code {orig_code} to {code}')
 
   return code, body
 
@@ -1515,8 +1515,8 @@ def urlopen(url_or_req, *args, **kwargs):
   else:
     url = url_or_req
 
-  logging.info('urlopen %s %s %s', 'GET' if data is None else 'POST', url,
-               _prune(kwargs))
+  method = 'GET' if data is None else 'POST'
+  logging.info(f'urlopen {method} {url} {_prune(kwargs)}')
   kwargs.setdefault('timeout', HTTP_TIMEOUT)
   return urllib.request.urlopen(url_or_req, *args, **kwargs)
 
@@ -1533,7 +1533,7 @@ def requests_fn(fn):
       :class:`werkzeug.exceptions.BadGateway` (HTTP 502).
   """
   def call(url, *args, **kwargs):
-    logging.info('requests.%s %s %s', fn, url, _prune(kwargs))
+    logging.info(f'requests.{fn} {url} {_prune(kwargs)}')
 
     gateway = kwargs.pop('gateway', None)
     kwargs.setdefault('timeout', HTTP_TIMEOUT)
@@ -1581,7 +1581,7 @@ def requests_fn(fn):
       raise
 
     if url != resp.url:
-      logging.info('Redirected to %s', resp.url)
+      logging.info(f'Redirected to {resp.url}')
 
     # check response size for text/ and application/ Content-Types
     type = resp.headers.get('Content-Type', '')
@@ -1674,7 +1674,7 @@ def follow_redirects(url, **kwargs):
   except AssertionError:
     raise
   except BaseException as e:
-    logging.warning("Couldn't resolve URL %s : %s", url, e)
+    logging.warning(f"Couldn't resolve URL {url} : {e}")
     resolved = requests.Response()
     resolved.url = url
     resolved.status_code = 499  # not standard. i made this up.
@@ -1682,9 +1682,9 @@ def follow_redirects(url, **kwargs):
   try:
     resolved.raise_for_status()
     if resolved.url != url:
-      logging.debug('Resolved %s to %s', url, resolved.url)
+      logging.debug(f'Resolved {url} to {resolved.url}')
   except BaseException as e:
-    logging.warning("Couldn't resolve URL %s : %s", url, e)
+    logging.warning(f"Couldn't resolve URL {url}: {resolved.url}")
 
   content_type = resolved.headers.get('content-type')
   if (not resolved.ok or
@@ -1924,7 +1924,7 @@ def parse_mf2(input, url=None, id=None):
     input = parse_html(input)
 
   if id:
-    logging.info('Extracting and parsing just DOM element %s', id)
+    logging.info(f'Extracting and parsing just DOM element {id}')
     input = input.find(id=id)
     if not input:
       return None
