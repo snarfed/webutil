@@ -15,7 +15,7 @@ import requests
 import webapp2
 
 from . import util
-from .util import json_dumps, json_loads, HTTP_TIMEOUT
+from .util import json_dumps, json_loads, HTTP_TIMEOUT, USER_AGENT
 
 RE_TYPE = (re.Pattern if hasattr(re, 'Pattern')  # python >=3.7
            else re._pattern_type)                # python <3.7
@@ -352,6 +352,7 @@ class TestCase(mox.MoxTestBase, Asserts):
       kwargs['timeout'] = HTTP_TIMEOUT
     elif kwargs['timeout'] is None:
       del kwargs['timeout']
+      
 
     if 'stream' not in kwargs:
       kwargs['stream'] = True
@@ -361,8 +362,20 @@ class TestCase(mox.MoxTestBase, Asserts):
     if method is requests.head:
       kwargs['allow_redirects'] = True
 
-    headers = kwargs.get('headers')
-    if headers and not isinstance(headers, mox.Comparator):
+    # this check is necessary because we need to init an empty dict
+    # if headers is not set or in the case it is explicitely set to None
+    # in which case a headers = kwargs.get('headers', {}) would not work
+    if kwargs.get('headers') is None:
+      headers = {}
+    else:
+      headers = kwargs['headers']
+
+    if not isinstance(headers, mox.Comparator):
+
+      if 'User-Agent' not in headers:
+        headers['User-Agent'] = USER_AGENT
+        
+
       def check_headers(actual):
         missing = set(headers.items()) - set(actual.items())
         assert not missing, f'Missing request headers: {missing}\n(Got {set(actual.items())}, {set(headers.items())})'
