@@ -778,9 +778,7 @@ def parse_iso8601(val):
 
   val = val.replace('T', ' ')
   tz = None
-  zone = TIMEZONE_OFFSET_RE.search(val)
-
-  if zone:
+  if zone := TIMEZONE_OFFSET_RE.search(val):
     offset = zone.group()
     val = val[:-len(offset)]
     tz = SimpleTzinfo()
@@ -1193,13 +1191,11 @@ def sniff_json_or_form_encoded(value):
   """
   if not value:
     return {}
-  elif value[0] in ('{', '['):
+  elif value[0] in ('{', '[') or '=' not in value:
     return json_loads(value)
-  elif '=' in value:
+  else:
     return {k: v[0] if len(v) == 1 else v
             for k, v in urllib.parse.parse_qs(value).items()}
-  else:
-    return json_loads(value)
 
 
 def interpret_http_exception(exception):
@@ -1331,26 +1327,18 @@ def interpret_http_exception(exception):
     message = repr(message)
   err_code = error.get('code')
   err_subcode = error.get('error_subcode')
-  if ((type == 'OAuthException' and
-       # have to use message, not error code, since some error codes are for
-       # both auth and non-auth errors, e.g. we've gotten code 100 for both
-       # "This authorization code has expired." and "Too many IDs. ..."
-       ('token provided is invalid.' in message or
-        'authorization code has expired.' in message or
-        'the user is not a confirmed user.' in message or
-        'user must be an administrator of the page' in message or
-        'user is enrolled in a blocking, logged-in checkpoint' in message or
-        'access token belongs to a Page that has been deleted.' in message or
-        # this one below comes with HTTP 400, but actually seems to be transient.
-        # 'Cannot call API on behalf of this user' in message or
-        'Permissions error' == message
-      )) or
-      (type == 'FacebookApiException' and 'Permissions error' in message) or
-      # https://developers.facebook.com/docs/graph-api/using-graph-api#errorcodes
-      # https://developers.facebook.com/docs/graph-api/using-graph-api#errorsubcodes
-      (err_code in (102, 190) and err_subcode in (458, 459, 460, 463, 467, 490)) or
-      (err_code == 326 and 'this account is temporarily locked' in message)
-    ):
+  if (type == 'OAuthException' and
+      ('token provided is invalid.' in message
+       or 'authorization code has expired.' in message
+       or 'the user is not a confirmed user.' in message
+       or 'user must be an administrator of the page' in message
+       or 'user is enrolled in a blocking, logged-in checkpoint' in message
+       or 'access token belongs to a Page that has been deleted.' in message
+       or message == 'Permissions error')
+      or (type == 'FacebookApiException' and 'Permissions error' in message)
+      or (err_code in (102, 190)
+          and err_subcode in (458, 459, 460, 463, 467, 490)) or
+      (err_code == 326 and 'this account is temporarily locked' in message)):
     code = '401'
 
   if error.get('is_transient'):
@@ -1596,10 +1584,7 @@ def requests_fn(fn):
     type = resp.headers.get('Content-Type', '')
     if type and (type.startswith('text/') or type.startswith('application/')):
       length = resp.headers.get('Content-Length')
-      if is_int(length):
-        length = int(length)
-      else:
-        length = len(resp.text)
+      length = int(length) if is_int(length) else len(resp.text)
       if length > MAX_HTTP_RESPONSE_SIZE:
         resp.close()
         resp.status_code = HTTP_RESPONSE_TOO_BIG_STATUS_CODE
@@ -1646,8 +1631,7 @@ def requests_post_with_redirects(url, *args, **kwargs):
 def _prune(kwargs):
   pruned = dict(kwargs)
 
-  headers = pruned.get('headers')
-  if headers:
+  if headers := pruned.get('headers'):
     pruned['headers'] = {k: '...' for k in headers}
 
   return {k: v for k, v in list(pruned.items())
@@ -1696,14 +1680,11 @@ def follow_redirects(url, **kwargs):
     logging.warning(f"Couldn't resolve URL {url}: {resolved.url}")
 
   content_type = resolved.headers.get('content-type')
-  if (not resolved.ok or
-      not content_type):  # Content-Type of error response isn't useful
-    if resolved.url:
-      type, _ = mimetypes.guess_type(resolved.url)
-      resolved.headers['content-type'] = type or 'text/html'
+  if ((not resolved.ok or not content_type)) and resolved.url:
+    type, _ = mimetypes.guess_type(resolved.url)
+    resolved.headers['content-type'] = type or 'text/html'
 
-  refresh = resolved.headers.get('refresh')
-  if refresh:
+  if refresh := resolved.headers.get('refresh'):
     for part in refresh.split(';'):
       if part.strip().startswith('url='):
         return follow_redirects(part.strip()[4:], **kwargs)
