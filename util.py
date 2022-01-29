@@ -36,6 +36,8 @@ except ImportError:
   ujson = None
   import json
 
+USER_AGENT = 'oauth-dropins (https://oauth-dropins.appspot.com/)'
+
 # These are used in interpret_http_exception() and is_connection_failure(). They
 # use dependencies that we may or may not have, so degrade gracefully if they're
 # not available.
@@ -106,6 +108,7 @@ try:
   import tweepy
 except ImportError:
   tweepy = None
+
 
 EPOCH = datetime.datetime.utcfromtimestamp(0)
 EPOCH_ISO = EPOCH.isoformat()
@@ -1539,6 +1542,12 @@ def requests_fn(fn):
     kwargs.setdefault('timeout', HTTP_TIMEOUT)
     # stream to short circuit on too-long response bodies (below)
     kwargs.setdefault('stream', True)
+
+    if kwargs.get('headers') is None:
+      kwargs['headers'] =  {}
+
+    if ('user-agent' not in[key.lower() for key in kwargs.get('headers',{}).keys()]):
+      kwargs['headers']['User-Agent'] = USER_AGENT
 
     try:
       # use getattr so that stubbing out with mox still works
