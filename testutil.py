@@ -352,7 +352,6 @@ class TestCase(mox.MoxTestBase, Asserts):
       kwargs['timeout'] = HTTP_TIMEOUT
     elif kwargs['timeout'] is None:
       del kwargs['timeout']
-      
 
     if 'stream' not in kwargs:
       kwargs['stream'] = True
@@ -362,19 +361,9 @@ class TestCase(mox.MoxTestBase, Asserts):
     if method is requests.head:
       kwargs['allow_redirects'] = True
 
-    # this check is necessary because we need to init an empty dict
-    # if headers is not set or in the case it is explicitely set to None
-    # in which case a headers = kwargs.get('headers', {}) would not work
-    if kwargs.get('headers') is None:
-      headers = {}
-    else:
-      headers = kwargs['headers']
-
+    headers = kwargs.setdefault('headers', {})
     if not isinstance(headers, mox.Comparator):
-
-      if 'User-Agent' not in headers:
-        headers['User-Agent'] = USER_AGENT
-        
+      headers.setdefault('User-Agent', USER_AGENT)
 
       def check_headers(actual):
         missing = set(headers.items()) - set(actual.items())

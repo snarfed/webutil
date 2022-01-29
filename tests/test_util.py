@@ -1107,12 +1107,10 @@ class UtilTest(testutil.TestCase):
           query=False, fragment=False, trailing_slash=False)
 
     self.unstub_requests_head()
-    self.expect_requests_head('https://a.b/post', headers=None,
-                              redirected_url='https://x.yz/post')
+    self.expect_requests_head('https://a.b/post', redirected_url='https://x.yz/post')
     self.expect_requests_head('https://c.d/post', headers={'Foo': 'bar'},
                               redirected_url='https://x.yz/post')
-    self.expect_requests_head('https://e.f/post', headers=None,
-                              status_code=404)
+    self.expect_requests_head('https://e.f/post', status_code=404)
     self.mox.ReplayAll()
 
     check('https://x.yz/post', 'http://a.b/post')

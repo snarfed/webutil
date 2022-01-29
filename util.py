@@ -36,7 +36,7 @@ except ImportError:
   ujson = None
   import json
 
-USER_AGENT = 'oauth-dropins (https://oauth-dropins.appspot.com/)'
+USER_AGENT = 'webutil (https://github.com/snarfed/webutil)'
 
 # These are used in interpret_http_exception() and is_connection_failure(). They
 # use dependencies that we may or may not have, so degrade gracefully if they're
@@ -1545,9 +1545,7 @@ def requests_fn(fn):
 
     if kwargs.get('headers') is None:
       kwargs['headers'] =  {}
-
-    if ('user-agent' not in[key.lower() for key in kwargs.get('headers',{}).keys()]):
-      kwargs['headers']['User-Agent'] = USER_AGENT
+    kwargs['headers'].setdefault('User-Agent', USER_AGENT)
 
     try:
       # use getattr so that stubbing out with mox still works
