@@ -36,7 +36,7 @@ except ImportError:
   ujson = None
   import json
 
-USER_AGENT = 'webutil (https://github.com/snarfed/webutil/)'
+USER_AGENT = 'oauth-dropins (https://oauth-dropins.appspot.com/)'
 
 # These are used in interpret_http_exception() and is_connection_failure(). They
 # use dependencies that we may or may not have, so degrade gracefully if they're
