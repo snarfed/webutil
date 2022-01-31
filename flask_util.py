@@ -4,6 +4,7 @@ import os
 import re
 import urllib.parse
 
+import flask
 from flask import abort, get_flashed_messages, make_response, redirect, render_template, request
 from flask.views import View
 from google.cloud import ndb
@@ -212,10 +213,16 @@ def error(msg, status=400, exc_info=False, **kwargs):
     msg: str
     status: int
     exc_info: Python exception info three-tuple, eg from sys.exc_info()
-    kwargs: passed through to :meth:`flask.abort`
+    kwargs: passed through to :func:`flask.abort`
   """
   logging.info(f'Returning {status}: {msg} {kwargs}', exc_info=exc_info)
   abort(int(status), msg, **kwargs)
+
+
+def flash(msg, **kwargs):
+  """Wrapper for :func:`flask.flash` that also logs the message."""
+  flask.flash(msg, **kwargs)
+  logging.info(f'Flashed message: {msg}')
 
 
 def default_modern_headers(resp):

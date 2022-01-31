@@ -4,7 +4,7 @@ import os
 import unittest
 
 from flask_caching import Cache
-from flask import Flask, flash, make_response, request
+from flask import Flask, flash, get_flashed_messages, make_response, request
 from werkzeug.exceptions import BadRequest
 
 from .. import flask_util
@@ -162,6 +162,12 @@ class FlaskUtilTest(unittest.TestCase):
       resp = self.client.post('/x/y', base_url=base_url)
       self.assertEqual(204, resp.status_code)
       self.assertNotIn('Location', resp.headers)
+
+  def test_flash(self):
+    with self.app.test_request_context('/'):
+      flask_util.flash('foo')
+      flask_util.flash('bar')
+      self.assertEqual(['foo', 'bar'], get_flashed_messages())
 
 
 class XrdOrJrdTest(unittest.TestCase):
