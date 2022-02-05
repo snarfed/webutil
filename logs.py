@@ -91,7 +91,7 @@ def maybe_link(when, key, time_class='dt-updated', link_class=''):
   # https://github.com/jmoiron/humanize/issues/9#issuecomment-322917865
   now = datetime.datetime.now(tz=when.tzinfo)
 
-  time = f'<time class="{time_class}" datetime="{when.isoformat()}" title="{when.ctime()} {when.tzname()}">{humanize.naturaltime(when, when=now)}</time>'
+  time = f'<time class="{time_class}" datetime="{when.isoformat()}" title="{when.ctime()} {when.tzname()}">{humanize.naturaldelta(now - when)} ago</time>'
 
   if now > when > now - MAX_LOG_AGE:
     return f'<a class="{link_class}" href="/{url(when, key)}">{time}</a>'
