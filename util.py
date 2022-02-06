@@ -1270,7 +1270,8 @@ def interpret_http_exception(exception):
     code = e.resp.status
     body = e.response.text
 
-  elif AccessTokenRefreshError and isinstance(e, AccessTokenRefreshError):
+  elif ((AccessTokenRefreshError and isinstance(e, AccessTokenRefreshError)) or
+        (prawcore and isinstance(e, prawcore.exceptions.OAuthException))):
     body = str(e)
     if body.startswith('invalid_grant'):
       code = '401'
