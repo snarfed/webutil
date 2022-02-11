@@ -14,6 +14,8 @@ from werkzeug.routing import BaseConverter
 
 from . import util
 
+logger = logging.getLogger(__name__)
+
 # Modern HTTP headers for CORS, CSP, other security, etc.
 MODERN_HEADERS = {
   'Access-Control-Allow-Headers': '*',
@@ -184,7 +186,7 @@ def handle_exception(e):
       else:
           e.show_exception = True
 
-  logging.error(f'{e.__class__}: {e}')
+  logger.error(f'{e.__class__}: {e}')
 
   if isinstance(e, HTTPException):
     # raised by this app itself, pass it through. use body and headers from
@@ -215,14 +217,14 @@ def error(msg, status=400, exc_info=False, **kwargs):
     exc_info: Python exception info three-tuple, eg from sys.exc_info()
     kwargs: passed through to :func:`flask.abort`
   """
-  logging.info(f'Returning {status}: {msg} {kwargs}', exc_info=exc_info)
+  logger.info(f'Returning {status}: {msg} {kwargs}', exc_info=exc_info)
   abort(int(status), msg, **kwargs)
 
 
 def flash(msg, **kwargs):
   """Wrapper for :func:`flask.flash` that also logs the message."""
   flask.flash(msg, **kwargs)
-  logging.info(f'Flashed message: {msg}')
+  logger.info(f'Flashed message: {msg}')
 
 
 def default_modern_headers(resp):

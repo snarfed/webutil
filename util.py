@@ -36,8 +36,6 @@ except ImportError:
   ujson = None
   import json
 
-USER_AGENT = 'webutil (https://github.com/snarfed/webutil)'
-
 # These are used in interpret_http_exception() and is_connection_failure(). They
 # use dependencies that we may or may not have, so degrade gracefully if they're
 # not available.
@@ -109,6 +107,9 @@ try:
 except ImportError:
   tweepy = None
 
+logger = logging.getLogger(__name__)
+
+USER_AGENT = 'webutil (https://github.com/snarfed/webutil)'
 
 EPOCH = datetime.datetime.utcfromtimestamp(0)
 EPOCH_ISO = EPOCH.isoformat()
@@ -1080,7 +1081,7 @@ def encode_oauth_state(obj):
   if not isinstance(obj, dict):
     raise TypeError(f'Expected dict, got {obj.__class__}')
 
-  logging.debug(f'encoding state {obj!r}')
+  logger.debug(f'encoding state {obj!r}')
   return urllib.parse.quote_plus(json_dumps(trim_nulls(obj), sort_keys=True))
 
 
@@ -1095,15 +1096,15 @@ def decode_oauth_state(state):
   if not isinstance(state, str) and state is not None:
     raise TypeError(f'Expected str, got {state.__class__}')
 
-  logging.debug(f'decoding state {state!r}', )
+  logger.debug(f'decoding state {state!r}', )
   try:
     obj = json_loads(urllib.parse.unquote_plus(state)) if state else {}
   except ValueError:
-    logging.error(f'Invalid value for state parameter: {state}', stack_info=True)
+    logger.error(f'Invalid value for state parameter: {state}', stack_info=True)
     abort(400, f'Invalid value for state parameter: {state}')
 
   if not isinstance(obj, dict):
-    logging.error(f'got a non-dict state parameter {state}')
+    logger.error(f'got a non-dict state parameter {state}')
     return {}
 
   return obj
@@ -1290,7 +1291,7 @@ def interpret_http_exception(exception):
     code = str(code)
   orig_code = code
   if code or body:
-    logging.warning(f'Error {code}, response body: {body!r}')
+    logger.warning(f'Error {code}, response body: {body!r}')
 
   if isinstance(body, bytes):
     # good faith effort to decode as UTF-8 or ASCII
@@ -1374,7 +1375,7 @@ def interpret_http_exception(exception):
       body = str(e)
 
   if orig_code != code:
-    logging.info(f'Converting code {orig_code} to {code}')
+    logger.info(f'Converting code {orig_code} to {code}')
 
   return code, body
 
@@ -1428,7 +1429,7 @@ def is_connection_failure(exception):
     # TODO: exc_info might not be for exception, e.g. if the json_loads() in
     # interpret_http_exception() fails. need to pass through the whole
     # sys.exc_info() tuple here, not just the exception object.
-    logging.info(f'Connection failure: {exception}', stack_info=True)
+    logger.info(f'Connection failure: {exception}', stack_info=True)
     return True
 
   return False
@@ -1520,7 +1521,7 @@ def urlopen(url_or_req, *args, **kwargs):
     url = url_or_req
 
   method = 'GET' if data is None else 'POST'
-  logging.info(f'urlopen {method} {url} {_prune(kwargs)}')
+  logger.info(f'urlopen {method} {url} {_prune(kwargs)}')
   kwargs.setdefault('timeout', HTTP_TIMEOUT)
   return urllib.request.urlopen(url_or_req, *args, **kwargs)
 
@@ -1537,7 +1538,7 @@ def requests_fn(fn):
       :class:`werkzeug.exceptions.BadGateway` (HTTP 502).
   """
   def call(url, *args, **kwargs):
-    logging.info(f'requests.{fn} {url} {_prune(kwargs)}')
+    logger.info(f'requests.{fn} {url} {_prune(kwargs)}')
 
     gateway = kwargs.pop('gateway', None)
     kwargs.setdefault('timeout', HTTP_TIMEOUT)
@@ -1552,7 +1553,7 @@ def requests_fn(fn):
       # use getattr so that stubbing out with mox still works
       resp = getattr(requests, fn)(url, *args, **kwargs)
       if gateway:
-        logging.info(f'Received {resp.status_code}: {"" if resp.ok else resp.text[:500]}')
+        logger.info(f'Received {resp.status_code}: {"" if resp.ok else resp.text[:500]}')
         resp.raise_for_status()
     except (ValueError, requests.URLRequired) as e:
       if isinstance(e, requests.exceptions.InvalidURL):
@@ -1570,11 +1571,11 @@ def requests_fn(fn):
 
       if gateway:
         msg = f'Bad URL {url} : {e}'
-        logging.warning(msg)
+        logger.warning(msg)
         # this format_exc with tb None below, instead of passing exc_info=True
         # above, prevents the 'Traceback (most recent call last):' prefix that
         # triggers Stackdriver Error Reporting
-        logging.warning('\n'.join(traceback.format_tb(sys.exc_info()[2])))
+        logger.warning('\n'.join(traceback.format_tb(sys.exc_info()[2])))
         abort(400, msg)
       raise
 
@@ -1583,13 +1584,13 @@ def requests_fn(fn):
         msg = str(e)
         if e.response is not None:
           msg += f' ; {e.response.text}'
-        logging.warning(msg)
-        logging.warning('\n'.join(traceback.format_tb(sys.exc_info()[2])))
+        logger.warning(msg)
+        logger.warning('\n'.join(traceback.format_tb(sys.exc_info()[2])))
         abort(502, msg)
       raise
 
     if url != resp.url:
-      logging.info(f'Redirected to {resp.url}')
+      logger.info(f'Redirected to {resp.url}')
 
     # check response size for text/ and application/ Content-Types
     type = resp.headers.get('Content-Type', '')
@@ -1607,7 +1608,7 @@ def requests_fn(fn):
         if gateway:
           resp.raise_for_status()
 
-    logging.info(f'Received {resp.status_code}')
+    logger.info(f'Received {resp.status_code}')
 
     return resp
 
@@ -1682,7 +1683,7 @@ def follow_redirects(url, **kwargs):
   except AssertionError:
     raise
   except BaseException as e:
-    logging.warning(f"Couldn't resolve URL {url} : {e}")
+    logger.warning(f"Couldn't resolve URL {url} : {e}")
     resolved = requests.Response()
     resolved.url = url
     resolved.status_code = 499  # not standard. i made this up.
@@ -1690,9 +1691,9 @@ def follow_redirects(url, **kwargs):
   try:
     resolved.raise_for_status()
     if resolved.url != url:
-      logging.debug(f'Resolved {url} to {resolved.url}')
+      logger.debug(f'Resolved {url} to {resolved.url}')
   except BaseException as e:
-    logging.warning(f"Couldn't resolve URL {url}: {resolved.url}")
+    logger.warning(f"Couldn't resolve URL {url}: {resolved.url}")
 
   content_type = resolved.headers.get('content-type')
   if (not resolved.ok or
@@ -1932,7 +1933,7 @@ def parse_mf2(input, url=None, id=None):
     input = parse_html(input)
 
   if id:
-    logging.info(f'Extracting and parsing just DOM element {id}')
+    logger.info(f'Extracting and parsing just DOM element {id}')
     input = input.find(id=id)
     if not input:
       return None

@@ -17,6 +17,8 @@ from webob import exc
 
 from . import util
 
+logger = logging.getLogger(__name__)
+
 JINJA_ENV = jinja2.Environment(
   loader=jinja2.FileSystemLoader(('.', 'templates')),
   autoescape=True,
@@ -107,7 +109,7 @@ def cache_response(expiration,
       if cache:
         resp = ttlcache.get(key)
         if resp:
-          logging.info('Serving cached response')
+          logger.info('Serving cached response')
           return resp
 
       resp = method(self, *args, **kwargs)
@@ -146,7 +148,7 @@ def throttle(one_request_each, cache_size=5000):
     @functools.wraps(method)
     def wrapper(self, *args, **kwargs):
       if self.request.url in ttlcache:
-        logging.info('Throttling repeated request for this URL; returning HTTP 429')
+        logger.info('Throttling repeated request for this URL; returning HTTP 429')
         raise exc.HTTPTooManyRequests("Too many requests for this URL. Please reduce your polling rate.")
 
       resp = method(self, *args, **kwargs)
@@ -273,7 +275,7 @@ class TemplateHandler(ModernHandler):
           values = values[0]
         vars[key] = values
     except UnicodeDecodeError:
-      logging.warning('Bad query param', exc_info=True)
+      logger.warning('Bad query param', exc_info=True)
       self.response.status = 400
       self.response.write("Couldn't decode query parameters as UTF-8")
       return
