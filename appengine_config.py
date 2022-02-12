@@ -60,10 +60,11 @@ try:
 except ImportError:
   pass
 
-# Stackdriver Logging
-# needed to make logging visible locally
+# needed to make logging visible locally under flask run, etc
+logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
+# Stackdriver Logging
 try:
   import google.cloud.logging
   logging_client = google.cloud.logging.Client()
