@@ -154,7 +154,7 @@ def log():
     start_time = float(start_time)
     if start_time < MIN_START_TIME:
       return error(f'start_time must be >= {MIN_START_TIME}')
-    elif start_time > MIN_START_TIME:
+    elif start_time > MAX_START_TIME:
       return error(f'start_time must be <= {MAX_START_TIME}')
 
     client = Client()
