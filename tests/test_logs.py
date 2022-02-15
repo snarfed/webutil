@@ -43,11 +43,12 @@ class LogsTest(mox.MoxTestBase):
     got = logs.maybe_link(when, KEY)
     self.assertFalse(got.startswith('<a'), got)
 
-  def test_utcfromtimestamp_overflow(self):
-    too_big = 999999999999999999999
-    with self.assertRaises(OverflowError):
-      time.gmtime(too_big)
-
-    resp = self.client.get(f'/log?key=abc&start_time={too_big}')
+  def test_start_time_too_old(self):
+    resp = self.client.get(f'/log?key=abc&start_time=644858558')
     self.assertEqual(400, resp.status_code)
-    self.assertIn('start_time too big', resp.get_data(as_text=True))
+    self.assertIn('start_time must be &gt;= ', resp.get_data(as_text=True))
+
+  def test_start_time_too_far_future(self):
+    resp = self.client.get(f'/log?key=abc&start_time=16448494169326941')
+    self.assertEqual(400, resp.status_code)
+    self.assertIn('start_time must be &lt;= ', resp.get_data(as_text=True))

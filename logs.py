@@ -33,6 +33,7 @@ CACHE_TIME = datetime.timedelta(days=1)
 MAX_LOG_AGE = datetime.timedelta(days=30)
 # App Engine's launch, roughly
 MIN_START_TIME = time.mktime(datetime.datetime(2008, 4, 1).timetuple())
+MAX_START_TIME = time.mktime(datetime.datetime(2099, 1, 1).timetuple())
 
 SANITIZE_RE = re.compile(r"""
   ((?:access|api|oauth)?[ _]?
@@ -130,19 +131,6 @@ def linkify_datastore_keys(msg):
   return DATASTORE_KEY_RE.sub(linkify_key, msg)
 
 
-def utcfromtimestamp(val):
-    """Wrapper for datetime.utcfromtimestamp that returns HTTP 400 on overflow.
-
-    ...specifically, if datetime.utcfromtimestamp raises OverflowError because
-    the timestamp is greater than the platform's time_t can hold.
-    https://docs.python.org/3.9/library/datetime.html#datetime.datetime.utcfromtimestamp
-    """
-    try:
-      return datetime.datetime.utcfromtimestamp(val)
-    except OverflowError:
-      return error(f'start_time too big: {val}')
-
-
 def log():
     """Flask view that searches for and renders app logs for an HTTP request.
 
@@ -166,12 +154,15 @@ def log():
     start_time = float(start_time)
     if start_time < MIN_START_TIME:
       return error(f'start_time must be >= {MIN_START_TIME}')
+    elif start_time > MIN_START_TIME:
+      return error(f'start_time must be <= {MAX_START_TIME}')
 
     client = Client()
     project = f'projects/{APP_ID}'
     key = urllib.parse.unquote_plus(flask_util.get_required_param('key'))
 
     # first, find the individual log message to get the trace id
+    utcfromtimestamp = datetime.datetime.utcfromtimestamp
     timestamp_filter = (
       f"timestamp>=\"{utcfromtimestamp(start_time - 60).isoformat() + 'Z'}\" "
       f"timestamp<=\"{utcfromtimestamp(start_time + 120).isoformat() + 'Z'}\"")
