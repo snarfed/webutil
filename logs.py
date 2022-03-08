@@ -183,12 +183,12 @@ def log():
 <body style="font-family: monospace; white-space: pre">
 """
 
-    query = f'logName="{project}/logs/app" trace="{log.trace}" resource.type="gae_app" {timestamp_filter}'
+    query = f'logName="{project}/logs/python" trace="{log.trace}" resource.type="gae_app" {timestamp_filter}'
     logger.info(f'Searching logs with: {query}')
 
     # sanitize and render each line
     for log in client.list_entries(filter_=query, page_size=1000):
-      msg = log.payload.get('message')
+      msg = log.payload
       if msg:
         msg = linkify_datastore_keys(util.linkify(html.escape(
           msg if msg.startswith('Created by this poll:') else sanitize(msg),
