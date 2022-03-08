@@ -166,7 +166,7 @@ def log():
     timestamp_filter = (
       f"timestamp>=\"{utcfromtimestamp(start_time - 60).isoformat() + 'Z'}\" "
       f"timestamp<=\"{utcfromtimestamp(start_time + 120).isoformat() + 'Z'}\"")
-    query = f'logName="{project}/logs/app" jsonPayload.message:"{key}" {timestamp_filter}'
+    query = f'logName="{project}/logs/python" textPayload:"{key}" {timestamp_filter}'
     logger.info(f'Searching logs with: {query}')
     try:
       # https://googleapis.dev/python/logging/latest/client.html#google.cloud.logging_v2.client.Client.list_entries
