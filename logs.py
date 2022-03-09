@@ -189,6 +189,8 @@ def log():
 
     # sanitize and render each line
     for log in client.list_entries(filter_=query, page_size=1000):
+      # payload is a union that can be string, JSON, or protobuf
+      # https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#FIELDS.oneof_payload
       msg = log.payload
       if not msg:
         continue
