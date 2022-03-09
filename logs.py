@@ -14,7 +14,7 @@ import urllib.request, urllib.parse, urllib.error
 from google.cloud import ndb
 from google.cloud.logging import Client
 import humanize
-from oauth_dropins.webutil import json_dumps, json_loads
+from oauth_dropins.webutil.util import json_dumps, json_loads
 
 from .appengine_info import APP_ID
 from . import flask_util, util
