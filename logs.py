@@ -14,6 +14,7 @@ import urllib.request, urllib.parse, urllib.error
 from google.cloud import ndb
 from google.cloud.logging import Client
 import humanize
+from oauth_dropins.webutil import json_dumps, json_loads
 
 from .appengine_info import APP_ID
 from . import flask_util, util
@@ -189,12 +190,18 @@ def log():
     # sanitize and render each line
     for log in client.list_entries(filter_=query, page_size=1000):
       msg = log.payload
-      if msg:
-        msg = linkify_datastore_keys(util.linkify(html.escape(
-          msg if msg.startswith('Created by this poll:') else sanitize(msg),
-          quote=False)))
-        resp += '%s %s %s<br />' % (
-          log.severity[0], log.timestamp, msg.replace('\n', '<br />'))
+      if not msg:
+        continue
+      elif isinstance(msg, (dict, list)):
+        msg = json_dumps(msg, indent=2)
+      else:
+        msg = str(msg)
+
+      msg = linkify_datastore_keys(util.linkify(html.escape(
+        msg if msg.startswith('Created by this poll:') else sanitize(msg),
+        quote=False)))
+      resp += '%s %s %s<br />' % (
+        log.severity[0], log.timestamp, msg.replace('\n', '<br />'))
 
     resp += '</body>\n</html>'
     return resp, {'Content-Type': 'text/html; charset=utf-8'}
