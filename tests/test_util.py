@@ -23,12 +23,14 @@ from werkzeug.exceptions import BadGateway, BadRequest
 from .. import testutil, util
 from ..util import json_dumps, json_loads
 
+ORIG_USER_AGENT = util.user_agent
 
 class UtilTest(testutil.TestCase):
 
   def setUp(self):
     super(UtilTest, self).setUp()
     util.follow_redirects_cache.clear()
+    util.user_agent = ORIG_USER_AGENT
 
   def test_to_xml(self):
     self.assert_equals('', util.to_xml({}))
@@ -1302,3 +1304,17 @@ class UtilTest(testutil.TestCase):
     resp = util.requests_get(url)
     self.assertEqual(200, resp.status_code)
     self.assertEqual(url, resp.url)
+
+  def test_set_user_agent_requests(self):
+    self.expect_requests_get('http://xyz', 'abc', headers={'User-Agent': 'Fooey'})
+    self.mox.ReplayAll()
+
+    util.set_user_agent('Fooey')
+    self.assertEqual(200, util.requests_get('http://xyz').status_code)
+
+  def test_set_user_agent_urlopen(self):
+    self.expect_urlopen('http://xyz', 'abc', headers={'User-agent': 'Fooey'})
+    self.mox.ReplayAll()
+
+    util.set_user_agent('Fooey')
+    self.assertEqual(200, util.urlopen('http://xyz').status_code)

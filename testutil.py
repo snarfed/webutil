@@ -15,7 +15,7 @@ import requests
 import webapp2
 
 from . import util
-from .util import json_dumps, json_loads, HTTP_TIMEOUT, USER_AGENT
+from .util import json_dumps, json_loads, HTTP_TIMEOUT, user_agent
 
 RE_TYPE = (re.Pattern if hasattr(re, 'Pattern')  # python >=3.7
            else re._pattern_type)                # python <3.7
@@ -363,7 +363,7 @@ class TestCase(mox.MoxTestBase, Asserts):
 
     headers = kwargs.setdefault('headers', {})
     if not isinstance(headers, mox.Comparator):
-      headers.setdefault('User-Agent', USER_AGENT)
+      headers.setdefault('User-Agent', user_agent)
 
       def check_headers(actual):
         missing = set(headers.items()) - set(actual.items())
@@ -406,25 +406,25 @@ class TestCase(mox.MoxTestBase, Asserts):
       kwargs: other keyword args, e.g. timeout
     """
     def check_request(req):
+      assert isinstance(req, urllib.request.Request), repr(req)
       try:
-        req_url = req if isinstance(req, str) else req.get_full_url()
         if isinstance(url, RE_TYPE):
-          self.assertRegexpMatches(req_url, url)
+          self.assertRegexpMatches(req.get_full_url(), url)
         else:
-          self.assertEqual(url, req_url)
+          self.assertEqual(url, req.get_full_url())
 
-        if isinstance(req, str):
-          assert not data, data
-          assert not headers, headers
+        self.assertEqual(
+            data.decode() if isinstance(data, bytes) else data,
+            req.data.decode() if isinstance(req.data, bytes) else req.data)
+
+        nonlocal headers
+        if isinstance(headers, mox.Comparator):
+          self.assertTrue(headers.equals(req.header_items()))
         else:
-          self.assertEqual(
-              data.decode() if isinstance(data, bytes) else data,
-              req.data.decode() if isinstance(req.data, bytes) else req.data)
-          if isinstance(headers, mox.Comparator):
-            self.assertTrue(headers.equals(req.header_items()))
-          elif headers is not None:
-            missing = set(headers.items()) - set(req.header_items())
-            assert not missing, f'Missing request headers: {missing}'
+          if not headers:
+            headers = {}
+          missing = set(headers.items()) - set(req.header_items())
+          assert not missing, f'Missing request headers: {missing}; got {req.header_items()}'
 
       except AssertionError:
         traceback.print_exc()

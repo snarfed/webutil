@@ -109,7 +109,8 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-USER_AGENT = 'webutil (https://github.com/snarfed/webutil)'
+# set with set_user_agent()
+user_agent = 'webutil (https://github.com/snarfed/webutil)'
 
 EPOCH = datetime.datetime.utcfromtimestamp(0)
 EPOCH_ISO = EPOCH.isoformat()
@@ -1505,29 +1506,50 @@ def json_dumps(*args, **kwargs):
   return json.dumps(*args, **kwargs)
 
 
+def set_user_agent(val):
+  """Sets the user agent to be sent in :func:`urlopen` and :func:`requests_fn`.
+
+  Args:
+    val: str
+  """
+  global user_agent
+  user_agent = val
+
+
 def urlopen(url_or_req, *args, **kwargs):
-  """Wraps :func:`urllib.request.urlopen` and logs the HTTP method and URL."""
+  """Wraps :func:`urllib.request.urlopen` and logs the HTTP method and URL.
+
+  Use :func:`set_user_agent` to change the User-Agent header to be sent.
+  """
   data = kwargs.get('data')
   if isinstance(data, str):
     kwargs['data'] = data.encode()
 
   if url_or_req.__class__.__name__ == 'Request':
+    req = url_or_req
     if data is None:
-      data = url_or_req.data
+      data = req.data
       if isinstance(data, str):
-        url_or_req.data = data.encode()
-    url = url_or_req.get_full_url()
+        req.data = data.encode()
+    url = req.get_full_url()
   else:
     url = url_or_req
+    req = urllib.request.Request(url)
+
+  if not req.has_header('User-Agent'):
+    global user_agent
+    req.add_header('User-Agent', user_agent)
 
   method = 'GET' if data is None else 'POST'
   logger.info(f'urlopen {method} {url} {_prune(kwargs)}')
   kwargs.setdefault('timeout', HTTP_TIMEOUT)
-  return urllib.request.urlopen(url_or_req, *args, **kwargs)
+  return urllib.request.urlopen(req, *args, **kwargs)
 
 
 def requests_fn(fn):
   """Wraps requests.* and logs the HTTP method and URL.
+
+  Use :func:`set_user_agent` to change the User-Agent header to be sent.
 
   Args:
     fn: 'get', 'head', or 'post'
@@ -1547,7 +1569,7 @@ def requests_fn(fn):
 
     if kwargs.get('headers') is None:
       kwargs['headers'] =  {}
-    kwargs['headers'].setdefault('User-Agent', USER_AGENT)
+    kwargs['headers'].setdefault('User-Agent', user_agent)
 
     try:
       # use getattr so that stubbing out with mox still works
