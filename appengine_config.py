@@ -8,14 +8,6 @@ from .appengine_info import DEBUG
 from . import util
 util.beautifulsoup_parser = 'lxml'
 
-# # Suppress warnings
-# import warnings
-# warnings.filterwarnings('ignore', module='bs4',
-#                         message='No parser was explicitly specified')
-# if DEBUG:
-#   warnings.filterwarnings('ignore', module='google.auth',
-#     message='Your application has authenticated using end user credentials')
-
 # make oauthlib let us use non-SSL http://localhost when running locally
 # https://oauthlib.readthedocs.io/en/latest/oauth2/security.html#envvar-OAUTHLIB_INSECURE_TRANSPORT
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = 'true'
