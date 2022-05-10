@@ -4,7 +4,7 @@ StackDriver Logging API:
 https://cloud.google.com/logging/docs/apis
 """
 import calendar
-import datetime
+from datetime import datetime, timedelta, timezone
 import html
 import logging
 import re
@@ -30,11 +30,11 @@ LEVELS = {
   logging.CRITICAL: 'F',
 }
 
-CACHE_TIME = datetime.timedelta(days=1)
-MAX_LOG_AGE = datetime.timedelta(days=30)
+CACHE_TIME = timedelta(days=1)
+MAX_LOG_AGE = timedelta(days=30)
 # App Engine's launch, roughly
-MIN_START_TIME = time.mktime(datetime.datetime(2008, 4, 1).timetuple())
-MAX_START_TIME = time.mktime(datetime.datetime(2099, 1, 1).timetuple())
+MIN_START_TIME = time.mktime(datetime(2008, 4, 1, tzinfo=timezone.utc).timetuple())
+MAX_START_TIME = time.mktime(datetime(2099, 1, 1, tzinfo=timezone.utc).timetuple())
 
 SANITIZE_RE = re.compile(r"""
   ((?:access|api|oauth)?[ _]?
@@ -89,13 +89,11 @@ def maybe_link(when, key, time_class='dt-updated', link_class=''):
   """
   # always show time zone. assume naive timestamps are UTC.
   if when.tzinfo is None:
-    when = when.replace(tzinfo=datetime.timezone.utc)
+    when = when.replace(tzinfo=timezone.utc)
 
-  # humanize.naturaltime breaks on timezone-aware datetimes :(
-  # https://github.com/jmoiron/humanize/issues/9#issuecomment-322917865
-  now = datetime.datetime.now(tz=when.tzinfo)
+  now = datetime.now(tz=when.tzinfo)
 
-  time = f'<time class="{time_class}" datetime="{when.isoformat()}" title="{when.ctime()} {when.tzname()}">{humanize.naturaldelta(now - when)} ago</time>'
+  time = f'<time class="{time_class}" datetime="{when.isoformat()}" title="{when.ctime()} {when.tzname()}">{humanize.naturaltime(now - when)}</time>'
 
   if now > when > now - MAX_LOG_AGE:
     return f'<a class="{link_class}" href="/{url(when, key)}">{time}</a>'
@@ -163,7 +161,7 @@ def log():
     key = urllib.parse.unquote_plus(flask_util.get_required_param('key'))
 
     # first, find the individual log message to get the trace id
-    utcfromtimestamp = datetime.datetime.utcfromtimestamp
+    utcfromtimestamp = datetime.utcfromtimestamp
     timestamp_filter = (
       f"timestamp>=\"{utcfromtimestamp(start_time - 60).isoformat() + 'Z'}\" "
       f"timestamp<=\"{utcfromtimestamp(start_time + 120).isoformat() + 'Z'}\"")

@@ -7,7 +7,7 @@ import collections
 from collections.abc import Iterator
 import contextlib
 import base64
-import datetime
+from datetime import datetime, timedelta, timezone
 import http.client
 import inspect
 import logging
@@ -112,7 +112,7 @@ logger = logging.getLogger(__name__)
 # set with set_user_agent()
 user_agent = 'webutil (https://github.com/snarfed/webutil)'
 
-EPOCH = datetime.datetime.utcfromtimestamp(0)
+EPOCH = datetime.fromtimestamp(0, timezone.utc)
 EPOCH_ISO = EPOCH.isoformat()
 # from https://stackoverflow.com/a/53140944/186123
 ISO8601_DURATION_RE = re.compile(
@@ -744,21 +744,6 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
            escaped_text))
 
 
-class SimpleTzinfo(datetime.tzinfo):
-  """A simple, DST-unaware tzinfo subclass.
-  """
-
-  offset = datetime.timedelta(0)
-
-  def utcoffset(self, dt):
-    return self.offset
-
-  def dst(self, dt):
-    return datetime.timedelta(0)
-
-UTC = SimpleTzinfo()
-
-
 TIMEZONE_OFFSET_RE = re.compile(r'[+-]\d{2}:?\d{2}$')
 
 def parse_iso8601(val):
@@ -783,23 +768,23 @@ def parse_iso8601(val):
   zone = TIMEZONE_OFFSET_RE.search(val)
 
   if zone:
-    offset = zone.group()
-    val = val[:-len(offset)]
-    tz = SimpleTzinfo()
-    tz.offset = (datetime.datetime.strptime(offset[1:].replace(':', ''), '%H%M') -
-                 datetime.datetime.strptime('', ''))
-    if offset[0] == '-':
-      tz.offset = -tz.offset
+    offset_str = zone.group()
+    val = val[:-len(offset_str)]
+    offset = (datetime.strptime(offset_str[1:].replace(':', ''), '%H%M') -
+              datetime.strptime('', ''))
+    if offset_str[0] == '-':
+      offset = -offset
+    tz = timezone(offset)
   elif val[-1] == 'Z':
     val = val[:-1]
-    tz = UTC
+    tz = timezone.utc
 
   # fractional seconds are optional. add them if they're not already there to
   # make strptime parsing below easier.
   if '.' not in val:
     val += '.0'
 
-  return datetime.datetime.strptime(val, '%Y-%m-%d %H:%M:%S.%f').replace(tzinfo=tz)
+  return datetime.strptime(val, '%Y-%m-%d %H:%M:%S.%f').replace(tzinfo=tz)
 
 
 def parse_iso8601_duration(input):
@@ -829,9 +814,9 @@ def parse_iso8601_duration(input):
     val = match.group(i)
     return int(val[:-1]) if val else 0
 
-  return datetime.timedelta(weeks=g(3),
-                            days=365 * g(1) + 30 * g(2) + g(4),
-                            hours=g(6), minutes=g(7), seconds=g(8))
+  return timedelta(weeks=g(3),
+                   days=365 * g(1) + 30 * g(2) + g(4),
+                   hours=g(6), minutes=g(7), seconds=g(8))
 
 
 def to_iso8601_duration(input):
@@ -850,8 +835,8 @@ def to_iso8601_duration(input):
 
   Raises: :class:`TypeError` if delta is not a :class:`datetime.timedelta`
   """
-  if not isinstance(input, datetime.timedelta):
-    raise TypeError(f'Expected datetime.timedelta, got {input.__class__}')
+  if not isinstance(input, timedelta):
+    raise TypeError(f'Expected timedelta, got {input.__class__}')
 
   return f'P{input.days}DT{input.seconds}S'
 
@@ -879,7 +864,7 @@ def maybe_timestamp_to_rfc3339(input):
   Assumes UNIX timestamps are always UTC. (They're generally supposed to be.)
   """
   try:
-    dt = datetime.datetime.utcfromtimestamp(float(input)).replace(tzinfo=UTC)
+    dt = datetime.utcfromtimestamp(float(input)).replace(tzinfo=timezone.utc)
     return dt.isoformat('T', 'milliseconds' if dt.microsecond else 'seconds')
   except (ValueError, TypeError):
     return input
@@ -915,7 +900,7 @@ def as_utc(input):
   if not input.tzinfo:
     return input
 
-  utc = input - input.tzinfo.utcoffset(False)
+  utc = input - input.tzinfo.utcoffset(None)
   return utc.replace(tzinfo=None)
 
 

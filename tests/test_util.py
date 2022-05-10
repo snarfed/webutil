@@ -620,9 +620,8 @@ class UtilTest(testutil.TestCase):
     dt = datetime.datetime(2000, 1, 1)  # naive
     self.assertEqual(dt, util.as_utc(dt))
 
-    tzinfo = util.SimpleTzinfo()
-    tzinfo.offset = datetime.timedelta(minutes=-390)
-    dt = datetime.datetime(2000, 1, 1, tzinfo=tzinfo)  # aware
+    tz = datetime.timezone(datetime.timedelta(minutes=-390))
+    dt = datetime.datetime(2000, 1, 1, tzinfo=tz)  # aware
 
     got = util.as_utc(dt)
     self.assertEqual(datetime.datetime(2000, 1, 1, 6, 30), got)
