@@ -9,6 +9,7 @@ import contextlib
 import base64
 from datetime import datetime, timedelta, timezone
 import http.client
+import humanize
 import inspect
 import logging
 import mimetypes
@@ -902,6 +903,18 @@ def as_utc(input):
 
   utc = input - input.tzinfo.utcoffset(None)
   return utc.replace(tzinfo=None)
+
+
+def naturaltime(val, when=None, **kwargs):
+  """Wrapper for humanize.naturaltime that handles timezone-aware datetimes.
+
+  ...since humanize currently doesn't. :(
+  https://github.com/python-humanize/humanize/issues/17
+  """
+  val = val.replace(tzinfo=None)
+  if when is not None:
+    when = when.replace(tzinfo=None)
+  return humanize.naturaltime(val, when=when, **kwargs)
 
 
 def ellipsize(str, words=14, chars=140):

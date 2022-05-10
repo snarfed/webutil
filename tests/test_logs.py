@@ -27,7 +27,7 @@ class LogsTest(mox.MoxTestBase):
 
   def test_maybe_link(self):
     when = datetime.datetime(1970, 1, 3)
-    expected = r'<time class="foo" datetime="1970-01-03T00:00:00\+00:00" title="Sat Jan  3 00:00:00 1970 UTC">\d+ years ago</time>'
+    expected = r'<time class="foo" datetime="1970-01-03T00:00:00\+00:00" title="Sat Jan  3 00:00:00 1970 UTC">\d+ years from now</time>'
     actual = logs.maybe_link(when, KEY, time_class='foo')
     self.assertRegex(actual, expected)
 
