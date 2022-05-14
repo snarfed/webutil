@@ -129,7 +129,7 @@ def linkify_datastore_keys(msg):
   return DATASTORE_KEY_RE.sub(linkify_key, msg)
 
 
-def log():
+def log(module=None):
     """Flask view that searches for and renders app logs for an HTTP request.
 
     URL parameters:
@@ -144,6 +144,9 @@ def log():
       @cache.cached(600)
       def log():
         return logs.log()
+
+    Args:
+      module: str, App Engine module to search. Defaults to all.
     """
     start_time = flask_util.get_required_param('start_time')
     if not util.is_float(start_time):
@@ -165,6 +168,8 @@ def log():
       f"timestamp>=\"{utcfromtimestamp(start_time - 60).isoformat() + 'Z'}\" "
       f"timestamp<=\"{utcfromtimestamp(start_time + 120).isoformat() + 'Z'}\"")
     query = f'logName="{project}/logs/python" textPayload:"{key}" {timestamp_filter}'
+    if module:
+      query += f' resource.labels.module_id="{module}"'
     logger.info(f'Searching logs with: {query}')
     try:
       # https://googleapis.dev/python/logging/latest/client.html#google.cloud.logging_v2.client.Client.list_entries
