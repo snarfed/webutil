@@ -22,7 +22,7 @@ class LogsTest(mox.MoxTestBase):
     self.client = self.app.test_client()
 
   def test_url(self):
-    self.assertEqual(f'log?start_time=172800&key={KEY_STR}',
+    self.assertEqual(f'log?start_time=172800&key={KEY_STR}&module=',
                      logs.url(datetime.datetime(1970, 1, 3), KEY))
 
   def test_maybe_link(self):
@@ -35,7 +35,7 @@ class LogsTest(mox.MoxTestBase):
     logs.MAX_LOG_AGE = datetime.timedelta(days=99999)
 
     self.assertEqual(
-      f'<a class="bar" href="/log?start_time=172800&key={KEY_STR}">{actual}</a>',
+      f'<a class="bar" href="/log?start_time=172800&key={KEY_STR}&module=">{actual}</a>',
       logs.maybe_link(when, KEY, time_class='foo', link_class='bar'))
 
   def test_maybe_link_future(self):

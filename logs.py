@@ -51,17 +51,18 @@ def sanitize(msg):
   return SANITIZE_RE.sub(r'\1...', msg)
 
 
-def url(when, key):
+def url(when, key, module=None):
   """Returns the relative URL (no scheme or host) to a log page.
 
   Args:
     when: datetime
     key: ndb.Key
+    module: string, optional App Engine module
   """
-  return f'log?start_time={calendar.timegm(when.utctimetuple())}&key={key.urlsafe().decode()}'
+  return f'log?start_time={calendar.timegm(when.utctimetuple())}&key={key.urlsafe().decode()}&module={module if module else ""}'
 
 
-def maybe_link(when, key, time_class='dt-updated', link_class=''):
+def maybe_link(when, key, time_class='dt-updated', link_class='', module=None):
   """Returns an HTML snippet with a timestamp and maybe a log page link.
 
   Example:
@@ -83,6 +84,7 @@ def maybe_link(when, key, time_class='dt-updated', link_class=''):
     key: ndb.Key
     time_class: string, optional class value for the <time> tag
     link_class: string, optional class value for the <a> tag (if generated)
+    module: string, optional App Engine module to search logs of
 
   Returns: string HTML
   """
@@ -95,7 +97,7 @@ def maybe_link(when, key, time_class='dt-updated', link_class=''):
   time = f'<time class="{time_class}" datetime="{when.isoformat()}" title="{when.ctime()} {when.tzname()}">{util.naturaltime(when, when=now)}</time>'
 
   if now > when > now - MAX_LOG_AGE:
-    return f'<a class="{link_class}" href="/{url(when, key)}">{time}</a>'
+    return f'<a class="{link_class}" href="/{url(when, key, module=module)}">{time}</a>'
 
   return time
 
