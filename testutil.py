@@ -458,19 +458,3 @@ class TestCase(mox.MoxTestBase, Asserts):
                                    headers=response_headers))
 
     return call
-
-
-class HandlerTest(TestCase):
-  """Base test class for webapp2 request handlers.
-
-  Attributes:
-    handler: :class:`webapp2.RequestHandler`
-    request: :class:`webob.Request`
-    response: :class:`webob.Response`
-  """
-  def setUp(self):
-    super(HandlerTest, self).setUp()
-
-    self.request = webapp2.Request.blank('/')
-    self.response = webapp2.Response()
-    self.handler = webapp2.RequestHandler(self.request, self.response)

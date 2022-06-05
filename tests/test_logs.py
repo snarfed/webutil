@@ -1,5 +1,5 @@
 """Unit tests for logs.py. Woefully incomplete."""
-import datetime
+from datetime import datetime, timedelta, timezone
 import time
 
 from flask import Flask
@@ -23,25 +23,25 @@ class LogsTest(mox.MoxTestBase):
 
   def test_url(self):
     self.assertEqual(f'log?start_time=172800&key={KEY_STR}&module=',
-                     logs.url(datetime.datetime(1970, 1, 3), KEY))
+                     logs.url(datetime(1970, 1, 3), KEY))
 
   def test_maybe_link(self):
-    when = datetime.datetime(1970, 1, 3)
+    when = datetime(1970, 1, 3)
     expected = r'<time class="foo" datetime="1970-01-03T00:00:00\+00:00" title="Sat Jan  3 00:00:00 1970 UTC">\d+ years ago</time>'
     actual = logs.maybe_link(when, KEY, time_class='foo')
     self.assertRegex(actual, expected)
 
     self.mox.StubOutWithMock(logs, 'MAX_LOG_AGE')
-    logs.MAX_LOG_AGE = datetime.timedelta(days=99999)
+    logs.MAX_LOG_AGE = timedelta(days=99999)
 
     self.assertEqual(
       f'<a class="bar" href="/log?start_time=172800&key={KEY_STR}&module=">{actual}</a>',
       logs.maybe_link(when, KEY, time_class='foo', link_class='bar'))
 
   def test_maybe_link_future(self):
-    when = datetime.datetime.now() + datetime.timedelta(minutes=1)
+    when = datetime.now(tz=timezone.utc) + timedelta(minutes=1)
     got = logs.maybe_link(when, KEY)
-    self.assertFalse(got.startswith('<a'), got)
+    self.assertFalse(got.startswith('<a'), repr(got))
 
   def test_start_time_too_old(self):
     resp = self.client.get(f'/log?key=abc&start_time=644858558')
