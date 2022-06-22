@@ -1557,8 +1557,8 @@ def requests_fn(fn):
       (HTTP 400), connection failures and HTTP 4xx and 5xx result in
       :class:`werkzeug.exceptions.BadGateway` (HTTP 502).
   """
-  def call(url, *args, **kwargs):
-    logger.info(f'requests.{fn} {url} {_prune(kwargs)}')
+  def call(url, session=None, *args, **kwargs):
+    logger.info(f'{session or "requests"}.{fn} {url} {_prune(kwargs)}')
 
     gateway = kwargs.pop('gateway', None)
     kwargs.setdefault('timeout', HTTP_TIMEOUT)
@@ -1571,7 +1571,7 @@ def requests_fn(fn):
 
     try:
       # use getattr so that stubbing out with mox still works
-      resp = getattr(requests, fn)(url, *args, **kwargs)
+      resp = getattr((session or requests), fn)(url, *args, **kwargs)
       if gateway:
         logger.info(f'Received {resp.status_code}: {"" if resp.ok else resp.text[:500]}')
         resp.raise_for_status()
