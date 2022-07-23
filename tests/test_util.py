@@ -401,7 +401,9 @@ class UtilTest(testutil.TestCase):
         '<a href="http://foo.com"  class="x">xyz</a> Y',
         "X <a href='http://foo.com' />",
         'asdf <a href="http://foo.com">foo</a> qwert ',
-        'http://a<b>.com'):
+        'http://a<b>.com',
+        '<a href="http://www.example.com/?feature_embedded">',
+    ):
       self.assertEqual(unchanged, util.linkify(unchanged))
 
     for expected, input in (
@@ -509,11 +511,6 @@ class UtilTest(testutil.TestCase):
     self.assertEqual('<a href="http://aÇb.com">aÇb.com</a>', pl('http://aÇb.com'))
     self.assertEqual('<a href="http://a☕⊙b.com">a☕⊙b.com</a>',
                      pl('http://a☕⊙b.com'))
-
-  # TODO: make this work
-  # def test_linkify_broken(self):
-  #   self.assertEqual('', util.linkify(
-  #       '<a href="http://www.example.com/?feature_embedded">'))
 
   def test_linkify_pretty(self):
     def lp(url):
