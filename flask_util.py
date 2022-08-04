@@ -24,8 +24,7 @@ MODERN_HEADERS = {
   # see https://content-security-policy.com/
   'Content-Security-Policy':
     "script-src https: localhost:8080 my.dev.com:8080 'unsafe-inline'; "
-    "frame-ancestors 'self'; "
-    "report-uri /csp-report; ",
+    "frame-ancestors 'self'; ",
   # 16070400 seconds is 6 months
   'Strict-Transport-Security': 'max-age=16070400; preload',
   'X-Content-Type-Options': 'nosniff',
