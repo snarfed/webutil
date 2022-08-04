@@ -418,9 +418,12 @@ def domain_from_link(url):
   Returns:
     string
   """
-  parsed = urlparse(url)
-  if not parsed.hostname and '//' not in url:
-    parsed = urlparse('http://' + url)
+  try:
+    parsed = urlparse(url)
+    if not parsed.hostname and '//' not in url:
+      parsed = urlparse('http://' + url)
+  except ValueError:
+    return None
 
   domain = parsed.hostname
   if domain:

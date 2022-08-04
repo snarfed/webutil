@@ -211,7 +211,8 @@ class UtilTest(testutil.TestCase):
     self.assertEqual('abc⊙.de', util.domain_from_link('http://abc⊙.de/x'))
     self.assertEqual('abc.⊙.de', util.domain_from_link('http://abc.⊙.de/x'))
 
-    for bad_link in '', '  ', 'a&b.com', 'http://', 'file:///':
+    for bad_link in ('', '  ', 'a&b.com', 'http://', 'file:///',
+                     """12345'"\\'\\");|]*\x00{\r\n<\x00>�''💡"""):
       self.assertEqual(None, util.domain_from_link(bad_link))
 
   def test_domain_or_parent_in(self):
