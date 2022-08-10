@@ -117,7 +117,7 @@ class RegexConverter(BaseConverter):
 
   Usage:
 
-    @app.route('/<regex("(abc|def)"):letters>')
+    @app.route('/<regex("abc|def"):letters>')
 
   Install with:
 

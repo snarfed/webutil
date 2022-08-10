@@ -109,18 +109,24 @@ class FlaskUtilTest(unittest.TestCase):
     self.assertEqual(9, calls)
     self.assertEqual('7', resp.get_data(as_text=True))
 
+  def test_http_5xx(self):
+    cache = Cache(self.app)
+    calls = 0
+
     @self.app.route('/error')
     @flask_util.cached(cache, datetime.timedelta(days=1), http_5xx=True)
     def error():
-      return view()
+      nonlocal calls
+      calls += 1
+      return '', 500
 
-    resp = client.get('/error?500')
+    resp = self.client.get('/error')
     self.assertEqual(500, resp.status_code)
-    self.assertEqual(10, calls)
+    self.assertEqual(1, calls)
 
-    resp = client.get('/error?500')
+    resp = self.client.get('/error')
     self.assertEqual(500, resp.status_code)
-    self.assertEqual(10, calls)
+    self.assertEqual(1, calls)
 
   def test_canonicalize_domain_get(self):
     @self.app.route('/', defaults={'_': ''})
