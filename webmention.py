@@ -5,7 +5,11 @@ Spec: https://webmention.net/draft/
 from collections import namedtuple
 import logging
 import re
+import threading
 from urllib.parse import urlparse, urljoin
+
+from cachetools import TTLCache
+import requests
 
 from . import util
 
@@ -19,12 +23,35 @@ LINK_HEADER_RE = re.compile(
 #   response: requests.Response
 Endpoint = namedtuple('Endpoint', ('endpoint', 'response'))
 
+endpoint_cache_lock = threading.RLock()
+endpoint_cache = TTLCache(100_000, 60 * 60 * 24 * 365)  # 1y expiration
+NO_ENDPOINT = 'NONE'
 
-def discover(url, **requests_kwargs):
+
+def endpoint_cache_key(url):
+  """Returns cache key for a cached webmention endpoint for a given URL.
+
+  Example: 'https snarfed.org /'
+
+  If the URL is the home page, ie path is / , the key includes a / at the end,
+  so that we cache webmention endpoints for home pages separate from other pages.
+  https://github.com/snarfed/bridgy/issues/701
+  """
+  domain = util.domain_from_link(url)
+  parsed = urlparse(url)
+  parts = [parsed.scheme, domain]
+  if parsed.path in ('', '/'):
+    parts.append('/')
+
+  return ' '.join(parts)
+
+
+def discover(url, cache=False, **requests_kwargs):
   """Discovers a URL's webmention endpoint.
 
   Args:
     url: str
+    cache: boolean, whether to cache discovered endpoints by domain in memory
     requests_kwargs: passed to :meth:`requests.post`
 
   Returns: :class:`Endpoint`. If no endpoint is discovered, the endpoint
@@ -33,7 +60,25 @@ def discover(url, **requests_kwargs):
   Raises: :class:`ValueError` on bad URL, :class:`requests.HTTPError` on failure
   """
   if not url or not isinstance(url, str) or not urlparse(url).netloc:
-      raise ValueError(url)
+    raise ValueError(url)
+
+  cache_key = endpoint_cache_key(url)
+
+  def maybe_cache(endpoint):
+    if cache:
+      if not endpoint:
+        endpoint = NO_ENDPOINT
+      logging.info(f'Caching endpoint {endpoint} for {cache_key}')
+      with endpoint_cache_lock:
+        endpoint_cache[cache_key] = endpoint or NO_ENDPOINT
+
+  if cache:
+    endpoint = endpoint_cache.get(cache_key)
+    if endpoint:
+      logger.info(f'Webmention discovery: using cached endpoint {cache_key}: {endpoint}')
+      resp = requests.Response()
+      resp.url = url
+      return Endpoint(endpoint, resp)
 
   logger.debug(f'Webmention discovery: attempting for {url}')
 
@@ -50,12 +95,14 @@ def discover(url, **requests_kwargs):
     if match:
       endpoint = util.fragmentless(urljoin(url, match.group(1)))
       logger.debug(f'Webmention discovery: got endpoint in Link header: {endpoint}')
+      maybe_cache(endpoint)
       return Endpoint(endpoint, resp)
 
   # if no header, require HTML content
   content_type = resp.headers.get('content-type')
   if content_type and content_type.split(';')[0] != 'text/html':
     logger.debug(f'Webmention discovery: no endpoint in headers and content type {content_type} is not HTML')
+    maybe_cache(NO_ENDPOINT)
     return Endpoint(None, resp)
 
   # look in the content
@@ -65,9 +112,11 @@ def discover(url, **requests_kwargs):
     if tag and tag.get('href'):
       endpoint = util.fragmentless(urljoin(url, tag['href']))
       logger.debug(f'Webmention discovery: got endpoint in tag: {endpoint}')
+      maybe_cache(endpoint)
       return Endpoint(endpoint, resp)
 
   logger.debug('Webmention discovery: no endpoint in headers or HTML')
+  maybe_cache(NO_ENDPOINT)
   return Endpoint(None, resp)
 
 
