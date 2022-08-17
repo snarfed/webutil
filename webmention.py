@@ -38,6 +38,9 @@ def endpoint_cache_key(url):
   https://github.com/snarfed/bridgy/issues/701
   """
   domain = util.domain_from_link(url)
+  if not domain:
+    return None
+
   parsed = urlparse(url)
   parts = [parsed.scheme, domain]
   if parsed.path in ('', '/'):
@@ -76,9 +79,7 @@ def discover(url, cache=False, **requests_kwargs):
     endpoint = endpoint_cache.get(cache_key)
     if endpoint:
       logger.info(f'Webmention discovery: using cached endpoint {cache_key}: {endpoint}')
-      resp = requests.Response()
-      resp.url = url
-      return Endpoint(endpoint, resp)
+      return Endpoint(endpoint, None)
 
   logger.debug(f'Webmention discovery: attempting for {url}')
 
