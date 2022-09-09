@@ -1416,7 +1416,10 @@ def is_connection_failure(exception):
     ]
 
   if urllib3:
-    types += [urllib3.exceptions.HTTPError]
+    types += [
+      urllib3.exceptions.HTTPError,
+      urllib3.exceptions.ReadTimeoutError,
+    ]
 
   msg = str(exception)
   if (isinstance(exception, tuple(types)) or
@@ -1428,10 +1431,7 @@ def is_connection_failure(exception):
       'Connection closed unexpectedly' in msg or
       'Max retries exceeded' in msg
      ):
-    # TODO: exc_info might not be for exception, e.g. if the json_loads() in
-    # interpret_http_exception() fails. need to pass through the whole
-    # sys.exc_info() tuple here, not just the exception object.
-    logger.info(f'Connection failure: {exception}', stack_info=True)
+    logger.info(f'Connection failure: {exception}', stack_info=False)
     return True
 
   return False
@@ -1631,7 +1631,10 @@ def requests_fn(fn):
         if gateway:
           resp.raise_for_status()
 
-    logger.info(f'Received {resp.status_code}')
+    msg = f'Received {resp.status_code}'
+    if resp.status_code // 100 == 3:
+      msg += f' {resp.headers.get("Location") or "no Location header"}'
+    logger.info(msg)
 
     return resp
 
