@@ -138,6 +138,8 @@ FOLLOW_REDIRECTS_CACHE_TIME = 60 * 60 * 24  # 1d expiration
 follow_redirects_cache = TTLCache(1000, FOLLOW_REDIRECTS_CACHE_TIME)
 follow_redirects_cache_lock = threading.RLock()
 
+CLIENT_REDIRECT_COUNT = 1
+
 # https://en.wikipedia.org/wiki/Top-level_domain#Reserved_domains
 # Currently used in granary.source.Source.original_post_discovery, not here.
 RESERVED_TLDS = {
@@ -1967,7 +1969,32 @@ def parse_mf2(input, url=None, id=None):
   return mf2py.parse(url=url, doc=input, img_with_alt=True)
 
 
-def fetch_mf2(url, get_fn=requests_get, gateway=False, **kwargs):
+def parse_http_equiv(input, **kwargs):
+  """Parses http_equiv meta tag, if available.
+
+  Args:
+    input: unicode HTML string, :class:`bs4.BeautifulSoup`, or
+      :class:`requests.Response`
+
+  Returns: str, empty if not available or a url if available
+  """
+  if not isinstance(input, (bs4.BeautifulSoup, bs4.Tag)):
+    input = parse_html(input)
+
+  element = input.find("meta", attrs={'http-equiv': 'refresh'})
+
+  if not element:
+    return ''
+
+  refresh_content = element.get('content')
+
+  if not refresh_content:
+    return ''
+  
+  return refresh_content.rpartition('=')[2]
+
+
+def fetch_mf2(url, get_fn=requests_get, gateway=False, redirect_count=0, **kwargs):
   """Fetches an HTML page over HTTP, parses it, and returns its microformats2.
 
   Args:
@@ -1981,8 +2008,16 @@ def fetch_mf2(url, get_fn=requests_get, gateway=False, **kwargs):
   """
   resp = get_fn(url, gateway=gateway, **kwargs)
   resp.raise_for_status()
+  
+  input = parse_html(resp)
+  client_redirect = parse_http_equiv(input)
 
-  mf2 = parse_mf2(resp)
-  assert 'url' not in mf2
-  mf2['url'] = resp.url
-  return mf2
+  if client_redirect and redirect_count < CLIENT_REDIRECT_COUNT:
+    return fetch_mf2(client_redirect, get_fn=get_fn, gateway=gateway, redirect_count=redirect_count+1 **kwargs)
+  
+  else:
+    mf2 = parse_mf2(input, url=resp.url)
+    
+    assert 'url' not in mf2
+    mf2['url'] = resp.url
+    return mf2
