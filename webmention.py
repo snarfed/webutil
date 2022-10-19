@@ -20,7 +20,7 @@ LINK_HEADER_RE = re.compile(
 Endpoint = namedtuple('Endpoint', ('endpoint', 'response'))
 
 
-def discover(url, **requests_kwargs):
+def discover(url, follow_meta_refresh=False, **requests_kwargs):
   """Discovers a URL's webmention endpoint.
 
   Args:
@@ -66,6 +66,14 @@ def discover(url, **requests_kwargs):
       endpoint = util.fragmentless(urljoin(url, tag['href']))
       logger.debug(f'Webmention discovery: got endpoint in tag: {endpoint}')
       return Endpoint(endpoint, resp)
+
+  # If we are not currently following a client-side redirect https://www.w3.org/TR/WCAG20-TECHS/H76.html
+  if not follow_meta_refresh:
+    http_equiv = util.parse_http_equiv(soup)
+    if http_equiv: # else break out and continue like normal
+      endpoint = util.fragmentless(urljoin(url, http_equiv))
+      logger.debug(f'Webmention discovery: got http_equiv in tag: {endpoint}')
+      return discover(http_equiv, follow_meta_refresh=True)
 
   logger.debug('Webmention discovery: no endpoint in headers or HTML')
   return Endpoint(None, resp)

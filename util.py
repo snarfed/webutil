@@ -2008,16 +2008,8 @@ def fetch_mf2(url, get_fn=requests_get, gateway=False, redirect_count=0, **kwarg
   """
   resp = get_fn(url, gateway=gateway, **kwargs)
   resp.raise_for_status()
-  
-  input = parse_html(resp)
-  client_redirect = parse_http_equiv(input)
 
-  if client_redirect and redirect_count < CLIENT_REDIRECT_COUNT:
-    return fetch_mf2(client_redirect, get_fn=get_fn, gateway=gateway, redirect_count=redirect_count+1 **kwargs)
-  
-  else:
-    mf2 = parse_mf2(input, url=resp.url)
-    
-    assert 'url' not in mf2
-    mf2['url'] = resp.url
-    return mf2
+  mf2 = parse_mf2(resp)
+  assert 'url' not in mf2
+  mf2['url'] = resp.url
+  return mf2
