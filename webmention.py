@@ -74,7 +74,7 @@ def discover(url, follow_meta_refresh=False, **requests_kwargs):
     if http_equiv: # else implicit break out and continue like normal
       endpoint = util.fragmentless(urljoin(url, http_equiv))
       logger.debug(f'Webmention discovery: got http_equiv in tag: {endpoint}')
-      return discover(http_equiv, follow_meta_refresh=True)
+      return discover(endpoint, follow_meta_refresh=True)
 
   logger.debug('Webmention discovery: no endpoint in headers or HTML')
   return Endpoint(None, resp)
