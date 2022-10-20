@@ -686,6 +686,19 @@ class UtilTest(testutil.TestCase):
     ):
       self.assertEqual((expected, val), util.remove_query_param(input, param))
 
+  def test_parse_http_equiv(self):
+    for input, expected in (
+      ('', ''),
+      ('0;URL=', ''),
+      ('http://a', ''),
+      ('=http://a', ''),
+      ('URL=http://a', 'http://a'),
+      ('0;URL=http://a', 'http://a'),
+      ('0;URL=\'http://a\'', 'http://a'),
+      ('0;\'URL=http://a\'', 'http://a')
+    ):
+      self.assertEqual(expected, util.parse_http_equiv(input))
+
   def test_get_required_param(self):
     handler = webapp2.RequestHandler(webapp2.Request.blank('/?a=b'), None)
     self.assertEqual('b', util.get_required_param(handler, 'a'))

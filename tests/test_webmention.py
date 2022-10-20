@@ -16,6 +16,15 @@ class DiscoverTest(testutil.TestCase):
     self.assertEqual(expected, got.endpoint)
     self.assertEqual(call._return_value, got.response)
 
+  def _test_refresh(self, expected, html, redirect_html, **kwargs):
+    call = self.expect_requests_get('http://will/redirect', f'<html>{html}</html>', **kwargs)
+    redirect_call = self.expect_requests_get('http://foo', f'<html>{redirect_html}</html>', **kwargs)
+    self.mox.ReplayAll()
+
+    got = discover('http://will/redirect', follow_meta_refresh=True)
+    self.assertEqual(expected, got.endpoint)
+    self.assertEqual(redirect_call._return_value, got.response)
+
   def test_bad_url(self):
     for bad in (None, 123, '', 'asdf'):
       with self.assertRaises(ValueError):
@@ -31,7 +40,9 @@ class DiscoverTest(testutil.TestCase):
     self._test('http://endpoint', '<a rel="webmention" href="http://endpoint">')
 
   def test_html_refresh(self):
-    self._test('http://will/redirect', '<meta http-equiv="refresh" content="0;URL=\'http://refresh\'">')
+    self._test_refresh('http://endpoint',
+      '<meta http-equiv="refresh" content="0;URL=\'http://foo\'">',
+      '<link rel="webmention" href="http://endpoint">')
 
   def test_html_relative(self):
     self._test('http://foo/bar', '<link rel="webmention" href="/bar">')
