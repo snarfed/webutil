@@ -68,13 +68,13 @@ def discover(url, follow_meta_refresh=False, **requests_kwargs):
       logger.debug(f'Webmention discovery: got endpoint in tag: {endpoint}')
       return Endpoint(endpoint, resp)
 
-  # If we are not currently following a client-side redirect https://www.w3.org/TR/WCAG20-TECHS/H76.html
-  if not follow_meta_refresh:
+  # If follow_meta_refresh, look for client-side redirect https://www.w3.org/TR/WCAG20-TECHS/H76.html
+  if follow_meta_refresh:
     http_equiv = util.parse_http_equiv(soup)
-    if http_equiv: # else implicit break out and continue like normal
-      endpoint = util.fragmentless(urljoin(url, http_equiv))
+    endpoint = util.fragmentless(urljoin(url, http_equiv))
+    if http_equiv and url != endpoint: # else implicit break out and continue like normal
       logger.debug(f'Webmention discovery: got http_equiv in tag: {endpoint}')
-      return discover(endpoint, follow_meta_refresh=True)
+      return discover(endpoint, **requests_kwargs)
 
   logger.debug('Webmention discovery: no endpoint in headers or HTML')
   return Endpoint(None, resp)

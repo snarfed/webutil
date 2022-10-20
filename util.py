@@ -138,8 +138,6 @@ FOLLOW_REDIRECTS_CACHE_TIME = 60 * 60 * 24  # 1d expiration
 follow_redirects_cache = TTLCache(1000, FOLLOW_REDIRECTS_CACHE_TIME)
 follow_redirects_cache_lock = threading.RLock()
 
-CLIENT_REDIRECT_COUNT = 1
-
 # https://en.wikipedia.org/wiki/Top-level_domain#Reserved_domains
 # Currently used in granary.source.Source.original_post_discovery, not here.
 RESERVED_TLDS = {
@@ -1981,7 +1979,7 @@ def parse_http_equiv(input, **kwargs):
   if not isinstance(input, (bs4.BeautifulSoup, bs4.Tag)):
     input = parse_html(input)
 
-  element = input.find("meta", attrs={'http-equiv': 'refresh'})
+  element = input.find('meta', attrs={'http-equiv': 'refresh'})
 
   if not element:
     return ''
@@ -1994,7 +1992,7 @@ def parse_http_equiv(input, **kwargs):
   return refresh_content.rpartition('=')[2]
 
 
-def fetch_mf2(url, get_fn=requests_get, gateway=False, redirect_count=0, **kwargs):
+def fetch_mf2(url, get_fn=requests_get, gateway=False, **kwargs):
   """Fetches an HTML page over HTTP, parses it, and returns its microformats2.
 
   Args:
