@@ -69,10 +69,10 @@ def discover(url, follow_meta_refresh=False, **requests_kwargs):
       return Endpoint(endpoint, resp)
 
   http_equiv = util.fetch_http_equiv(soup)
-  endpoint = util.fragmentless(urljoin(url, http_equiv))
-  if http_equiv and url != endpoint: # else implicit break out and continue like normal
+  if http_equiv: # else implicit break out and continue like normal
+    endpoint = util.fragmentless(urljoin(url, http_equiv))
     logger.debug(f'Webmention discovery: got http_equiv in tag: {endpoint}')
-    if follow_meta_refresh:
+    if follow_meta_refresh and url != endpoint:
       logger.debug(f'Webmention discovery: following http_equiv: {endpoint}')
       return discover(endpoint, **requests_kwargs)
 
