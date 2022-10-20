@@ -1990,6 +1990,7 @@ def clean_leading_and_trailing_quotes(url):
   
   return url
 
+
 def parse_http_equiv(content):
   """Parses the value in the http_equiv meta field and returns the url.
 
@@ -2003,6 +2004,7 @@ def parse_http_equiv(content):
     return ''
 
   return clean_leading_and_trailing_quotes(split[2])
+
 
 def fetch_http_equiv(input, **kwargs):
   """Fetches http_equiv meta tag, if available.
