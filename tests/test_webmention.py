@@ -40,9 +40,13 @@ class DiscoverTest(testutil.TestCase):
     self._test('http://endpoint', '<a rel="webmention" href="http://endpoint">')
 
   def test_html_refresh(self):
-    self._test_refresh('http://endpoint',
-      '<meta http-equiv="refresh" content="0;URL=\'http://foo\'">',
-      '<link rel="webmention" href="http://endpoint">')
+    call = self.expect_requests_get('http://will/redirect', f'<html><meta http-equiv="refresh" content="0;URL=\'http://foo\'"></html>')
+    redirect_call = self.expect_requests_get('http://foo', f'<html><link rel="webmention" href="http://endpoint"></html>')
+    self.mox.ReplayAll()
+
+    got = discover('http://will/redirect', follow_meta_refresh=True)
+    self.assertEqual('http://endpoint', got.endpoint)
+    self.assertEqual(redirect_call._return_value, got.response)
 
   def test_html_relative(self):
     self._test('http://foo/bar', '<link rel="webmention" href="/bar">')
