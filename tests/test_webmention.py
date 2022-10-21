@@ -16,15 +16,6 @@ class DiscoverTest(testutil.TestCase):
     self.assertEqual(expected, got.endpoint)
     self.assertEqual(call._return_value, got.response)
 
-  def _test_refresh(self, expected, html, redirect_html, **kwargs):
-    call = self.expect_requests_get('http://will/redirect', f'<html>{html}</html>', **kwargs)
-    redirect_call = self.expect_requests_get('http://foo', f'<html>{redirect_html}</html>', **kwargs)
-    self.mox.ReplayAll()
-
-    got = discover('http://will/redirect', follow_meta_refresh=True)
-    self.assertEqual(expected, got.endpoint)
-    self.assertEqual(redirect_call._return_value, got.response)
-
   def test_bad_url(self):
     for bad in (None, 123, '', 'asdf'):
       with self.assertRaises(ValueError):
