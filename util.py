@@ -1967,30 +1967,6 @@ def parse_mf2(input, url=None, id=None):
   return mf2py.parse(url=url, doc=input, img_with_alt=True)
 
 
-def clean_leading_and_trailing_quotes(url):
-  """Cleans a url by removing leading/trailing quotes at ends if present.
-  
-  Adding due to poor guidance on https://www.w3.org/TR/WCAG20-TECHS/H76.html 
-  where examples show wrapping `anyUrl` with single quotes while procedures
-  show wrapping `URL=anyUrl` with single quotes. This discrepancy is minor and
-  can be easily solved by removing and first and last characters if single
-  quotes. 
-
-
-  Args:
-    url: str
-
-  Returns: str
-  """
-  if url.endswith('\''):
-    url = url[:-1]
-  
-  if url.startswith('\''):
-    url = url[1:]
-  
-  return url
-
-
 def parse_http_equiv(content):
   """Parses the value in the http_equiv meta field and returns the url.
 
@@ -2003,7 +1979,7 @@ def parse_http_equiv(content):
   if not split[1]: # If URL= is not in the string return an empty string
     return ''
 
-  return clean_leading_and_trailing_quotes(split[2])
+  return split[2].strip("'")
 
 
 def fetch_http_equiv(input, **kwargs):
