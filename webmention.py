@@ -20,11 +20,12 @@ LINK_HEADER_RE = re.compile(
 Endpoint = namedtuple('Endpoint', ('endpoint', 'response'))
 
 
-def discover(url, **requests_kwargs):
+def discover(url, follow_meta_refresh=False, **requests_kwargs):
   """Discovers a URL's webmention endpoint.
 
   Args:
     url: str
+    follow_meta_refresh: bool
     requests_kwargs: passed to :meth:`requests.post`
 
   Returns: :class:`Endpoint`. If no endpoint is discovered, the endpoint
@@ -66,6 +67,13 @@ def discover(url, **requests_kwargs):
       endpoint = util.fragmentless(urljoin(url, tag['href']))
       logger.debug(f'Webmention discovery: got endpoint in tag: {endpoint}')
       return Endpoint(endpoint, resp)
+
+  http_equiv = util.fetch_http_equiv(soup)
+  if http_equiv: # else implicit break out and continue like normal
+    endpoint = util.fragmentless(urljoin(url, http_equiv))
+    if follow_meta_refresh and url != endpoint:
+      logger.debug(f'Webmention discovery: following http_equiv: {endpoint}')
+      return discover(endpoint, **requests_kwargs)
 
   logger.debug('Webmention discovery: no endpoint in headers or HTML')
   return Endpoint(None, resp)

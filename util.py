@@ -1967,6 +1967,46 @@ def parse_mf2(input, url=None, id=None):
   return mf2py.parse(url=url, doc=input, img_with_alt=True)
 
 
+def parse_http_equiv(content):
+  """Parses the value in the http_equiv meta field and returns the url.
+
+  Args:
+    content: str, http_equiv content string https://www.w3.org/TR/WCAG20-TECHS/H76.html#procedure
+
+  Returns: str, empty if content format is incorrect
+  """
+  split = content.rpartition('URL=')
+  if not split[1]: # If URL= is not in the string return an empty string
+    return ''
+
+  return split[2].strip("'")
+
+
+def fetch_http_equiv(input, **kwargs):
+  """Fetches http_equiv meta tag, if available.
+
+  Args:
+    input: unicode HTML string, :class:`bs4.BeautifulSoup`, or
+      :class:`requests.Response`
+
+  Returns: str, empty if not available or a url if available
+  """
+  if not isinstance(input, (bs4.BeautifulSoup, bs4.Tag)):
+    input = parse_html(input)
+
+  element = input.find('meta', attrs={'http-equiv': 'refresh'})
+
+  if not element:
+    return ''
+
+  refresh_content = element.get('content')
+
+  if not refresh_content:
+    return ''
+
+  return parse_http_equiv(refresh_content)
+
+
 def fetch_mf2(url, get_fn=requests_get, gateway=False, **kwargs):
   """Fetches an HTML page over HTTP, parses it, and returns its microformats2.
 
