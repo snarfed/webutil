@@ -4,7 +4,7 @@ Intended for developers, not users. To turn on concurrent request recording, add
 
   from oauth_dropins.webutil.instance_info import concurrent_requests_wsgi_middleware, InfoHandler
 
-  application = concurrent_requests_wsgi_middleware(webapp2.WSGIApplication([
+  application = concurrent_requests_wsgi_middleware(WSGIApplication([
       ...
       ('/_info', InfoHandler),
   ])
