@@ -73,7 +73,7 @@ def discover(url, follow_meta_refresh=False, **requests_kwargs):
     endpoint = util.fragmentless(urljoin(url, http_equiv))
     if follow_meta_refresh and url != endpoint:
       logger.debug(f'Webmention discovery: following http_equiv: {endpoint}')
-      return discover(endpoint, **requests_kwargs)
+      return discover(endpoint, follow_meta_refresh=follow_meta_refresh, **requests_kwargs)
 
   logger.debug('Webmention discovery: no endpoint in headers or HTML')
   return Endpoint(None, resp)

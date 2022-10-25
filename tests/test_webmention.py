@@ -30,14 +30,26 @@ class DiscoverTest(testutil.TestCase):
   def test_html_a(self):
     self._test('http://endpoint', '<a rel="webmention" href="http://endpoint">')
 
-  def test_html_refresh(self):
-    call = self.expect_requests_get('http://will/redirect', f'<html><meta http-equiv="refresh" content="0;URL=\'http://foo\'"></html>')
-    redirect_call = self.expect_requests_get('http://foo', f'<html><link rel="webmention" href="http://endpoint"></html>')
+  def _test_html_refresh(self, count):
+    for i in range(count):
+      self.expect_requests_get(
+        f'http://will/redirect/{i}',
+        f'<html><meta http-equiv="refresh" content="0;URL=\'http://will/redirect/{i + 1}\'"></html>')
+
+    redirect_call = self.expect_requests_get(
+      f'http://will/redirect/{count}',
+      f'<html><link rel="webmention" href="http://endpoint"></html>')
     self.mox.ReplayAll()
 
-    got = discover('http://will/redirect', follow_meta_refresh=True)
+    got = discover('http://will/redirect/0', follow_meta_refresh=True)
     self.assertEqual('http://endpoint', got.endpoint)
     self.assertEqual(redirect_call._return_value, got.response)
+
+  def test_single_html_refresh(self):
+    self._test_html_refresh(1)
+
+  def test_double_html_refresh(self):
+    self._test_html_refresh(2)
 
   def test_html_relative(self):
     self._test('http://foo/bar', '<link rel="webmention" href="/bar">')
