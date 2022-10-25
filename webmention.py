@@ -23,13 +23,17 @@ Endpoint = namedtuple('Endpoint', ('endpoint', 'response'))
 def discover(url, follow_meta_refresh=False, **requests_kwargs):
   """Discovers a URL's webmention endpoint.
 
+  Follows up to 30 HTTP 3xx redirects, and at most one client-side HTML meta
+  http-equiv=refresh redirects.
+
   Args:
     url: str
-    follow_meta_refresh: bool
+    follow_meta_refresh: bool, whether to follow client side redirects in HTML
+      meta http-equiv=refresh tags
     requests_kwargs: passed to :meth:`requests.post`
 
   Returns: :class:`Endpoint`. If no endpoint is discovered, the endpoint
-  attribute will be None.
+    attribute will be None.
 
   Raises: :class:`ValueError` on bad URL, :class:`requests.HTTPError` on failure
   """
@@ -73,7 +77,7 @@ def discover(url, follow_meta_refresh=False, **requests_kwargs):
     endpoint = util.fragmentless(urljoin(url, http_equiv))
     if follow_meta_refresh and url != endpoint:
       logger.debug(f'Webmention discovery: following http_equiv: {endpoint}')
-      return discover(endpoint, follow_meta_refresh=follow_meta_refresh, **requests_kwargs)
+      return discover(endpoint, **requests_kwargs)
 
   logger.debug('Webmention discovery: no endpoint in headers or HTML')
   return Endpoint(None, resp)
