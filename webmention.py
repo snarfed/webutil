@@ -112,6 +112,6 @@ def send(endpoint, source, target, **requests_kwargs):
     logger.debug(f'webmention send: got {e.__class__.__name__}')
     raise
 
-  logger.debug(f'webmention send: got HTTP {resp.status_code} {resp.headers.get("Location")}')
+  logger.debug(f'webmention send: got HTTP {resp.status_code} {resp.headers.get("Location", "")}')
   resp.raise_for_status()
   return resp
