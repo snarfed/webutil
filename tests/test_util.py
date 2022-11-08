@@ -197,23 +197,33 @@ class UtilTest(testutil.TestCase):
       self.assertEqual('http://a.org/favicon.ico', util.favicon_for_url(url))
 
   def test_domain_from_link(self):
-    self.assertEqual('localhost', util.domain_from_link('http://localhost/foo'))
-    self.assertEqual('a.b.c.d', util.domain_from_link('http://a.b.c.d/foo'))
-    for good_link in ('asdf.com', 'www.asdf.com', 'https://asdf.com/',
-                      'asdf.com/foo?bar#baz', 'm.asdf.com', 'asdf.com:1234',
-                      'mobile.asdf.com/foo?bar#baz', '//asdf.com/foo/bar',
-                      'https://m.asdf.com/foo?bar#baz'):
-      actual = util.domain_from_link(good_link)
-      self.assertEqual('asdf.com', actual, f'{good_link} returned {actual}')
+    dfl = util.domain_from_link
 
-    self.assertEqual('asdf.com.', util.domain_from_link('http://asdf.com./x'))
-    self.assertEqual('⊙.de', util.domain_from_link('http://⊙.de/x'))
-    self.assertEqual('abc⊙.de', util.domain_from_link('http://abc⊙.de/x'))
-    self.assertEqual('abc.⊙.de', util.domain_from_link('http://abc.⊙.de/x'))
+    self.assert_equals('localhost', dfl('http://localhost/foo'))
+    self.assert_equals('a.b.c.d', dfl('http://a.b.c.d/foo'))
+
+    for url in ('asdf.com', 'https://asdf.com/', 'asdf.com/foo?bar#baz',
+                'asdf.com:1234', '//asdf.com/foo/bar'):
+      self.assert_equals('asdf.com', dfl(url, minimize=True))
+      self.assert_equals('asdf.com', dfl(url, minimize=False))
+
+    for url in ('www.asdf.com', 'm.asdf.com', 'mobile.asdf.com/foo?bar#baz',
+                'https://m.asdf.com/foo?bar#baz'):
+      self.assert_equals('asdf.com', dfl(url, minimize=True))
+
+    self.assert_equals('www.asdf.com', dfl('www.asdf.com', minimize=False))
+    self.assert_equals('m.asdf.com', dfl('m.asdf.com', minimize=False))
+    self.assert_equals('mobile.asdf.com', dfl('mobile.asdf.com/foo?bar#baz', minimize=False))
+    self.assert_equals('m.asdf.com', dfl('https://m.asdf.com/foo?bar#baz', minimize=False))
+
+    self.assert_equals('asdf.com.', dfl('http://asdf.com./x'))
+    self.assert_equals('⊙.de', dfl('http://⊙.de/x'))
+    self.assert_equals('abc⊙.de', dfl('http://abc⊙.de/x'))
+    self.assert_equals('abc.⊙.de', dfl('http://abc.⊙.de/x'))
 
     for bad_link in ('', '  ', 'a&b.com', 'http://', 'file:///',
                      """12345'"\\'\\");|]*\x00{\r\n<\x00>�''💡"""):
-      self.assertEqual(None, util.domain_from_link(bad_link))
+      self.assert_equals(None, dfl(bad_link))
 
   def test_domain_or_parent_in(self):
     for expected, inputs in (

@@ -407,13 +407,13 @@ def favicon_for_url(url):
 
 FULL_HOST_RE = re.compile(HOST_RE + '$')
 
-def domain_from_link(url):
+def domain_from_link(url, minimize=True):
   """Extracts and returns the meaningful domain from a URL.
-
-  Strips www., mobile., and m. from the beginning of the domain.
 
   Args:
     url: string
+    minimize: bool; if true, strips www., mobile., and m. subdomains from the
+      beginning of the domain
 
   Returns:
     string
@@ -426,10 +426,11 @@ def domain_from_link(url):
     return None
 
   domain = parsed.hostname
-  if domain:
+  if domain and minimize:
     for subdomain in ('www.', 'mobile.', 'm.'):
       if domain.startswith(subdomain):
         domain = domain[len(subdomain):]
+
   if domain and FULL_HOST_RE.match(domain):
     return domain
 
