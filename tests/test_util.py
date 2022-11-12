@@ -470,16 +470,16 @@ class UtilTest(testutil.TestCase):
     self.assertEqual('<a target="_blank" href="http://foo">foo</a>',
                       pl('http://foo', new_tab=True))
     self.assertEqual('<a href="http://www.foo">foo</a>', pl('http://www.foo'))
-    self.assertEqual('<a href="http://www.foo/bar">foo/ba...</a>',
+    self.assertEqual('<a title="foo/bar" href="http://www.foo/bar">foo/ba...</a>',
                       pl('http://www.foo/bar', max_length=6))
-    self.assertEqual('<a href="http://foo/bar/baz">foo/ba...</a>',
+    self.assertEqual('<a title="foo/bar/baz" href="http://foo/bar/baz">foo/ba...</a>',
                       pl('http://foo/bar/baz', max_length=6))
-    self.assertEqual('<a href="http://foo/bar/baz">foo/ba...</a>',
+    self.assertEqual('<a title="foo/bar/baz" href="http://foo/bar/baz">foo/ba...</a>',
                       pl('http://foo/bar/baz', max_length=6))
 
     self.assertEqual('<a href="http://foo/bar/baz">bar/baz</a>',
                       pl('http://foo/bar/baz', keep_host=False))
-    self.assertEqual('<a href="http://foo/bar/baz">bar/ba...</a>',
+    self.assertEqual('<a title="bar/baz" href="http://foo/bar/baz">bar/ba...</a>',
                       pl('http://foo/bar/baz', keep_host=False, max_length=6))
 
     self.assertEqual('<a href="http://foo">foo</a>', pl('http://foo', text=''))
@@ -501,13 +501,13 @@ class UtilTest(testutil.TestCase):
       '<a href="http://foo/bar/baz/baj/XY">foo/bar/baz/baj/XY</a>',
       pl('http://foo/bar/baz/baj/XY'))
     self.assertEqual(
-      '<a href="http://foo/bar/baz/baj/asdf_qwert">foo/bar/baz/baj/as...</a>',
+      '<a title="foo/bar/baz/baj/asdf_qwert" href="http://foo/bar/baz/baj/asdf_qwert">foo/bar/baz/baj/as...</a>',
       pl('http://foo/bar/baz/baj/asdf_qwert'))
 
     # default link max length is 30 chars
-    self.assertEqual('<a href="http://foo">123456789012345678901234567890...</a>',
+    self.assertEqual('<a title="123456789012345678901234567890TOOMUCH" href="http://foo">123456789012345678901234567890...</a>',
                      pl('http://foo', text='123456789012345678901234567890TOOMUCH'))
-    self.assertEqual('<a href="http://foo">bar...</a>',
+    self.assertEqual('<a title="barbazbaj" href="http://foo">bar...</a>',
                      pl('http://foo', text='barbazbaj', max_length=3))
 
     # unquote URL escape chars and decode UTF-8 in link text
@@ -523,6 +523,9 @@ class UtilTest(testutil.TestCase):
     self.assertEqual('<a href="http://a☕⊙b.com">a☕⊙b.com</a>',
                      pl('http://a☕⊙b.com'))
 
+    # no scheme, shouldn't try to strip it
+    self.assertEqual('<a href="foo.com">foo.com</a>', pl('foo.com'))
+
   def test_linkify_pretty(self):
     def lp(url):
       return util.linkify(url, pretty=True, max_length=6)
@@ -530,10 +533,12 @@ class UtilTest(testutil.TestCase):
     self.assertEqual('', lp(''))
     self.assertEqual('asdf qwert', lp('asdf qwert'))
     self.assertEqual('x <a href="http://foo.co">foo.co</a> y', lp('x http://foo.co y'))
-    self.assertEqual('x <a href="http://www.foo.ly/baz/baj">foo.ly...</a> y',
-                      lp('x http://www.foo.ly/baz/baj y'))
-    self.assertEqual('x <a href="http://foo.co/bar?baz=baj#biff">foo.co...</a> y',
-                      lp('x http://foo.co/bar?baz=baj#biff y'))
+    self.assertEqual(
+      'x <a title="foo.ly/baz/baj" href="http://www.foo.ly/baz/baj">foo.ly...</a> y',
+      lp('x http://www.foo.ly/baz/baj y'))
+    self.assertEqual(
+      'x <a title="foo.co/bar?baz=baj#biff" href="http://foo.co/bar?baz=baj#biff">foo.co...</a> y',
+      lp('x http://foo.co/bar?baz=baj#biff y'))
 
   def test_parse_iso8601(self):
     for val, offset, usecs in (

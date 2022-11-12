@@ -714,7 +714,7 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
   else:
     # use shortened version of URL as link text
     parsed = urlparse(url)
-    text = url[len(parsed.scheme) + 3:]  # strip scheme and ://
+    text = url.removeprefix(parsed.scheme + '://')
     host_len = len(parsed.netloc)
     if (keep_host and not parsed.params and not parsed.query and not parsed.fragment):
       text = text.strip('/')  # drop trailing slash
@@ -731,6 +731,7 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
     except ValueError:
       pass
 
+  full_text = text
   if max_length and len(text) > max_length:
     text = text[:max_length] + '...'
 
@@ -741,8 +742,9 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
   attr_str = (''.join(f'{attr}="{val}" ' for attr, val in list(attrs.items()))
               if attrs else '')
   target = 'target="_blank" ' if new_tab else ''
-  return ('<a %s%shref="%s">%s</a>' %
-          (attr_str, target,
+  return ('<a %s%s%shref="%s">%s</a>' %
+          (f'title="{full_text}" ' if text.endswith('...') else '',
+           attr_str, target,
            # not using urllib.parse.quote because it quotes a ton of chars we
            # want to pass through, including most unicode chars
            url.replace('<', '%3C').replace('>', '%3E'),
