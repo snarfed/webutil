@@ -1,4 +1,9 @@
-import logging, sys
+import logging, os, sys
+
+from ..appengine_info import DEBUG
+
+assert DEBUG
+assert not os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 
 logging.getLogger('chardet').setLevel(logging.INFO)
 logging.getLogger('google.cloud').setLevel(logging.INFO)
