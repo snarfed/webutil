@@ -56,10 +56,12 @@ def url(when, key, module=None):
 
   Args:
     when: datetime
-    key: ndb.Key
+    key: ndb.Key or str
     module: string, optional App Engine module
   """
-  return f'log?start_time={calendar.timegm(when.utctimetuple())}&key={key.urlsafe().decode()}&module={module if module else ""}'
+  if isinstance(key, ndb.Key):
+    key = key.urlsafe().decode()
+  return f'log?start_time={calendar.timegm(when.utctimetuple())}&key={key}&module={module if module else ""}'
 
 
 def maybe_link(when, key, time_class='dt-updated', link_class='', module=None):
@@ -81,7 +83,7 @@ def maybe_link(when, key, time_class='dt-updated', link_class='', module=None):
 
   Args:
     when: datetime
-    key: ndb.Key
+    key: ndb.Key or str
     time_class: string, optional class value for the <time> tag
     link_class: string, optional class value for the <a> tag (if generated)
     module: string, optional App Engine module to search logs of
