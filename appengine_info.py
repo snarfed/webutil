@@ -12,8 +12,6 @@ import os, sys
 
 creds = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 if creds and not creds.endswith('fake_user_account.json'):
-  print(f'Found GOOGLE_APPLICATION_CREDENTIALS {creds}')
-  print('!!! Starting in production mode !!!')
   APP_ID = 'bridgy-federated'
   DEBUG = False
   LOCAL = True

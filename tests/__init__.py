@@ -3,7 +3,8 @@ import logging, os, sys
 from ..appengine_info import DEBUG
 
 assert DEBUG
-assert not os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+creds = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+assert not creds or creds.endswith('fake_user_account.json')
 
 logging.getLogger('chardet').setLevel(logging.INFO)
 logging.getLogger('google.cloud').setLevel(logging.INFO)
