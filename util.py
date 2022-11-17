@@ -1262,6 +1262,9 @@ def interpret_http_exception(exception):
   elif ((requests and isinstance(e, requests.HTTPError)) or
         (prawcore and isinstance(e, prawcore.exceptions.ResponseException))):
     code = e.response.status_code
+    # TODO: this (and same below) can raise if the body was already read:
+    # 'RuntimeError: The content for this response was already consumed'
+    # https://console.cloud.google.com/errors/detail/CKuWp8f18s3g0gE;time=P30D?project=brid-gy
     body = e.response.text
 
   elif tumblpy and isinstance(e, tumblpy.TumblpyError):
