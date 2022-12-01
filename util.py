@@ -576,6 +576,12 @@ def base_url(url):
   return urllib.parse.urljoin(url, ' ')[:-1] if url else None
 
 
+def is_web(url):
+  """Returns True if the argument is an http or https URL, False otherwise."""
+  return isinstance(url, str) and (url.startswith('http://') or
+                                   url.startswith('https://'))
+
+
 def extract_links(text):
   """Returns a list of unique string URLs in the given text.
 

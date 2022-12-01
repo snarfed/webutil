@@ -1075,6 +1075,14 @@ class UtilTest(testutil.TestCase):
       ):
       self.assertEqual(expected, util.base_url(url))
 
+  def test_is_web(self):
+    for good in 'http://foo', 'https://bar/baz?biff=boff':
+      self.assertTrue(util.is_web(good), good)
+
+    for bad in (None, 3, '', ['http://foo'], 'foo', 'foo.com/bar',
+                'tag:foo.com:bar', 'acct:x@y.z', 'http:/x'):
+      self.assertFalse(util.is_web(bad), bad)
+
   def test_follow_redirects(self):
     for _ in range(2):
       self.expect_requests_head('http://will/redirect',
