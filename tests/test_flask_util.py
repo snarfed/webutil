@@ -109,7 +109,7 @@ class FlaskUtilTest(unittest.TestCase):
     self.assertEqual(9, calls)
     self.assertEqual('7', resp.get_data(as_text=True))
 
-  def test_http_5xx(self):
+  def test_cached_http_5xx(self):
     cache = Cache(self.app)
     calls = 0
 
@@ -127,6 +127,37 @@ class FlaskUtilTest(unittest.TestCase):
     resp = self.client.get('/error')
     self.assertEqual(500, resp.status_code)
     self.assertEqual(1, calls)
+
+  def test_cached_headers(self):
+    cache = Cache(self.app)
+    calls = 0
+
+    @self.app.route('/foo')
+    @flask_util.cached(cache, datetime.timedelta(days=1),
+                       headers=('Accept', 'Vary'))
+    def foo():
+      nonlocal calls
+      calls += 1
+      return ''
+
+    client = self.app.test_client()
+    client.get('/foo', headers={'Accept': 'bar'})
+    self.assertEqual(1, calls)
+
+    client.get('/foo', headers={'Accept': 'bar'})
+    self.assertEqual(1, calls)
+
+    client.get('/foo', headers={'Accept': 'baz'})
+    self.assertEqual(2, calls)
+
+    client.get('/foo', headers={'Accept': 'baz', 'Vary': 'biff'})
+    self.assertEqual(3, calls)
+
+    client.get('/foo', headers={'Accept': 'bar'})
+    self.assertEqual(3, calls)
+
+    client.get('/foo', headers={'Accept': 'baz', 'Vary': 'biff'})
+    self.assertEqual(3, calls)
 
   def test_canonicalize_domain_get(self):
     @self.app.route('/', defaults={'_': ''})

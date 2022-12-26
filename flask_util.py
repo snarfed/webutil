@@ -1,4 +1,5 @@
 """Utilities for Flask. View classes, decorators, URL route converters, etc."""
+import functools
 import logging
 import os
 import re
@@ -238,7 +239,7 @@ def default_modern_headers(resp):
   return resp
 
 
-def cached(cache, timeout, http_5xx=False):
+def cached(cache, timeout, headers=(), http_5xx=False):
   """Thin flask-cache wrapper that supports timedelta and cache query param.
 
   If the `cache` URL query parameter is `false`, skips the cache. Also, does not
@@ -248,21 +249,38 @@ def cached(cache, timeout, http_5xx=False):
   Args:
     cache: :class:`flask_caching.Cache`
     timeout: :class:`datetime.timedelta`
-    http_5xx: bool, whether to cache HTTP 5xx (server error) responses.
+    headers: sequence of str, optional headers to include in the cache key
+    http_5xx: bool, optional, whether to cache HTTP 5xx (server error) responses
   """
   def response_filter(resp):
-      """Return False if the response shouldn't be cached."""
-      resp = make_response(resp)
-      return (not get_flashed_messages() and 'Set-Cookie' not in resp.headers and
-              (http_5xx or resp.status_code // 100 != 5))
+    """Return False if the response shouldn't be cached."""
+    resp = make_response(resp)
+    return (not get_flashed_messages() and 'Set-Cookie' not in resp.headers and
+            (http_5xx or resp.status_code // 100 != 5))
 
   def unless():
-      return bool(request.args.get('cache', '').lower() == 'false' or
-                  request.cookies)
+    return bool(request.args.get('cache', '').lower() == 'false' or
+                request.cookies)
 
-  return cache.cached(timeout.total_seconds(), query_string=True,
-                      response_filter=response_filter, unless=unless)
+  def decorator(f):
+    decorated = cache.cached(timeout.total_seconds(), query_string=True,
+                             response_filter=response_filter, unless=unless)(f)
 
+    # include specified headers in cache key:
+    # https://flask-caching.readthedocs.io/en/latest/api.html#flask_caching.Cache.cached
+    # requires this pending bug fix:
+    # https://github.com/pallets-eco/flask-caching/pull/431
+    orig_cache_key = decorated.make_cache_key
+    def make_cache_key(*args, **kwargs):
+      header_vals = '  '.join(request.headers.get(h, '') for h in sorted(headers))
+      k = f'{orig_cache_key(*args, **kwargs)}  {header_vals}'
+      return k
+
+    decorated.make_cache_key = make_cache_key
+
+    return decorated
+
+  return decorator
 
 def canonicalize_domain(from_domains, to_domain):
   """Returns a callable that redirects one or more domains to a canonical domain.
