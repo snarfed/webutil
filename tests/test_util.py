@@ -199,6 +199,9 @@ class UtilTest(testutil.TestCase):
   def test_domain_from_link(self):
     dfl = util.domain_from_link
 
+    for url in None, '':
+      self.assertIsNone(dfl(url))
+
     self.assert_equals('localhost', dfl('http://localhost/foo'))
     self.assert_equals('a.b.c.d', dfl('http://a.b.c.d/foo'))
 

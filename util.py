@@ -416,8 +416,11 @@ def domain_from_link(url, minimize=True):
       beginning of the domain
 
   Returns:
-    string
+    str, or None if url is None or blank
   """
+  if not url:
+    return None
+
   try:
     parsed = urlparse(url)
     if not parsed.hostname and '//' not in url:
