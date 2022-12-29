@@ -10,12 +10,11 @@ Intended for developers, not users. To turn on concurrent request recording, add
   ])
 """
 import collections
-import datetime
 import heapq
 import os
 import threading
 
-from . import handlers
+from . import handlers, util
 
 CONCURRENTS_SIZE = 20
 
@@ -57,7 +56,7 @@ def concurrent_requests_wsgi_middleware(app):
       current_requests.add(req_id)
       if len(current_requests) > 1:
         heapq.heappush(concurrents, Concurrent(count=len(current_requests),
-                                               when=datetime.datetime.now()))
+                                               when=util.now()))
         if len(concurrents) > CONCURRENTS_SIZE:
           heapq.heappop(concurrents)
 

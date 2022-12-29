@@ -2,11 +2,11 @@
 
 Should not depend on App Engine API or SDK packages.
 """
+import base64
 import calendar
 import collections
 from collections.abc import Iterator
 import contextlib
-import base64
 from datetime import datetime, timedelta, timezone
 import http.client
 import humanize
@@ -110,8 +110,8 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-# set with set_user_agent()
 user_agent = 'webutil (https://github.com/snarfed/webutil)'
+"""Set with :func:`set_user_agent`."""
 
 EPOCH = datetime.fromtimestamp(0, timezone.utc)
 EPOCH_ISO = EPOCH.isoformat()
@@ -119,19 +119,19 @@ EPOCH_ISO = EPOCH.isoformat()
 ISO8601_DURATION_RE = re.compile(
   r'^ *P(?!$)(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)? *$')
 
-# default HTTP request timeout
 HTTP_TIMEOUT = 15
+"""Default HTTP request timeout, used in :func:`requests_get` etc."""
 socket.setdefaulttimeout(HTTP_TIMEOUT)
 # monkey-patch socket.getdefaulttimeout() because it often gets reset, e.g. by
 # socket.setblocking() and maybe other operations.
 # http://stackoverflow.com/a/8465202/186123
 socket.getdefaulttimeout = lambda: HTTP_TIMEOUT
 
-# Average HTML page size as of 2015-10-15 is 56K, so this is very generous and
-# conservative.
-# http://www.sitepoint.com/average-page-weight-increases-15-2014/
-# http://httparchive.org/interesting.php#bytesperpage
 MAX_HTTP_RESPONSE_SIZE = 1000000  # 1MB
+"""Average HTML size as of 2015-10-15 is 56K, so this is generous and conservative.
+http://www.sitepoint.com/average-page-weight-increases-15-2014/
+http://httparchive.org/interesting.php#bytesperpage
+"""
 HTTP_RESPONSE_TOO_BIG_STATUS_CODE = 422  # Unprocessable Entity
 
 FOLLOW_REDIRECTS_CACHE_TIME = 60 * 60 * 24  # 1d expiration
@@ -153,11 +153,14 @@ LOCAL_TLDS = {
   'localhost',
 }
 
-"""Global config, string parser nae for BeautifulSoup to use, e.g. 'lxml'.
+now = lambda tz=timezone.utc, **kwargs: datetime.now(tz=tz, **kwargs)
+"""Alias, allows unit tests to mock the function."""
+
+beautifulsoup_parser = None
+"""Global config, string parser for BeautifulSoup to use, e.g. 'lxml'.
 May be set at runtime.
 https://www.crummy.com/software/BeautifulSoup/bs4/doc/#installing-a-parser
 """
-beautifulsoup_parser = None
 
 # Regexps for domains, hostnames, and URLs.
 #

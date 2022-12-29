@@ -1,4 +1,5 @@
 """Unit test utilities."""
+from datetime import datetime, timezone
 import difflib
 import email
 import io
@@ -23,6 +24,8 @@ from .util import json_dumps, json_loads, HTTP_TIMEOUT, user_agent
 
 RE_TYPE = (re.Pattern if hasattr(re, 'Pattern')  # python >=3.7
            else re._pattern_type)                # python <3.7
+
+NOW = datetime.now(timezone.utc)
 
 
 def requests_response(body='', url=None, status=200, content_type=None,

@@ -94,7 +94,7 @@ def maybe_link(when, key, time_class='dt-updated', link_class='', module=None):
   if when.tzinfo is None:
     when = when.replace(tzinfo=timezone.utc)
 
-  now = datetime.now(tz=when.tzinfo)
+  now = util.now(tz=when.tzinfo)
 
   time = f'<time class="{time_class}" datetime="{when.isoformat()}" title="{when.ctime()} {when.tzname()}">{util.naturaltime(when, when=now)}</time>'
 

@@ -7,6 +7,7 @@ from google.cloud import ndb
 from mox3 import mox
 
 from .. import appengine_config, logs
+from ..testutil import NOW
 
 with appengine_config.ndb_client.context():
   KEY = ndb.Key('Foo', 123)
@@ -39,8 +40,7 @@ class LogsTest(mox.MoxTestBase):
       logs.maybe_link(when, KEY, time_class='foo', link_class='bar'))
 
   def test_maybe_link_future(self):
-    when = datetime.now(tz=timezone.utc) + timedelta(minutes=1)
-    got = logs.maybe_link(when, KEY)
+    got = logs.maybe_link(NOW + timedelta(minutes=1), KEY)
     self.assertFalse(got.startswith('<a'), repr(got))
 
   def test_start_time_too_old(self):
