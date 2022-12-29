@@ -25,7 +25,7 @@ from .util import json_dumps, json_loads, HTTP_TIMEOUT, user_agent
 RE_TYPE = (re.Pattern if hasattr(re, 'Pattern')  # python >=3.7
            else re._pattern_type)                # python <3.7
 
-NOW = datetime.now(timezone.utc)
+NOW = datetime(2022, 1, 2, 3, 4, 5, tzinfo=timezone.utc)
 
 
 def requests_response(body='', url=None, status=200, content_type=None,
@@ -310,6 +310,8 @@ class TestCase(mox.MoxTestBase, Asserts):
     os.environ['TZ'] = 'UTC'
 
     util.follow_redirects_cache.clear()
+
+    util.now = lambda **kwargs: NOW
 
   def stub_requests_head(self):
     """Automatically return 200 to outgoing HEAD requests."""
