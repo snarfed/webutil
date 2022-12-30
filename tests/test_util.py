@@ -168,6 +168,7 @@ class UtilTest(testutil.TestCase):
         ([], []),
         ({'x': 'y'}, None),
         ({'url': 'foo'}, 'foo'),
+        ({'url': ['foo', 'x']}, 'foo'),
       ):
       self.assertEqual(expected, util.get_url(val))
 
@@ -176,6 +177,7 @@ class UtilTest(testutil.TestCase):
         ({'a': 'b'}, None),
         ({'x': 'y'}, 'y'),
         ({'x': {'url': 'foo'}}, 'foo'),
+        ({'x': {'url': ['foo', 'x']}}, 'foo'),
       ):
       self.assertEqual(expected, util.get_url(val, 'x'))
 

@@ -255,7 +255,7 @@ def trim_nulls(value, ignore=()):
   elif (isinstance(value, (tuple, list, set, frozenset, Iterator)) or
         inspect.isgenerator(value)):
     trimmed = [trim_nulls(v, ignore=ignore) for v in value]
-    ret = (v for v in trimmed if v if v not in NULLS)
+    ret = (v for v in trimmed if v not in NULLS)
     if isinstance(value, Iterator) or inspect.isgenerator(value):
       return ret
     else:
@@ -337,7 +337,7 @@ def get_url(val, key=None):
   """
   if key is not None:
     val = get_first(val, key)
-  return val.get('url') if isinstance(val, dict) else val
+  return get_first(val, 'url') if isinstance(val, dict) else val
 
 
 def get_urls(obj, key, inner_key=None):
