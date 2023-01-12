@@ -1327,7 +1327,7 @@ def interpret_http_exception(exception):
                'APIRequiresAuthenticationError' in body):  # account deleted
     code = '401'
 
-  # facebook
+  # facebook and others
   # https://developers.facebook.com/docs/graph-api/using-graph-api/#errors
   body_json = None
   error = {}
