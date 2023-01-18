@@ -8,6 +8,7 @@ assert not creds or creds.endswith('fake_user_account.json')
 
 logging.getLogger('chardet').setLevel(logging.INFO)
 logging.getLogger('google.cloud').setLevel(logging.INFO)
+logging.getLogger('lexrpc').setLevel(logging.INFO)
 logging.getLogger('negotiator').setLevel(logging.WARNING)
 logging.getLogger('urllib3').setLevel(logging.INFO)
 
