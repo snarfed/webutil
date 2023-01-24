@@ -268,8 +268,6 @@ def cached(cache, timeout, headers=(), http_5xx=False):
 
     # include specified headers in cache key:
     # https://flask-caching.readthedocs.io/en/latest/api.html#flask_caching.Cache.cached
-    # requires this pending bug fix:
-    # https://github.com/pallets-eco/flask-caching/pull/431
     orig_cache_key = decorated.make_cache_key
     def make_cache_key(*args, **kwargs):
       header_vals = '  '.join(request.headers.get(h, '') for h in sorted(headers))
@@ -281,6 +279,7 @@ def cached(cache, timeout, headers=(), http_5xx=False):
     return decorated
 
   return decorator
+
 
 def canonicalize_domain(from_domains, to_domain):
   """Returns a callable that redirects one or more domains to a canonical domain.
