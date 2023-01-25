@@ -128,6 +128,25 @@ class FlaskUtilTest(unittest.TestCase):
     self.assertEqual(500, resp.status_code)
     self.assertEqual(1, calls)
 
+  def test_cached_flask_util_error(self):
+    cache = Cache(self.app)
+    calls = 0
+
+    @self.app.route('/error')
+    @flask_util.cached(cache, datetime.timedelta(days=1))
+    def error():
+      nonlocal calls
+      calls += 1
+      flask_util.error('asdf', status=400)
+
+    resp = self.client.get('/error')
+    self.assertEqual(400, resp.status_code)
+    self.assertEqual(1, calls)
+
+    resp = self.client.get('/error')
+    self.assertEqual(400, resp.status_code)
+    self.assertEqual(1, calls)
+
   def test_cached_headers(self):
     cache = Cache(self.app)
     calls = 0

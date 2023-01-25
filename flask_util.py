@@ -263,8 +263,18 @@ def cached(cache, timeout, headers=(), http_5xx=False):
                 request.cookies)
 
   def decorator(f):
+    # catch werkzeug HTTPExceptions, eg raised by abort(), and return them
+    # instead of letting them propagate, so that flask-cache can cache them
+    @functools.wraps(f)
+    def httpexception_to_return(*args, **kwargs):
+      try:
+        return f(*args, **kwargs)
+      except HTTPException as e:
+        return e
+
     decorated = cache.cached(timeout.total_seconds(), query_string=True,
-                             response_filter=response_filter, unless=unless)(f)
+                             response_filter=response_filter, unless=unless
+                             )(httpexception_to_return)
 
     # include specified headers in cache key:
     # https://flask-caching.readthedocs.io/en/latest/api.html#flask_caching.Cache.cached
