@@ -22,13 +22,13 @@ class JsonProperty(ndb.TextProperty):
     """
     def _validate(self, value):
         if not isinstance(value, dict):
-            raise TypeError("JSON property must be a dict")
+            raise TypeError('JSON property must be a dict')
 
     def _to_base_type(self, value):
-        as_str = json_dumps(value, separators=(",", ":"), ensure_ascii=True)
-        return as_str.encode("ascii")
+        as_str = json_dumps(value, separators=(',', ':'), ensure_ascii=True)
+        return as_str.encode('ascii')
 
     def _from_base_type(self, value):
         if not isinstance(value, str):
-            value = value.decode("ascii")
+            value = value.decode('ascii')
         return json_loads(value)
