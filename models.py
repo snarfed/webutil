@@ -32,3 +32,14 @@ class JsonProperty(ndb.TextProperty):
         if not isinstance(value, str):
             value = value.decode('ascii')
         return json_loads(value)
+
+
+class ComputedJsonProperty(JsonProperty, ndb.ComputedProperty):
+    """Custom ComputedProperty for JSON values that stores them as strings.
+
+    ...instead of like StructuredProperty, with "entity" type, which bloats them
+    unnecessarily in the datastore.
+    """
+    def __init__(self, *args, **kwargs):
+        kwargs['indexed'] = False
+        super().__init__(*args, **kwargs)
