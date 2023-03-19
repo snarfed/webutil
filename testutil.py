@@ -199,7 +199,7 @@ class Asserts(object):
 Expected value:
 {expected}
 Actual value:
-{actual}""")
+{actual}""") from None
 
   def _assert_equals(self, expected, actual, in_order=False):
     """Recursive helper for assert_equals().
@@ -239,7 +239,7 @@ Actual value:
       # fill in where this failure came from. this recursively builds,
       # backwards, all the way up to the root.
       args = (f'[{key}] ' if key is not None else '') + ''.join(e.args)
-      raise AssertionError(args)
+      raise AssertionError(args) from None
 
   def assert_multiline_equals(self, expected, actual, ignore_blanks=False):
     """Compares two multi-line strings and reports a diff style output.
