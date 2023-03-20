@@ -1356,3 +1356,40 @@ class UtilTest(testutil.TestCase):
 
     util.set_user_agent('Fooey')
     self.assertEqual(200, util.urlopen('http://xyz').status_code)
+
+  def test_fetch_mf2(self):
+    html = '<html><body class="h-entry"><p class="e-content">asdf</p></body></html>'
+    self.expect_requests_get('http://xyz', html)
+    self.mox.ReplayAll()
+
+    self.assert_equals({
+      'items': [{
+        'type': ['h-entry'],
+        'properties': {
+          'content': [{'value': 'asdf', 'html': 'asdf'}],
+        },
+      }],
+      'url': 'http://xyz',
+    }, util.fetch_mf2('http://xyz'), ignore=['debug', 'rels', 'rel-urls'])
+
+  def test_fetch_mf2_fragment(self):
+    html = """\
+<html>
+<body>
+<div id="a" class="h-entry"><p class="e-content">asdf</p></div>
+<div id="b" class="h-entry"><p class="e-content">qwer</p></div>
+</body>
+</html>"""
+    self.expect_requests_get('http://xyz', html, redirected_url='http://xyz#b')
+    self.mox.ReplayAll()
+
+    self.assert_equals({
+      'items': [{
+        'type': ['h-entry'],
+        'properties': {
+          'content': [{'value': 'qwer', 'html': 'qwer'}],
+        },
+      }],
+      'url': 'http://xyz#b',
+    }, util.fetch_mf2('http://xyz'), ignore=['debug', 'rels', 'rel-urls'])
+
