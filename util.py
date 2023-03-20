@@ -2043,7 +2043,7 @@ def fetch_mf2(url, get_fn=requests_get, gateway=False, **kwargs):
   resp = get_fn(url, gateway=gateway, **kwargs)
   resp.raise_for_status()
 
-  fragment = urllib.parse.urlparse(resp.url or id).fragment
+  fragment = urllib.parse.urlparse(resp.url).fragment
   mf2 = parse_mf2(resp, id=fragment)
   assert 'url' not in mf2
   mf2['url'] = resp.url
