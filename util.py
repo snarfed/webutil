@@ -2028,8 +2028,11 @@ def fetch_http_equiv(input, **kwargs):
 def fetch_mf2(url, get_fn=requests_get, gateway=False, **kwargs):
   """Fetches an HTML page over HTTP, parses it, and returns its microformats2.
 
+  If url includes a fragment, or redirects to a URL with a fragment, only that
+  element of the HTML will be parsed and returned.
+
   Args:
-    url: unicode string
+    url: str
     get_fn: callable matching :func:`requests.get`'s signature, for the HTTP fetch
     gateway: boolean; see :func:`requests_fn`
     **kwargs: passed through to :func:`requests.get`
@@ -2040,7 +2043,15 @@ def fetch_mf2(url, get_fn=requests_get, gateway=False, **kwargs):
   resp = get_fn(url, gateway=gateway, **kwargs)
   resp.raise_for_status()
 
-  mf2 = parse_mf2(resp)
+  fragment = urllib.parse.urlparse(resp.url or id).fragment
+  mf2 = parse_mf2(resp, id=fragment)
   assert 'url' not in mf2
   mf2['url'] = resp.url
   return mf2
+
+
+def d(*objs):
+  """Pretty-prints an object as JSON, for debugging."""
+  print('@', '\n'.join(json_dumps(o, indent=2) if isinstance(o, (dict, list))
+                       else str(o)
+                       for o in objs))
