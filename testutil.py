@@ -183,13 +183,13 @@ class Asserts(object):
     """
     return [e.key() for e in entities]
 
-  def assert_equals(self, expected, actual, msg=None, in_order=False):
+  def assert_equals(self, expected, actual, msg=None, in_order=False, ignore=()):
     """Pinpoints individual element differences in lists and dicts.
 
     If in_order is False, ignores order in lists and tuples.
     """
     try:
-      self._assert_equals(expected, actual, in_order=in_order)
+      self._assert_equals(expected, actual, in_order=in_order, ignore=ignore)
     except AssertionError as e:
       if not isinstance(expected, str):
         expected = pprint.pformat(expected)
@@ -201,7 +201,7 @@ Expected value:
 Actual value:
 {actual}""") from None
 
-  def _assert_equals(self, expected, actual, in_order=False):
+  def _assert_equals(self, expected, actual, in_order=False, ignore=()):
     """Recursive helper for assert_equals().
     """
     key = None
@@ -212,7 +212,8 @@ Actual value:
           self.fail(f"{expected!r} doesn't match {actual}")
       elif isinstance(expected, dict) and isinstance(actual, dict):
         for key in set(expected.keys()) | set(actual.keys()):
-          self._assert_equals(expected.get(key), actual.get(key), in_order=in_order)
+          if key not in ignore:
+            self._assert_equals(expected.get(key), actual.get(key), in_order=in_order)
       elif (isinstance(expected, (list, tuple, set)) and
             isinstance(actual, (list, tuple, set))):
         if not in_order:
