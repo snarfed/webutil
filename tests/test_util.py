@@ -11,6 +11,7 @@ import io
 from urllib.error import HTTPError, URLError
 import urllib.parse, urllib.request
 
+from flask import Flask, request
 import prawcore.exceptions
 import requests
 import tumblpy
@@ -246,13 +247,12 @@ class UtilTest(testutil.TestCase):
                           repr((input, domains, expected)))
 
   def test_update_scheme(self):
-    request = webapp2.Request.blank('/')
-
-    for orig in 'http', 'https':
-      for new in 'http', 'https':
-        request.scheme = new
-        updated = util.update_scheme(orig + '://foo', request)
-        self.assertEqual(new + '://foo', updated)
+    with Flask(__name__).test_request_context('/'):
+      for orig in 'http', 'https':
+        for new in 'http', 'https':
+          request.scheme = new
+          updated = util.update_scheme(orig + '://foo', request)
+          self.assertEqual(new + '://foo', updated)
 
   def test_schemeless(self):
     for expected, url in (
