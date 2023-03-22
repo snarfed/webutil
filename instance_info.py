@@ -2,11 +2,11 @@
 
 Intended for developers, not users. To turn on concurrent request recording, add the middleware and InfoHandler to your WSGI application, eg:
 
-  from oauth_dropins.webutil.instance_info import concurrent_requests_wsgi_middleware, InfoHandler
+  from oauth_dropins.webutil.instance_info import concurrent_requests_wsgi_middleware, info
 
   application = concurrent_requests_wsgi_middleware(WSGIApplication([
       ...
-      ('/_info', InfoHandler),
+      ('/_info', info),
   ])
 """
 import collections
@@ -14,7 +14,9 @@ import heapq
 import os
 import threading
 
-from . import handlers, util
+from flask import render_template
+
+from . import util
 
 CONCURRENTS_SIZE = 20
 
@@ -29,18 +31,15 @@ current_requests_lock = threading.Lock()
 concurrents = []  # a heapq. stores Concurrents
 
 
-class InfoHandler(handlers.TemplateHandler):
-
-  def template_file(self):
-    return os.path.join(os.path.dirname(__file__),
-                        'templates/instance_info.html')
-
-  def template_vars(self):
-    return {'concurrents': concurrents,
-            'current_requests': current_requests,
-            'os': os,
-            'runtime': os.getenv('GAE_RUNTIME'),
-            }
+def info():
+  """Flask handler that renders current instance info."""
+  return render_template(
+    os.path.join(os.path.dirname(__file__), 'templates/instance_info.html'),
+    concurrents=concurrents,
+    current_requests=current_requests,
+    os=os,
+    runtime=os.getenv('GAE_RUNTIME'),
+  )
 
 
 def concurrent_requests_wsgi_middleware(app):
