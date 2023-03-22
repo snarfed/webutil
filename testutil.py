@@ -17,7 +17,6 @@ from bs4 import (
 )
 from mox3 import mox
 import requests
-import webapp2
 
 from . import util
 from .util import json_dumps, json_loads, HTTP_TIMEOUT, user_agent

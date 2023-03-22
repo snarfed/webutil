@@ -16,7 +16,6 @@ import requests
 import tumblpy
 import tweepy
 import urllib3
-import webapp2
 from webob import exc
 from werkzeug.exceptions import BadGateway, BadRequest
 
