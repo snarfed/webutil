@@ -1011,18 +1011,6 @@ def remove_query_param(url, param):
   return url, removed
 
 
-def get_required_param(handler, name):
-  try:
-    val = handler.request.get(name)
-  except (UnicodeDecodeError, UnicodeEncodeError) as e:
-    handler.abort(400, f"Couldn't decode query parameters as UTF-8: {e}")
-
-  if not val:
-    handler.abort(400, f'Missing required parameter: {name}')
-
-  return val
-
-
 def dedupe_urls(urls, key=None):
   """Normalizes and de-dupes http(s) URLs.
 
