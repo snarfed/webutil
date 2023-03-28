@@ -1956,7 +1956,8 @@ def parse_mf2(input, url=None, id=None):
     id: string, optional id of specific element to extract and parse. defaults
       to the whole page.
 
-  Returns: dict, parsed mf2 data
+  Returns:
+    dict, parsed mf2 data, or None if id is provided and not found in the input HTML
   """
   if isinstance(input, requests.Response) and not url:
     url = input.url
@@ -2033,6 +2034,9 @@ def fetch_mf2(url, get_fn=requests_get, gateway=False, **kwargs):
 
   fragment = urllib.parse.urlparse(resp.url).fragment
   mf2 = parse_mf2(resp, id=fragment)
+  if mf2 is None:
+    return None
+
   assert 'url' not in mf2
   mf2['url'] = resp.url
   return mf2
