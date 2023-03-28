@@ -1376,3 +1376,22 @@ class UtilTest(testutil.TestCase):
       'url': 'http://xyz#b',
     }, util.fetch_mf2('http://xyz'), ignore=['debug', 'rels', 'rel-urls'])
 
+  def test_fetch_mf2_require_backlink_missing(self):
+    html = '<html><body class="h-entry"><p class="e-content">asdf</p></body></html>'
+    self.expect_requests_get('http://xyz', html).MultipleTimes()
+    self.mox.ReplayAll()
+
+    with self.assertRaises(ValueError):
+      util.fetch_mf2('http://xyz', require_backlink='http://back')
+
+    with self.assertRaises(ValueError):
+      util.fetch_mf2('http://xyz', require_backlink=['http://back', 'http://link'])
+
+  def test_fetch_mf2_require_backlink_found(self):
+    html = '<html><body class="h-entry"><p class="e-content"><a href="http://back"></a></p></body></html>'
+    self.expect_requests_get('http://xyz', html).MultipleTimes()
+    self.mox.ReplayAll()
+
+    self.assertIsNotNone(util.fetch_mf2('http://xyz', require_backlink='http://back'))
+    self.assertIsNotNone(util.fetch_mf2(
+      'http://xyz',require_backlink=['http://link', 'http://back']))

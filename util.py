@@ -2014,7 +2014,8 @@ def fetch_http_equiv(input, **kwargs):
   return parse_http_equiv(refresh_content)
 
 
-def fetch_mf2(url, get_fn=requests_get, gateway=False, **kwargs):
+def fetch_mf2(url, get_fn=requests_get, gateway=False, require_backlink=None,
+              **kwargs):
   """Fetches an HTML page over HTTP, parses it, and returns its microformats2.
 
   If url includes a fragment, or redirects to a URL with a fragment, only that
@@ -2024,13 +2025,28 @@ def fetch_mf2(url, get_fn=requests_get, gateway=False, **kwargs):
     url: str
     get_fn: callable matching :func:`requests.get`'s signature, for the HTTP fetch
     gateway: boolean; see :func:`requests_fn`
+    require_backlink: str or sequence of strs; raises ValueError if one of these
+      strings is not present in the returned HTML, in any form. Generally used
+      for webmention validation.
     **kwargs: passed through to :func:`requests.get`
 
   Returns: dict, parsed mf2 data. Includes the final URL of the parsed document
     (after redirects) in the top-level `url` field.
+
+  Raises:
+    ValueError: if a backlink in require_backlink is not found
   """
   resp = get_fn(url, gateway=gateway, **kwargs)
   resp.raise_for_status()
+
+  if require_backlink:
+    if not isinstance(require_backlink, (tuple, list)):
+      require_backlink = [require_backlink]
+    for link in require_backlink:
+      if link in resp.text:
+        break
+    else:
+      raise ValueError(f"Couldn't find {require_backlink} in {url}")
 
   fragment = urllib.parse.urlparse(resp.url).fragment
   mf2 = parse_mf2(resp, id=fragment)
