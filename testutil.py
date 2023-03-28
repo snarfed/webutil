@@ -212,7 +212,8 @@ Actual value:
       elif isinstance(expected, dict) and isinstance(actual, dict):
         for key in set(expected.keys()) | set(actual.keys()):
           if key not in ignore:
-            self._assert_equals(expected.get(key), actual.get(key), in_order=in_order)
+            self._assert_equals(expected.get(key), actual.get(key),
+                                in_order=in_order, ignore=ignore)
       elif (isinstance(expected, (list, tuple, set)) and
             isinstance(actual, (list, tuple, set))):
         if not in_order:
@@ -228,7 +229,7 @@ Actual value:
         self.assertEqual(len(expected), len(actual),
                          f'Different lengths:\n expected {len(expected)}\n actual {len(actual)}')
         for key, (e, a) in enumerate(zip(expected, actual)):
-          self._assert_equals(e, a, in_order=in_order)
+          self._assert_equals(e, a, in_order=in_order, ignore=ignore)
       elif (isinstance(expected, str) and isinstance(actual, str) and
             '\n' in expected):
         self.assert_multiline_equals(expected, actual)
