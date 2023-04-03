@@ -2036,7 +2036,7 @@ def fetch_mf2(url, get_fn=requests_get, gateway=False, require_backlink=None,
   Raises:
     ValueError: if a backlink in require_backlink is not found
   """
-  resp = get_fn(url, gateway=gateway, **kwargs)
+  resp = get_fn(fragmentless(url), gateway=gateway, **kwargs)
   resp.raise_for_status()
 
   if require_backlink:
@@ -2048,7 +2048,7 @@ def fetch_mf2(url, get_fn=requests_get, gateway=False, require_backlink=None,
     else:
       raise ValueError(f"Couldn't find {require_backlink} in {url}")
 
-  fragment = urllib.parse.urlparse(resp.url).fragment
+  fragment = urllib.parse.urlparse(url).fragment
   mf2 = parse_mf2(resp, id=fragment)
   if mf2 is None:
     return None

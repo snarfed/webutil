@@ -1363,7 +1363,7 @@ class UtilTest(testutil.TestCase):
 <div id="b" class="h-entry"><p class="e-content">qwer</p></div>
 </body>
 </html>"""
-    self.expect_requests_get('http://xyz', html, redirected_url='http://xyz#b')
+    self.expect_requests_get('http://xyz', html)
     self.mox.ReplayAll()
 
     self.assert_equals({
@@ -1374,7 +1374,7 @@ class UtilTest(testutil.TestCase):
         },
       }],
       'url': 'http://xyz#b',
-    }, util.fetch_mf2('http://xyz'), ignore=['debug', 'rels', 'rel-urls'])
+    }, util.fetch_mf2('http://xyz#b'), ignore=['debug', 'rels', 'rel-urls'])
 
   def test_fetch_mf2_require_backlink_missing(self):
     html = '<html><body class="h-entry"><p class="e-content">asdf</p></body></html>'
