@@ -1373,7 +1373,7 @@ class UtilTest(testutil.TestCase):
           'content': [{'value': 'qwer', 'html': 'qwer'}],
         },
       }],
-      'url': 'http://xyz#b',
+      'url': 'http://xyz',
     }, util.fetch_mf2('http://xyz#b'), ignore=['debug', 'rels', 'rel-urls'])
 
   def test_fetch_mf2_require_backlink_missing(self):
