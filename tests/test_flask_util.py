@@ -109,6 +109,13 @@ class FlaskUtilTest(unittest.TestCase):
     self.assertEqual(9, calls)
     self.assertEqual('7', resp.get_data(as_text=True))
 
+    resp = client.head('/foo?head')
+    self.assertEqual(10, calls)
+
+    resp = client.get('/foo?head')
+    self.assertEqual(11, calls)
+    self.assertEqual('11', resp.get_data(as_text=True))
+
   def test_cached_http_5xx(self):
     cache = Cache(self.app)
     calls = 0

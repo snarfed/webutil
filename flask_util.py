@@ -282,6 +282,8 @@ def cached(cache, timeout, headers=(), http_5xx=False):
     def make_cache_key(*args, **kwargs):
       header_vals = '  '.join(request.headers.get(h, '') for h in sorted(headers))
       k = f'{orig_cache_key(*args, **kwargs)}  {header_vals}'
+      if request.method != 'GET':
+        k = f'{request.method} {k}'
       return k
 
     decorated.make_cache_key = make_cache_key
