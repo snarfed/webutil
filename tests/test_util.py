@@ -343,12 +343,12 @@ class UtilTest(testutil.TestCase):
 
   def test_parse_acct_uri(self):
     self.assertEqual(('me', 'x.com'), util.parse_acct_uri('acct:me@x.com'))
+    self.assertEqual(('me', 'x.com'), util.parse_acct_uri('acct:@me@x.com'))
     self.assertEqual(('me', 'x.com'),
                       util.parse_acct_uri('acct:me@x.com', ['x.com', 'y.com']))
     self.assertRaises(ValueError, util.parse_acct_uri, 'mailto:me@x.com')
     self.assertRaises(ValueError, util.parse_acct_uri, 'acct:foo')
-    self.assertRaises(ValueError,
-                      util.parse_acct_uri, 'acct:me@a.com', ['x.com'])
+    self.assertRaises(ValueError, util.parse_acct_uri, 'acct:me@a.com', ['x.com'])
 
   def test_extract_links(self):
     self.assertEqual([], util.extract_links(None))

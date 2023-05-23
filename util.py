@@ -393,7 +393,7 @@ def parse_acct_uri(uri, hosts=None):
     raise ValueError(f'Acct URI {uri} has unsupported scheme: {parsed.scheme}')
 
   try:
-    username, host = parsed.path.split('@')
+    username, host = parsed.path.strip('@').split('@')
     assert host
   except (ValueError, AssertionError):
     raise ValueError(f'Bad acct URI: {uri}')
