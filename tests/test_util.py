@@ -497,6 +497,8 @@ class UtilTest(testutil.TestCase):
 
     self.assertEqual('<a href="http://foo">foo <span class="glyphicon glyphicon-bar"></span></a>',
                      pl('http://foo', glyphicon='bar'))
+    self.assertEqual('<a href="http://foo">🌐 foo</a>',
+                     pl('http://foo', text_prefix='🌐'))
     self.assertEqual('<a href="http://%3Ca%3Eb">&lt;a&gt;b <span class="glyphicon glyphicon-bar"></span></a>',
                      pl('http://<a>b', glyphicon='bar'))
 

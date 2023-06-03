@@ -693,8 +693,8 @@ def linkify(text, pretty=False, skip_bare_cc_tlds=False, **kwargs):
   return ''.join(result)
 
 
-def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
-                new_tab=False, max_length=None):
+def pretty_link(url, text=None, text_prefix=None, keep_host=True,
+                glyphicon=None, attrs=None, new_tab=False, max_length=None):
   """Renders a pretty, short HTML link to a URL.
 
   If text is not provided, the link text is the URL without the leading
@@ -710,6 +710,7 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
   Args:
     url: string
     text: string, optional
+    text_prefix: string, optional, added to beginning of text
     keep_host: if False, remove the host from the link text
     glyphicon: string glyphicon to render after the link text, if provided.
       Details: http://glyphicons.com/
@@ -748,6 +749,8 @@ def pretty_link(url, text=None, keep_host=True, glyphicon=None, attrs=None,
     text = text[:max_length] + '...'
 
   escaped_text = saxutils.escape(text)
+  if text_prefix:
+    escaped_text = f'{text_prefix} {escaped_text}'
   if glyphicon is not None:
     escaped_text += f' <span class="glyphicon glyphicon-{glyphicon}"></span>'
 
