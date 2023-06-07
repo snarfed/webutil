@@ -48,6 +48,23 @@ class NoContent(HTTPException):
     code = 204
     description = 'No Content'
 
+class Redirect(HTTPException):
+    def __init__(self, *args, location=None, **kwargs):
+      assert location
+      self.location = location
+      super().__init__(**kwargs)
+
+    def get_headers(self, *args, **kwargs):
+      return {'Location': self.location}
+
+class MovedPermanently(Redirect):
+    code = 301
+    description = 'Moved Permanently'
+
+class Found(Redirect):
+    code = 302
+    description = 'Found'
+
 class NotModified(HTTPException):
     code = 304
     description = 'Not Modified'
@@ -101,11 +118,26 @@ class NetworkConnectTimeoutError(HTTPException):
     description = 'Network Connect Timeout Error'
 
 
-for cls in (Created, Accepted, NoContent, NotModified, PaymentRequired,
-            ProxyAuthenticationRequired, MisdirectedRequest, UpgradeRequired,
-            PreconditionRequired, ClientClosedRequest, VariantAlsoNegotiates,
-            InsufficientStorage, LoopDetected, NotExtended,
-            NetworkAuthenticationRequired, NetworkConnectTimeoutError):
+for cls in (
+    Created,
+    Accepted,
+    NoContent,
+    MovedPermanently,
+    Found,
+    NotModified,
+    PaymentRequired,
+    ProxyAuthenticationRequired,
+    MisdirectedRequest,
+    UpgradeRequired,
+    PreconditionRequired,
+    ClientClosedRequest,
+    VariantAlsoNegotiates,
+    InsufficientStorage,
+    LoopDetected,
+    NotExtended,
+    NetworkAuthenticationRequired,
+    NetworkConnectTimeoutError,
+):
   # https://github.com/pallets/flask/issues/1837#issuecomment-304996942
   werkzeug.exceptions.default_exceptions.setdefault(cls.code, cls)
   werkzeug.exceptions._aborter.mapping.setdefault(cls.code, cls)
