@@ -16,5 +16,7 @@ logging.getLogger('urllib3').setLevel(logging.INFO)
 logging.basicConfig()
 if '-v' in sys.argv:
   logging.getLogger().setLevel(logging.DEBUG)
-elif 'discover' in sys.argv or '-q' in sys.argv or '--quiet' in sys.argv:
+else:
+  # used to be: elif 'discover' in sys.argv or '-q' in sys.argv or '--quiet' in sys.argv:
+  # dropped that to suppress logging when running full single test files
   logging.disable(logging.CRITICAL + 1)
