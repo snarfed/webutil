@@ -11,6 +11,7 @@ import re
 import time
 import urllib.request, urllib.parse, urllib.error
 
+from flask import request
 from google.cloud import ndb
 from google.cloud.logging import Client
 from oauth_dropins.webutil.util import json_dumps, json_loads
@@ -51,20 +52,23 @@ def sanitize(msg):
   return SANITIZE_RE.sub(r'\1...', msg)
 
 
-def url(when, key, module=None):
+def url(when, key, **params):
   """Returns the relative URL (no scheme or host) to a log page.
 
   Args:
     when: datetime
     key: ndb.Key or str
-    module: string, optional App Engine module
+    params: included as query params, eg module, path
   """
-  if isinstance(key, ndb.Key):
-    key = key.urlsafe().decode()
-  return f'log?start_time={calendar.timegm(when.utctimetuple())}&key={key}&module={module if module else ""}'
+  assert 'start_time' not in params and 'key' not in params, params
+  params.update({
+    'start_time': calendar.timegm(when.utctimetuple()),
+    'key': key.urlsafe().decode() if isinstance(key, ndb.Key) else key,
+  })
+  return 'log?' + urllib.parse.urlencode(params)
 
 
-def maybe_link(when, key, time_class='dt-updated', link_class='', module=None):
+def maybe_link(when, key, time_class='dt-updated', link_class='', **params):
   """Returns an HTML snippet with a timestamp and maybe a log page link.
 
   Example:
@@ -86,7 +90,8 @@ def maybe_link(when, key, time_class='dt-updated', link_class='', module=None):
     key: ndb.Key or str
     time_class: string, optional class value for the <time> tag
     link_class: string, optional class value for the <a> tag (if generated)
-    module: string, optional App Engine module to search logs of
+    params: dict {string: string}, query params to include in the link URL,
+      eg module, path
 
   Returns: string HTML
   """
@@ -99,7 +104,7 @@ def maybe_link(when, key, time_class='dt-updated', link_class='', module=None):
   time = f'<time class="{time_class}" datetime="{when.isoformat()}" title="{when.ctime()} {when.tzname()}">{util.naturaltime(when, when=now)}</time>'
 
   if now > when > now - MAX_LOG_AGE:
-    return f'<a class="{link_class}" href="/{url(when, key, module=module)}">{time}</a>'
+    return f'<a class="{link_class}" href="/{url(when, key, **params)}">{time}</a>'
 
   return time
 
@@ -133,7 +138,7 @@ def linkify_datastore_keys(msg):
   return DATASTORE_KEY_RE.sub(linkify_key, msg)
 
 
-def log(module=None):
+def log(module=None, path=None):
     """Flask view that searches for and renders app logs for an HTTP request.
 
     URL parameters:
@@ -151,7 +156,16 @@ def log(module=None):
 
     Args:
       module: str, App Engine module to search. Defaults to all.
+      path: string, optional HTTP request path to limit logs to.
+
+    Returns:
+      (string response body, dict headers) Flask response
     """
+    if not module:
+      module = request.values.get('module')
+    if not path:
+      path = request.values.get('path')
+
     start_time = flask_util.get_required_param('start_time')
     if not util.is_float(start_time):
       return error(f"Couldn't convert start_time to float: {start_time!r}")
@@ -174,6 +188,9 @@ def log(module=None):
     query = f'logName="{project}/logs/python" textPayload:"{key}" {timestamp_filter}'
     if module:
       query += f' resource.labels.module_id="{module}"'
+    if path:
+      query += f' httpRequest.requestUrl:"{path}"'
+
     logger.info(f'Searching logs with: {query}')
     try:
       # https://googleapis.dev/python/logging/latest/client.html#google.cloud.logging_v2.client.Client.list_entries
