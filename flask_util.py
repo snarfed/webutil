@@ -179,7 +179,7 @@ def get_required_param(name):
   return val
 
 
-def ndb_context_middleware(app, client=None):
+def ndb_context_middleware(app, client=None, **kwargs):
   """WSGI middleware to add an NDB context per request.
 
   Follows the WSGI standard. Details: http://www.python.org/dev/peps/pep-0333/
@@ -194,13 +194,14 @@ def ndb_context_middleware(app, client=None):
 
   Args:
     client: :class:`google.cloud.ndb.Client`
+    kwargs: passed through to :meth:`google.cloud.ndb.Client.context`
   """
   def wrapper(environ, start_response):
     if ndb.context.get_context(raise_context_error=False):
       # someone else (eg a unit test harness) has already created a context
       return app(environ, start_response)
 
-    with client.context():
+    with client.context(**kwargs):
       return app(environ, start_response)
 
   return wrapper
