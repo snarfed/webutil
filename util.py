@@ -497,7 +497,7 @@ def schemeless(url, slashes=True):
 
   Args:
     url: string
-    leading_slashes: if False, also strips leading slashes and trailing slash,
+    slashes: if False, also strips leading slashes and trailing slash,
       e.g. 'http://example.com/' becomes 'example.com'
 
   Returns:
