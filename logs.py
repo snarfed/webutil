@@ -61,6 +61,12 @@ def url(when, key, **params):
     params: included as query params, eg module, path
   """
   assert 'start_time' not in params and 'key' not in params, params
+
+  if isinstance(params.get('path'), (list, tuple)):
+    for path in params['path']:
+      assert ',' not in path, path
+    params['path'] = ','.join(params['path'])
+
   params.update({
     'start_time': calendar.timegm(when.utctimetuple()),
     'key': key.urlsafe().decode() if isinstance(key, ndb.Key) else key,
@@ -156,7 +162,8 @@ def log(module=None, path=None):
 
     Args:
       module: str, App Engine module to search. Defaults to all.
-      path: string, optional HTTP request path to limit logs to.
+      path: string or sequence of strings, optional HTTP request path(s) to
+        limit logs to.
 
     Returns:
       (string response body, dict headers) Flask response
@@ -189,7 +196,8 @@ def log(module=None, path=None):
     if module:
       query += f' resource.labels.module_id="{module}"'
     if path:
-      query += f' httpRequest.requestUrl:"{path}"'
+      or_paths = ' OR '.join(f'"{path}"' for path in path.split(','))
+      query += f' httpRequest.requestUrl:({or_paths})'
 
     logger.info(f'Searching logs with: {query}')
     try:

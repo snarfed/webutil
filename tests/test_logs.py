@@ -39,6 +39,12 @@ class LogsTest(mox.MoxTestBase):
       f'<a class="bar" href="/log?start_time=172800&key={KEY_STR}">{actual}</a>',
       logs.maybe_link(when, KEY, time_class='foo', link_class='bar'))
 
+  def test_maybe_link_path(self):
+    self.mox.StubOutWithMock(logs, 'MAX_LOG_AGE')
+    logs.MAX_LOG_AGE = timedelta(days=99999)
+    self.assertIn('path=foo%2Cbar%2Fbaz',
+                  logs.maybe_link(NOW, KEY, path=['foo', 'bar/baz']))
+
   def test_maybe_link_future(self):
     got = logs.maybe_link(NOW + timedelta(minutes=1), KEY)
     self.assertFalse(got.startswith('<a'), repr(got))
