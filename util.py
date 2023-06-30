@@ -1917,6 +1917,7 @@ def parse_html(input, **kwargs):
   we've been bit by at least one meaningful difference between lxml and e.g.
   html5lib: lxml includes the contents of <noscript> tags, html5lib omits them.
   https://github.com/snarfed/bridgy/issues/798#issuecomment-370508015
+  Also lxml is noticeably faster than the others.
 
   Specifically, projects like oauth-dropins, granary, and bridgy all use lxml
   explicitly.
