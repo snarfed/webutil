@@ -59,7 +59,13 @@ class Unique:
     super().__init__(*args, repeated=True, **kwargs)
 
   def _store_value(self, entity, value):
-    return super()._store_value(entity, UniqueList(value))
+    return super()._store_value(entity, AssignableSet(value))
+
+
+def hash_base_value(self):
+  return hash(self.b_val)
+
+ndb.model._BaseValue.__hash__ = hash_base_value
 
 
 class StringSetProperty(Unique, ndb.StringProperty):

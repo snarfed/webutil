@@ -64,19 +64,19 @@ class ModelTest(testutil.TestCase):
       x = StringSetProperty()
 
     f = Foo(x=['a', 'b', 'a'])
-    self.assertEqual(['a', 'b'], f.x)
+    self.assertEqual({'a', 'b'}, f.x)
 
     f = f.put().get()
-    self.assertEqual(['a', 'b'], f.x)
+    self.assertEqual({'a', 'b'}, f.x)
 
     f.x.add('a')
     f.x.add('c')
     f.x.remove('a')
-    f.x.update({'d', 'b'})
-    self.assertEqual(['b', 'c', 'd'], f.x)
+    f.x |= {'d', 'b'}
+    self.assertEqual({'b', 'c', 'd'}, f.x)
 
     f = f.put().get()
-    self.assertEqual(['b', 'c', 'd'], f.x)
+    self.assertEqual({'b', 'c', 'd'}, f.x)
 
     g = Foo(x=f.x)
     g = g.put().get()
