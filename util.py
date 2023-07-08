@@ -127,8 +127,9 @@ socket.setdefaulttimeout(HTTP_TIMEOUT)
 # http://stackoverflow.com/a/8465202/186123
 socket.getdefaulttimeout = lambda: HTTP_TIMEOUT
 
-MAX_HTTP_RESPONSE_SIZE = 1000000  # 1MB
+MAX_HTTP_RESPONSE_SIZE = 2000000  # 2MB
 """Average HTML size as of 2015-10-15 is 56K, so this is generous and conservative.
+Raised from 1MB to 2MB on 2023-07-07.
 http://www.sitepoint.com/average-page-weight-increases-15-2014/
 http://httparchive.org/interesting.php#bytesperpage
 """
