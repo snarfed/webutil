@@ -973,6 +973,12 @@ class UtilTest(testutil.TestCase):
     self.assertEqual('502', code)
     self.assertEqual('"Something went wrong"', body)
 
+    # Unstodon (Mastodon fork, https://git.sleeping.town/sleeping-town/unstodon )
+    # evidently includes just the HTTP status code in response bodies, eg '404'
+    # make sure we don't assume it's a dict
+    resp = testutil.requests_response('404', status=404)
+    self.assertEqual(('404', '404'), ihc(requests.HTTPError(response=resp)))
+
     # make sure we handle non-facebook JSON bodies ok
     wordpress_rest_error = json_str({
       'error': 'unauthorized',

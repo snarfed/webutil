@@ -1334,7 +1334,7 @@ def interpret_http_exception(exception):
 
   # twitter
   # https://dev.twitter.com/overview/api/response-codes
-  if body_json and not error:
+  if not error and body_json and isinstance(body_json, dict):
     errors = body_json.get('errors')
     if errors and isinstance(errors, list):
       error = errors[0]
