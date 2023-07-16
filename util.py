@@ -2065,6 +2065,11 @@ def fetch_mf2(url, get_fn=requests_get, gateway=False, require_backlink=None,
 
 def d(*objs):
   """Pretty-prints an object as JSON, for debugging."""
-  print('@', '\n'.join(json_dumps(o, indent=2) if isinstance(o, (dict, list))
-                       else str(o)
-                       for o in objs))
+  dumped = []
+  for o in objs:
+    try:
+      dumped.append(json_dumps(o, indent=2))
+    except TypeError:
+      dumped.append(str(o))
+
+  print('@', '\n'.join(dumped))
