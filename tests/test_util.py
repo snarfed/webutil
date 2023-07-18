@@ -1377,6 +1377,7 @@ class UtilTest(testutil.TestCase):
     self.assert_equals({
       'items': [{
         'type': ['h-entry'],
+        'id': 'b',
         'properties': {
           'content': [{'value': 'qwer', 'html': 'qwer'}],
         },
