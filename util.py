@@ -479,7 +479,8 @@ def domain_or_parent_in(input, domains):
 
 
 def update_scheme(url, request):
-  """Returns a modified URL with the current request's scheme.
+  """Returns a modified URL with the scheme upgraded to https if the
+  request uses https.
 
   Useful for converting URLs to https if and only if the current request itself
   is being served over https.
