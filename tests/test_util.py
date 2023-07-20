@@ -247,12 +247,14 @@ class UtilTest(testutil.TestCase):
                           repr((input, domains, expected)))
 
   def test_update_scheme(self):
+    # Should only upgrade http -> https, never downgrade
     with Flask(__name__).test_request_context('/'):
+      request.scheme = 'http'
       for orig in 'http', 'https':
-        for new in 'http', 'https':
-          request.scheme = new
-          updated = util.update_scheme(orig + '://foo', request)
-          self.assertEqual(new + '://foo', updated)
+        self.assertEqual(orig + "://foo", util.update_scheme(orig + "://foo", request))
+      request.scheme = 'https'
+      for orig in 'http', 'https':
+        self.assertEqual("https://foo", util.update_scheme(orig + "://foo", request))
 
   def test_schemeless(self):
     for expected, url in (

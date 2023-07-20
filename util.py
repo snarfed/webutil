@@ -490,7 +490,9 @@ def update_scheme(url, request):
 
   Returns: string, url
   """
-  return urllib.parse.urlunparse((request.scheme,) + urlparse(url)[1:])
+  if request.scheme == 'https':
+    return urllib.parse.urlunparse((request.scheme,) + urlparse(url)[1:])
+  return url
 
 
 def schemeless(url, slashes=True):
