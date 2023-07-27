@@ -19,6 +19,9 @@ class JsonProperty(ndb.TextProperty):
     This makes values show up as normal, human-readable, serialized JSON in the
     web console.
     https://github.com/googleapis/python-ndb/issues/874#issuecomment-1442753255
+
+    Duplicated in arroba:
+    https://github.com/snarfed/arroba/blob/main/arroba/ndb_storage.py
     """
     def _validate(self, value):
         if not isinstance(value, dict):
