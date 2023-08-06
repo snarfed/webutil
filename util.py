@@ -246,12 +246,15 @@ def trim_nulls(value, ignore=()):
 
   Args:
     value: dict or list
-    ignore: optional sequence of keys to allow to have None/empty values
+    ignore: optional sequence of keys to allow to have None/empty values.
+      Transitive: ignored keys' *entire contents* are ignored and allowed to
+      have nulls, all the way down!
   """
   NULLS = (None, {}, [], (), '', set(), frozenset())
 
   if isinstance(value, dict):
-    trimmed = {k: trim_nulls(v, ignore=ignore) for k, v in value.items()}
+    trimmed = {k: (v if k in ignore else trim_nulls(v, ignore=ignore))
+               for k, v in value.items()}
     return {k: v for k, v in trimmed.items() if k in ignore or v not in NULLS}
   elif (isinstance(value, (tuple, list, set, frozenset, Iterator)) or
         inspect.isgenerator(value)):

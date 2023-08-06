@@ -91,8 +91,10 @@ class UtilTest(testutil.TestCase):
 
     # ignore
     self.assertEqual({'a': None}, util.trim_nulls({'a': None}, ignore=('a',)))
+    self.assertEqual({'a': [None]}, util.trim_nulls({'a': [None]}, ignore=('a',)))
     self.assertEqual(['a'], util.trim_nulls(['a', None], ignore=('a',)))
-    self.assertEqual({'a': {}}, util.trim_nulls({'a': {'b': ''}}, ignore=('a',)))
+    self.assertEqual({'a': {'b': ''}}, util.trim_nulls({'a': {'b': ''}},
+                                                       ignore=('a',)))
     self.assertEqual({'a': {'b': None}}, util.trim_nulls({'a': {'b': None}},
                                                          ignore=('a', 'b')))
 
