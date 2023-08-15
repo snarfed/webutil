@@ -119,7 +119,7 @@ EPOCH_ISO = EPOCH.isoformat()
 ISO8601_DURATION_RE = re.compile(
   r'^ *P(?!$)(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)? *$')
 
-HTTP_TIMEOUT = 15
+HTTP_TIMEOUT = 15  # seconds
 """Default HTTP request timeout, used in :func:`requests_get` etc."""
 socket.setdefaulttimeout(HTTP_TIMEOUT)
 # monkey-patch socket.getdefaulttimeout() because it often gets reset, e.g. by
