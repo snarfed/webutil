@@ -586,7 +586,7 @@ def base_url(url):
   Args:
     url: string
   """
-  return urllib.parse.urljoin(url, ' ')[:-1] if url else None
+  return urllib.parse.urljoin(url, 'x')[:-1] if url else None
 
 
 def is_web(url):
