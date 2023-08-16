@@ -1569,12 +1569,18 @@ def requests_fn(fn):
   Use :func:`set_user_agent` to change the User-Agent header to be sent.
 
   Args:
-    fn: 'get', 'head', or 'post'
-    gateway: boolean, whether this is in a HTTP gateway request handler context.
-      If True, errors will be raised as appropriate Flask HTTP exceptions.
-      Malformed URLs result in :class:`werkzeug.exceptions.BadRequest`
-      (HTTP 400), connection failures and HTTP 4xx and 5xx result in
-      :class:`werkzeug.exceptions.BadGateway` (HTTP 502).
+    method: 'get', 'head', or 'post'
+
+  Returns:
+    callable, (str url, gateway=None, **kwargs) => :class:`requests.Response`,
+      drop-in replacement for :func:`requests.get` etc
+
+      The gateway kwarg is a boolean for whether this is in a HTTP gateway
+      request handler context. If True, errors will be raised as appropriate
+      Flask HTTP exceptions. Malformed URLs result in
+      :class:`werkzeug.exceptions.BadRequest` (HTTP 400), connection failures
+      and HTTP 4xx and 5xx result in :class:`werkzeug.exceptions.BadGateway`
+      (HTTP 502).
   """
   def call(url, session=None, *args, **kwargs):
     logger.info(f'{session or "requests"}.{fn} {url} {_prune(kwargs)}')
@@ -1670,7 +1676,7 @@ def requests_post_with_redirects(url, *args, **kwargs):
   Args:
     url: string
 
-  Returns: requests.Response
+  Returns: :class:`requests.Response`
 
   Raises: TooManyRedirects
   """
