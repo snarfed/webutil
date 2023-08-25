@@ -1420,6 +1420,7 @@ def is_connection_failure(exception):
       http.client.NotConnected,
       prawcore.exceptions.RequestException,
       socket.timeout,
+      TimeoutError,
       ssl.SSLError,
   ]
   if requests:
