@@ -26,6 +26,10 @@ RE_TYPE = (re.Pattern if hasattr(re, 'Pattern')  # python >=3.7
 
 NOW = datetime(2022, 1, 2, 3, 4, 5, tzinfo=timezone.utc)
 
+# don't truncate assertion error diffs
+import unittest.util
+unittest.util._MAX_LENGTH = 999999
+
 
 def requests_response(body='', url=None, status=200, content_type=None,
                       redirected_url=None, headers=None, allow_redirects=None,
