@@ -21,5 +21,5 @@ if creds and not creds.endswith('fake_user_account.json'):
 else:
   APP_ID = os.getenv('GAE_APPLICATION', '').split('~')[-1]
   DEBUG = os.environ.get('GAE_ENV') in (None, 'localdev')  # 'standard' in production
-  LOCAL = (os.environ.get('GAE_ENV') == 'localdev'  # App Engine Standard
+  LOCAL = (os.environ.get('GAE_ENV') != 'standard'  # App Engine Standard
            and not os.environ.get('GAE_INSTANCE'))  # App Engine Flex
