@@ -13,13 +13,14 @@ env GOOGLE_APPLICATION_CREDENTIALS=service_account_creds.json FLASK_ENV=developm
 """
 import os, sys
 
+project = os.getenv('GOOGLE_CLOUD_PROJECT') or os.getenv('GAE_APPLICATION') or ''
+APP_ID = project.split('~')[-1]
+
 creds = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 if creds and not creds.endswith('fake_user_account.json'):
-  APP_ID = 'bridgy-federated'
   DEBUG = False
   LOCAL = True
 else:
-  APP_ID = os.getenv('GAE_APPLICATION', '').split('~')[-1]
   DEBUG = os.environ.get('GAE_ENV') in (None, 'localdev')  # 'standard' in production
   LOCAL = (os.environ.get('GAE_ENV') != 'standard'  # App Engine Standard
            and not os.environ.get('GAE_INSTANCE'))  # App Engine Flex
