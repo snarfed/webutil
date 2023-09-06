@@ -318,16 +318,19 @@ class UtilTest(testutil.TestCase):
     self.assertEqual(['https://foo/'], util.dedupe_urls([
       'https://foo', 'http://foo', 'https://foo/', 'http://foo/']))
     self.assertEqual(['https://foo/'],
-                      util.dedupe_urls(['http://foo', '', 'https://foo/']))
+                     util.dedupe_urls(['http://foo', '', 'https://foo/']))
     self.assertEqual(['http://foo/bar', 'http://foo/bar/'],
-                      util.dedupe_urls(['http://foo/bar', 'http://foo/bar/', None, '']))
+                     util.dedupe_urls(['http://foo/bar', 'http://foo/bar/', None, '']))
     self.assertEqual(['http://foo/'],
-                      util.dedupe_urls(['http://foo', 'http://FOO/', 'http://FoO/']))
+                     util.dedupe_urls(['http://foo', 'http://FOO/', 'http://FoO/']))
+    self.assertEqual(['http://foo/', 'http://foo:80/', 'http://foo:3333/'],
+                     util.dedupe_urls(['http://foo', 'http://foo:80/',
+                                       'http://foo:3333/']))
 
     self.assertEqual([{'url': 'http://foo/'}, {'url': 'http://bar/'}],
-                      util.dedupe_urls([{'url': 'http://foo'},
-                                        {'url': 'http://FOO/'},
-                                        {'url': 'http://bar'}]))
+                     util.dedupe_urls([{'url': 'http://foo'},
+                                       {'url': 'http://FOO/'},
+                                       {'url': 'http://bar'}]))
     self.assertEqual(
       [{'stream': {'url': 'http://foo/'}}, {'stream': {'url': 'http://bar/'}}],
        util.dedupe_urls([{'stream': {'url': 'http://foo'}},

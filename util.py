@@ -1039,8 +1039,6 @@ def dedupe_urls(urls, key=None):
 
   Background: https://en.wikipedia.org/wiki/URL_normalization
 
-  TODO: port to https://pypi.python.org/pypi/urlnorm
-
   Args:
     urls: sequence of string URLs or dict objects with 'url' keys
     key: if not None, an inner key to be dereferenced in a dict object before
@@ -1058,8 +1056,10 @@ def dedupe_urls(urls, key=None):
       continue
 
     p = urllib.parse.urlsplit(url)
-    # normalize domain (hostname attr is lower case) and path
-    norm = [p.scheme, p.hostname, p.path or '/', p.query, p.fragment]
+    # normalize domain and path
+    # (the hostname param is automatically lower cased, but we can't use it
+    # because it doesn't include port)
+    norm = [p.scheme, p.netloc.lower(), p.path or '/', p.query, p.fragment]
 
     if p.scheme == 'http' and urllib.parse.urlunsplit(['https'] + norm[1:]) in result:
       continue
