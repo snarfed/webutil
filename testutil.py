@@ -18,8 +18,9 @@ from bs4 import (
 from mox3 import mox
 import requests
 
+from . import appengine_info
 from . import util
-from .util import json_dumps, json_loads, HTTP_TIMEOUT, user_agent
+from .util import json_dumps, json_loads, HTTP_TIMEOUT
 
 RE_TYPE = (re.Pattern if hasattr(re, 'Pattern')  # python >=3.7
            else re._pattern_type)                # python <3.7
@@ -305,6 +306,9 @@ class TestCase(mox.MoxTestBase, Asserts):
     warnings.filterwarnings('ignore', category=XMLParsedAsHTMLWarning)
 
     super(TestCase, self).setUp()
+
+    appengine_info.LOCAL_SERVER = False
+
     for method in 'get', 'post', 'delete':
       self.mox.StubOutWithMock(requests, method, use_mock_anything=True)
     self.stub_requests_head()
@@ -384,7 +388,7 @@ class TestCase(mox.MoxTestBase, Asserts):
       headers = kwargs['headers'] = {}
 
     if not isinstance(headers, mox.Comparator):
-      headers.setdefault('User-Agent', user_agent)
+      headers.setdefault('User-Agent', util.user_agent)
 
       def check_headers(actual):
         missing = set(headers.items()) - set(actual.items())
