@@ -307,6 +307,7 @@ class TestCase(mox.MoxTestBase, Asserts):
 
     super(TestCase, self).setUp()
 
+    appengine_info.APP_ID = 'my-app'
     appengine_info.LOCAL_SERVER = False
 
     for method in 'get', 'post', 'delete':
