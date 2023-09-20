@@ -1,13 +1,12 @@
 """Renders vital stats about a single App Engine instance.
 
-Intended for developers, not users. To turn on concurrent request recording, add the middleware and InfoHandler to your WSGI application, eg:
+Intended for developers, not users. To turn on concurrent request recording, add the middleware and InfoHandler to your WSGI application, eg::
 
-  from oauth_dropins.webutil.instance_info import concurrent_requests_wsgi_middleware, info
-
-  application = concurrent_requests_wsgi_middleware(WSGIApplication([
-      ...
-      ('/_info', info),
-  ])
+    from oauth_dropins.webutil.instance_info import concurrent_requests_wsgi_middleware, info
+    application = concurrent_requests_wsgi_middleware(WSGIApplication([
+        ...
+        ('/_info', info),
+    ])
 """
 import collections
 import heapq

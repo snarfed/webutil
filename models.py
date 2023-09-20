@@ -6,7 +6,7 @@ from oauth_dropins.webutil.util import json_dumps, json_loads
 
 
 class StringIdModel(ndb.Model):
-  """An ndb model class that requires a string id."""
+  """An :class:`ndb.Model` class that requires a string id."""
   def put(self, *args, **kwargs):
     """Raises AssertionError if string id is not provided."""
     assert self.key and self.key.string_id(), 'string id required but not provided'
@@ -14,7 +14,7 @@ class StringIdModel(ndb.Model):
 
 
 class JsonProperty(ndb.TextProperty):
-    """Fork of ndb's that subclasses TextProperty instead of BlobProperty.
+    """Fork of ndb's that subclasses :class:`ndb.TextProperty` instead of :class:`ndb.BlobProperty`.
 
     This makes values show up as normal, human-readable, serialized JSON in the
     web console.
@@ -38,10 +38,11 @@ class JsonProperty(ndb.TextProperty):
 
 
 class ComputedJsonProperty(JsonProperty, ndb.ComputedProperty):
-    """Custom ComputedProperty for JSON values that stores them as strings.
+    """Custom :class:`ndb.ComputedProperty` for JSON values that stores them as
+    strings.
 
-    ...instead of like StructuredProperty, with "entity" type, which bloats them
-    unnecessarily in the datastore.
+    ...instead of like :class:`ndb.StructuredProperty`, with "entity" type,
+    which bloats them unnecessarily in the datastore.
     """
     def __init__(self, *args, **kwargs):
         kwargs['indexed'] = False

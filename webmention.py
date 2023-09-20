@@ -14,28 +14,32 @@ logger = logging.getLogger(__name__)
 LINK_HEADER_RE = re.compile(
   r'''<([^>]+)>; rel=["']?(https?://)?webmention(\.org/?)?["']?''')
 
-# Returned by discover(). Attributes:
-#   endpoint: str
-#   response: requests.Response
 Endpoint = namedtuple('Endpoint', ('endpoint', 'response'))
+"""Returned by :class:`discover`.
 
+Attributes:
+  endpoint (str)
+  response (:class:`requests.Response`)
+"""
 
 def discover(url, follow_meta_refresh=False, **requests_kwargs):
   """Discovers a URL's webmention endpoint.
 
   Follows up to 30 HTTP 3xx redirects, and at most one client-side HTML meta
-  http-equiv=refresh redirects.
+  ``http-equiv=refresh`` redirects.
 
   Args:
-    url: str
-    follow_meta_refresh: bool, whether to follow client side redirects in HTML
-      meta http-equiv=refresh tags
+    url (str):
+    follow_meta_refresh (bool): whether to follow client side redirects in HTML
+      meta ``http-equiv=refresh`` tags
     requests_kwargs: passed to :meth:`requests.post`
 
-  Returns: :class:`Endpoint`. If no endpoint is discovered, the endpoint
-    attribute will be None.
+  Returns:
+    Endpoint: If no endpoint is discovered, the endpoint attribute will be ``None``.
 
-  Raises: :class:`ValueError` on bad URL, :class:`requests.HTTPError` on failure
+  Raises:
+    ValueError: on bad URL
+    requests.HTTPError: on failure
   """
   if not url or not isinstance(url, str) or not urlparse(url).netloc:
       raise ValueError(url)
@@ -87,14 +91,17 @@ def send(endpoint, source, target, **requests_kwargs):
   """Sends a webmention.
 
   Args:
-    endpoint: str, webmention endpoint URL
-    source: str, source URL
-    target: str, target URL
+    endpoint (str): webmention endpoint URL
+    source (str): source URL
+    target (str): target URL
     requests_kwargs: passed to :meth:`requests.post`
 
-  Returns: :class:`requests.Response` on success.
+  Returns:
+    requests.Response: on success
 
-  Raises: :class:`ValueError` on bad URL, :class:`requests.HTTPError` on failure
+  Raises:
+    ValueError: on bad URL
+    requests.HTTPError: on failure
   """
   for arg in endpoint, source, target:
     if not arg or not isinstance(arg, str) or not urlparse(arg).netloc:

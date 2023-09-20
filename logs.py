@@ -1,7 +1,6 @@
 """A handler that serves all app logs for an App Engine HTTP request.
 
-StackDriver Logging API:
-https://cloud.google.com/logging/docs/apis
+StackDriver Logging API: https://cloud.google.com/logging/docs/apis
 """
 import calendar
 from datetime import datetime, timedelta, timezone
@@ -56,8 +55,8 @@ def url(when, key, **params):
   """Returns the relative URL (no scheme or host) to a log page.
 
   Args:
-    when: datetime
-    key: ndb.Key or str
+    when (:class:`datetime`)
+    key (:class:`ndb.Key` or str)
     params: included as query params, eg module, path
   """
   assert 'start_time' not in params and 'key' not in params, params
@@ -77,26 +76,26 @@ def url(when, key, **params):
 def maybe_link(when, key, time_class='dt-updated', link_class='', **params):
   """Returns an HTML snippet with a timestamp and maybe a log page link.
 
-  Example:
+  Example::
 
-  <a href="/log?start_time=1513904267&key=aglz..." class="u-bridgy-log">
-    <time class="dt-updated" datetime="2017-12-22T00:57:47.222060"
-            title="Fri Dec 22 00:57:47 2017">
-      3 days ago
-    </time>
-  </a>
+      <a href="/log?start_time=1513904267&key=aglz..." class="u-bridgy-log">
+        <time class="dt-updated" datetime="2017-12-22T00:57:47.222060"
+                title="Fri Dec 22 00:57:47 2017">
+          3 days ago
+        </time>
+      </a>
 
-  The <a> tag is only included if the timestamp is 30 days old or less, since
+  The ``<a>`` tag is only included if the timestamp is 30 days old or less, since
   Stackdriver's basic tier doesn't store logs older than that:
-    https://cloud.google.com/monitoring/accounts/tiers#logs_ingestion
-    https://github.com/snarfed/bridgy/issues/767
+  * https://cloud.google.com/monitoring/accounts/tiers#logs_ingestion
+  * https://github.com/snarfed/bridgy/issues/767
 
   Args:
-    when: datetime
-    key: ndb.Key or str
-    time_class: string, optional class value for the <time> tag
-    link_class: string, optional class value for the <a> tag (if generated)
-    params: dict {string: string}, query params to include in the link URL,
+    when (datetime)
+    key (:class:`ndb.Key` or str)
+    time_class (str): optional class value for the ``<time>`` tag
+    link_class (str): optional class value for the ``<a>`` tag (if generated)
+    params (dict, str: str): query params to include in the link URL,
       eg module, path
 
   Returns: string HTML
@@ -148,25 +147,28 @@ def log(module=None, path=None):
     """Flask view that searches for and renders app logs for an HTTP request.
 
     URL parameters:
-      start_time: float, seconds since the epoch
-      key: string that should appear in the first app log
 
-    Install with:
-      app.add_url_rule('/log', view_func=logs.log)
+    * ``start_time`` (float): seconds since the epoch
+    * ``key`` (str): token to find in the first app log of the request
 
-    Or:
-      @app.get('/log')
-      @cache.cached(600)
-      def log():
-        return logs.log()
+    Install with::
+
+        app.add_url_rule('/log', view_func=logs.log)
+
+    Or::
+
+        @app.get('/log')
+        @cache.cached(600)
+        def log():
+          return logs.log()
 
     Args:
-      module: str, App Engine module to search. Defaults to all.
-      path: string or sequence of strings, optional HTTP request path(s) to
+      module (str): App Engine module to search. Defaults to all.
+      path (str or sequence of str): optional HTTP request path(s) to
         limit logs to.
 
     Returns:
-      (string response body, dict headers) Flask response
+      (str response body, dict headers) tuple: Flask response
     """
     if not module:
       module = request.values.get('module')

@@ -148,14 +148,13 @@ class RegexConverter(BaseConverter):
 
   Based on https://github.com/rhyselsmore/flask-reggie.
 
-  Usage:
+  Usage::
 
-    @app.route('/<regex("abc|def"):letters>')
+      @app.route('/<regex("abc|def"):letters>')
 
-  Install with:
+  Install with::
 
-    app = Flask(...)
-    app.url_map.converters['regex'] = RegexConverter
+      app.url_map.converters['regex'] = RegexConverter
   """
   def __init__(self, url_map, *items):
     super(RegexConverter, self).__init__(url_map)
@@ -184,11 +183,11 @@ def ndb_context_middleware(app, client=None, **kwargs):
 
   Follows the WSGI standard. Details: http://www.python.org/dev/peps/pep-0333/
 
-  Install with e.g.:
+  Install with eg::
 
-    ndb_client = ndb.Client()
-    app = Flask('my-app')
-    app.wsgi_app = flask_util.ndb_context_middleware(app.wsgi_app, ndb_client)
+      ndb_client = ndb.Client()
+      app = Flask('my-app')
+      app.wsgi_app = flask_util.ndb_context_middleware(app.wsgi_app, ndb_client)
 
   Background: https://cloud.google.com/appengine/docs/standard/python3/migrating-to-cloud-ndb#using_a_runtime_context_with_wsgi_frameworks
 
@@ -210,8 +209,9 @@ def ndb_context_middleware(app, client=None, **kwargs):
 def handle_exception(e):
   """Flask error handler that propagates HTTP exceptions into the response.
 
-  Install with:
-    app.register_error_handler(Exception, handle_exception)
+  Install with::
+
+      app.register_error_handler(Exception, handle_exception)
   """
   if isinstance(e, BadRequestKeyError):
       if e.args:
@@ -245,9 +245,9 @@ def error(msg, status=400, exc_info=False, **kwargs):
   """Logs and returns an HTTP error via :class:`werkzeug.exceptions.HTTPException`.
 
   Args:
-    msg: str
-    status: int
-    exc_info: Python exception info three-tuple, eg from sys.exc_info()
+    msg (str)
+    status (int)
+    exc_info: Python exception info three-tuple, eg from :func:`sys.exc_info`
     kwargs: passed through to :func:`flask.abort`
   """
   logger.info(f'Returning {status}: {msg} {kwargs}', exc_info=exc_info)
@@ -255,7 +255,7 @@ def error(msg, status=400, exc_info=False, **kwargs):
 
 
 def flash(msg, **kwargs):
-  """Wrapper for :func:`flask.flash` that also logs the message."""
+  """Wrapper for :func:`flask.flash`` that also logs the message."""
   flask.flash(msg, **kwargs)
   logger.info(f'Flashed message: {msg}')
 
@@ -263,8 +263,9 @@ def flash(msg, **kwargs):
 def default_modern_headers(resp):
   """Include modern HTTP headers by default, but let the response override them.
 
-  Install with:
-    app.after_request(default_modern_headers)
+  Install with::
+
+      app.after_request(default_modern_headers)
   """
   for name, value in MODERN_HEADERS.items():
     resp.headers.setdefault(name, value)
@@ -275,15 +276,15 @@ def default_modern_headers(resp):
 def cached(cache, timeout, headers=(), http_5xx=False):
   """Thin flask-cache wrapper that supports timedelta and cache query param.
 
-  If the `cache` URL query parameter is `false`, skips the cache. Also, does not
-  store the response in the cache if it's an HTTP 5xx or if there are any
+  If the ``cache`` URL query parameter is ``false``, skips the cache. Also, does
+  not store the response in the cache if it's an HTTP 5xx or if there are any
   flashed messages.
 
   Args:
-    cache: :class:`flask_caching.Cache`
-    timeout: :class:`datetime.timedelta`
+    cache (:class:`flask_caching.Cache`)
+    timeout (:class:`datetime.timedelta`)
     headers: sequence of str, optional headers to include in the cache key
-    http_5xx: bool, optional, whether to cache HTTP 5xx (server error) responses
+    http_5xx (bool): optional, whether to cache HTTP 5xx (server error) responses
   """
   def response_filter(resp):
     """Return False if the response shouldn't be cached."""
@@ -331,10 +332,10 @@ def canonicalize_domain(from_domains, to_domain):
 
   Preserves scheme, path, and query.
 
-  Install with eg:
+  Install with eg::
 
-    app = flask.Flask(...)
-    app.before_request(canonicalize_domain(('old1.com', 'old2.org'), 'new.com'))
+      app = flask.Flask(...)
+      app.before_request(canonicalize_domain(('old1.com', 'old2.org'), 'new.com'))
 
   Args:
     from_domains: str or sequence of str
@@ -357,26 +358,24 @@ class XrdOrJrd(View):
   """Renders and serves an XRD or JRD file.
 
   JRD is served if the request path ends in .jrd or .json, or the format query
-  parameter is 'jrd' or 'json', or the request's Accept header includes 'jrd' or
-  'json'.
+  parameter is ``jrd`` or ``json``, or the request`s Accept header includes
+  ``jrd`` or ``json``.
 
   XRD is served if the request path ends in .xrd or .xml, or the format query
-  parameter is 'xml' or 'xrd', or the request's Accept header includes 'xml' or
-  'xrd'.
+  parameter is ``xml`` or ``xrd``, or the request's Accept header includes
+  ``xml`` or ``xrd``.
 
   Otherwise, defaults to DEFAULT_TYPE.
 
-  Subclasses must override :meth:`template_prefix()` and
-  :meth:`template_vars()`. URL route variables are passed through to
-  :meth:`template_vars()` as keyword args.
-
-  Class members:
-    DEFAULT_TYPE: either JRD or XRD, which type to return by default if the
-    request doesn't ask for one explicitly with the Accept header.
+  Subclasses must override :meth:`template_prefix()`` and
+  :meth:`template_vars()``. URL route variables are passed through to
+  :meth:`template_vars()`` as keyword args.
   """
   JRD = 'jrd'
   XRD = 'xrd'
-  DEFAULT_TYPE = JRD  # either JRD or XRD
+  DEFAULT_TYPE = JRD
+  """Either ``JRD`` or ``which``, the type to return by default if the request
+  doesn't ask for one explicitly with the Accept header."""
 
   def template_prefix(self):
     """Returns template filename, without extension."""

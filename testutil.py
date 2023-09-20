@@ -37,7 +37,7 @@ def requests_response(body='', url=None, status=200, content_type=None,
                       encoding=None):
     """
     Args:
-      redirected_url: string URL or sequence of string URLs for multiple redirects
+      redirected_url (str sequence of str): URL(s) for multiple redirects
     """
     resp = requests.Response()
 
@@ -79,18 +79,18 @@ def requests_response(body='', url=None, status=200, content_type=None,
 def enable_flask_caching(app, cache):
   """Test case decorator that enables a flask_caching cache.
 
-  Usage:
+  Usage::
 
-    from app import app, cache
-
-    class FooTest(TestCase):
-      @enable_flask_caching(app, cache)
-      def test_foo(self):
-        ..
+      from app import app, cache
+       
+      class FooTest(TestCase):
+        @enable_flask_caching(app, cache)
+        def test_foo(self):
+          ..
 
   Args:
-    app: :class:`flask.Flask` app
-    cache: :class:`flask_caching.Cache`
+    app (flask.Flask)
+    cache (flask_caching.Cache)
   """
   def decorator(method):
     def wrapper(self, *args, **kwargs):
@@ -142,11 +142,11 @@ class Asserts(object):
     have populated keys, that their keys are equal too.
 
     Args:
-      a: :class:`ndb.Model` instances or lists of instances
-      b: same
-      ignore: sequence of strings, property names not to compare
-      keys_only: boolean, if True only compare keys
-      in_order: boolean. If False, all entities must have keys.
+      a (:class:`ndb.Model`): instances or lists of instances
+      b (:class:`ndb.Model`): same
+      ignore (sequence of str): property names not to compare
+      keys_only (bool): if True only compare keys
+      in_order (bool): if False, all entities must have keys
     """
     # all the __class__.__name__ hacks below are so we avoid importing ndb
     # from the app engine SDK, since this file needs to support Python 3.
@@ -190,7 +190,7 @@ class Asserts(object):
   def assert_equals(self, expected, actual, msg=None, in_order=False, ignore=()):
     """Pinpoints individual element differences in lists and dicts.
 
-    If in_order is False, ignores order in lists and tuples.
+    If ``in_order`` is False, ignores order in lists and tuples.
     """
     try:
       self._assert_equals(expected, actual, in_order=in_order, ignore=ignore)
@@ -254,7 +254,7 @@ Actual value:
     blank lines down to just one.
 
     Args:
-      ignore_blanks: boolean, whether to ignore blank lines altogether
+      ignore_blanks (boolean): whether to ignore blank lines altogether
     """
     exp = self._normalize_lines(expected, ignore_blanks=ignore_blanks)
     act = self._normalize_lines(actual, ignore_blanks=ignore_blanks)
@@ -268,7 +268,7 @@ Actual value:
     blank lines down to just one.
 
     Args:
-      ignore_blanks: boolean, whether to ignore blank lines altogether
+      ignore_blanks (boolean): whether to ignore blank lines altogether
     """
     exp = ''.join(self._normalize_lines(expected, ignore_blanks=ignore_blanks)).strip()
     act = ''.join(self._normalize_lines(actual, ignore_blanks=ignore_blanks))
@@ -339,7 +339,7 @@ class TestCase(mox.MoxTestBase, Asserts):
     self._is_head_mocked = False  # expect_requests_head() sets this to True
 
   def unstub_requests_head(self):
-    """Mock outgoing HEAD requests so they must be expected individually."""
+    """Mock outgoing ``HEAD`` requests so they must be expected individually."""
     if not self._is_head_mocked:
       self.mox.StubOutWithMock(requests, 'head', use_mock_anything=True)
       self._is_head_mocked = True
@@ -363,7 +363,7 @@ class TestCase(mox.MoxTestBase, Asserts):
                             **kwargs):
     """
     Args:
-      redirected_url: string URL or sequence of string URLs for multiple redirects
+      redirected_url (string): URL or sequence of string URLs for multiple redirects
     """
     resp = requests_response(
       response, url=url, status=status_code, content_type=content_type,
@@ -412,7 +412,7 @@ class TestCase(mox.MoxTestBase, Asserts):
 
   def expect_urlopen(self, url, response=None, status=200, data=None,
                      headers=None, response_headers={}, **kwargs):
-    """Stubs out :func:`urllib.request.urlopen()` and sets up an expected call.
+    """Stubs out :func:`urllib.request.urlopen` and sets up an expected call.
 
     If status isn't 2xx, makes the expected call raise a
     :class:`urllib.error.HTTPError` instead of returning the response.
@@ -422,13 +422,12 @@ class TestCase(mox.MoxTestBase, Asserts):
     If response is unset, returns the expected call.
 
     Args:
-      url: string, :class:`re.RegexObject` or :class:`urllib.request.Request` or
-        :class:`webob.request.Request`
-      response: string
-      status: int, HTTP response code
-      data: optional string POST body
-      headers: optional expected request header dict
-      response_headers: optional response header dict
+      url (str, :class:`re.RegexObject`, :class:`urllib.request.Request`, or :class:`webob.request.Request`)
+      response (str):
+      status (int): HTTP response code
+      data (str): optional ``POST`` body
+      headers (dict): optional expected request headers
+      response_headers (dict): optional response headers
       kwargs: other keyword args, e.g. timeout
     """
     def check_request(req):
