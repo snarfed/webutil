@@ -134,7 +134,7 @@ def linkify_datastore_keys(msg):
                                  for kind, id in tokens)
       key_quoted = urllib.parse.quote(urllib.parse.quote(key_str, safe=''), safe='')
       html = f"{match.group(1)}<a title='{match.group(2)}' href='https://console.cloud.google.com/datastore/entities;kind={key.kind()};ns=__$DEFAULT$__/edit;key={key_quoted}?project={APP_ID}'>{match.group(3)}...</a>{match.group(4)}"
-      logger.debug(f'Returning {html}')
+      # logger.debug(f'Returning {html}')
       return html
     except BaseException:
       # logger.debug("Couldn't linkify candidate datastore key.")   # too noisy
@@ -201,7 +201,8 @@ def log(module=None, path=None):
       or_paths = ' OR '.join(f'"{path}"' for path in path.split(','))
       query += f' httpRequest.requestUrl:({or_paths})'
 
-    logger.info(f'Searching logs with: {query}')
+    # don't log key; would be a false positive for future searches
+    logger.info('Searching logs...')  # with: {query}')
     try:
       # https://googleapis.dev/python/logging/latest/client.html#google.cloud.logging_v2.client.Client.list_entries
       log = next(iter(client.list_entries(filter_=query, page_size=1)))
