@@ -2,7 +2,7 @@
 import logging
 import os
 
-from .appengine_info import DEBUG
+from .appengine_info import DEBUG, LOCAL_SERVER
 
 # Use lxml for BeautifulSoup explicitly.
 from . import util
@@ -36,7 +36,7 @@ except ImportError:
 try:
   from google.cloud import tasks_v2
   tasks_client = tasks_v2.CloudTasksClient()
-  if DEBUG:
+  if DEBUG or LOCAL_SERVER:
     tasks_client.host = 'localhost:9999'
     tasks_client.secure = False
 except ImportError:
