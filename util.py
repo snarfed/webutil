@@ -1568,19 +1568,19 @@ def urlopen(url_or_req, *args, **kwargs):
 
 
 def requests_fn(fn):
-  """Wraps requests.* and logs the HTTP method and URL.
+  """Wraps ``requests.*`` and logs the HTTP method and URL.
 
   Use :func:`set_user_agent` to change the ``User-Agent`` header to be sent.
 
   Args:
-    method (callable): :func:`requests.get`, :func:`requests.head`, or
+    method (callable): :func:`requests.get`\, :func:`requests.head`\, or
       :func:`requests.post`
 
   Returns:
-    callable (str url, gateway=None, **kwargs) => :class:`requests.Response`:
+    callable, ``(str url, gateway=None, **kwargs)`` => :class:`requests.Response`:
       drop-in replacement for :func:`requests.get` etc
 
-      The gateway kwarg is a bool for whether this is in a HTTP gateway
+      The ``gateway`` kwarg is a bool for whether this is in a HTTP gateway
       request handler context. If True, errors will be raised as appropriate
       Flask HTTP exceptions. Malformed URLs result in
       :class:`werkzeug.exceptions.BadRequest` (HTTP 400), connection failures

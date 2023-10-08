@@ -13,8 +13,8 @@ env GOOGLE_APPLICATION_CREDENTIALS=service_account_creds.json FLASK_ENV=developm
 """
 import os, sys
 
-project = os.getenv('GOOGLE_CLOUD_PROJECT') or os.getenv('GAE_APPLICATION') or ''
-APP_ID = project.split('~')[-1]
+PROJECT = os.getenv('GOOGLE_CLOUD_PROJECT') or os.getenv('GAE_APPLICATION') or ''
+APP_ID = PROJECT.split('~')[-1]
 
 creds = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 gae_env = os.environ.get('GAE_ENV')  # App Engine Standard
