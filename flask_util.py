@@ -34,6 +34,9 @@ MODERN_HEADERS = {
   'X-XSS-Protection': '1; mode=block',
 }
 
+# https://cloud.google.com/tasks/docs/creating-appengine-handlers#reading_task_request_headers
+CLOUD_TASKS_QUEUE_HEADER = 'X-AppEngine-QueueName'
+
 
 # A few extra non-error HTTPExceptions
 class Created(HTTPException):
@@ -323,6 +326,28 @@ def cached(cache, timeout, headers=(), http_5xx=False):
     decorated.make_cache_key = make_cache_key
 
     return decorated
+
+  return decorator
+
+
+def cloud_tasks_only(fn):
+  """Flask decorator that returns HTTP 401 if the request isn't from Cloud Tasks.
+
+  https://cloud.google.com/tasks/docs/creating-appengine-handlers#reading_task_request_headers
+
+  Must be used *below* :meth:`flask.Flask.route`, eg::
+
+      @app.route('/path')
+      @cloud_tasks_only
+      def handler():
+          ...
+  """
+  @functools.wraps(fn)
+  def decorator(*args, **kwargs):
+    if CLOUD_TASKS_QUEUE_HEADER not in request.headers:
+      return 'Internal only', 401
+
+    return fn(*args, **kwargs)
 
   return decorator
 

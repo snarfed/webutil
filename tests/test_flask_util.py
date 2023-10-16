@@ -232,6 +232,23 @@ class FlaskUtilTest(unittest.TestCase):
       flask_util.flash('bar')
       self.assertEqual(['foo', 'bar'], get_flashed_messages())
 
+  def test_cloud_tasks_only(self):
+    @self.app.route('/', methods=['POST'])
+    @flask_util.cloud_tasks_only
+    def handler():
+      return 'OK'
+
+    got = self.client.post('/', headers={
+        flask_util.CLOUD_TASKS_QUEUE_HEADER: '',
+    })
+    self.assertEqual(200, got.status_code)
+    self.assertEqual('OK', got.get_data(as_text=True))
+
+    # with self.app.test_request_context('/'):
+    got = self.client.post('/')
+    self.assertEqual(401, got.status_code)
+
+
 
 class XrdOrJrdTest(unittest.TestCase):
   def setUp(self):
