@@ -353,7 +353,7 @@ def cloud_tasks_only(fn):
 
 
 def canonicalize_domain(from_domains, to_domain):
-  """Returns a callable that redirects one or more domains to a canonical domain.
+  """WSGI middleware that redirects one or more domains to a canonical domain.
 
   Preserves scheme, path, and query.
 
@@ -377,6 +377,31 @@ def canonicalize_domain(from_domains, to_domain):
       return redirect(urllib.parse.urlunparse(parts), code=301)
 
   return fn
+
+
+def canonicalize_request_domain(from_domains, to_domain):
+  """Flask handler decorator that redirects to a canonical domain.
+
+
+  Use *below* :meth:`flask.Flask.route`, eg::
+
+      @app.route('/path')
+      @canonicalize_request_domain('foo.com', 'bar.com')
+      def handler():
+          ...
+
+  Args:
+    from_domains: str or sequence of str
+    to_domain: str
+  """
+  def decorator(fn):
+    @functools.wraps(fn)
+    def decorated(*args, **kwargs):
+      return canonicalize_domain(from_domains, to_domain)() or fn(*args, **kwargs)
+
+    return decorated
+
+  return decorator
 
 
 class XrdOrJrd(View):

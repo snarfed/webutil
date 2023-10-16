@@ -226,6 +226,19 @@ class FlaskUtilTest(unittest.TestCase):
       self.assertEqual(204, resp.status_code)
       self.assertNotIn('Location', resp.headers)
 
+  def test_canonicalize_request_domain_decorator(self):
+    @self.app.route('/x')
+    @flask_util.canonicalize_request_domain('foo.com', 'bar.com')
+    def view():
+      return 'OK'
+
+    resp = self.client.get('/x')
+    self.assertEqual(200, resp.status_code)
+
+    resp = self.client.get('/x', base_url='http://foo.com/')
+    self.assertEqual(301, resp.status_code)
+    self.assertEqual('http://bar.com/x', resp.headers['Location'])
+
   def test_flash(self):
     with self.app.test_request_context('/'):
       flask_util.flash('foo')
@@ -247,7 +260,6 @@ class FlaskUtilTest(unittest.TestCase):
     # with self.app.test_request_context('/'):
     got = self.client.post('/')
     self.assertEqual(401, got.status_code)
-
 
 
 class XrdOrJrdTest(unittest.TestCase):
