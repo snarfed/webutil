@@ -2093,9 +2093,13 @@ def d(*objs):
   """Pretty-prints an object as JSON, for debugging."""
   dumped = []
   for o in objs:
-    try:
-      dumped.append(json_dumps(o, indent=2))
-    except TypeError:
-      dumped.append(str(o))
+    if isinstance(o, (dict, list)):
+      try:
+        dumped.append(json_dumps(o, indent=2))
+        continue
+      except TypeError:
+        pass
 
-  print('@', '\n'.join(dumped))
+    dumped.append(str(o))
+
+  print('@', inspect.stack()[1].function, ' '.join(dumped))
