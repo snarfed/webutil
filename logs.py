@@ -37,7 +37,7 @@ MAX_START_TIME = time.mktime(datetime(2099, 1, 1, tzinfo=timezone.utc).timetuple
 
 SANITIZE_RE = re.compile(r"""
   ((?:access|api|oauth)?[ _]?
-   (?:code|consumer_key|consumer_secret|nonce|password|secret|signature|token|verifier)
+   (?:code|accessJwt|consumer_key|consumer_secret|nonce|password|refreshJwt|secret|signature|token|verifier)
      (?:u?['"])?
    (?:=|:|\ |,\ |%3D)\ *
      (?:u?['"])?
