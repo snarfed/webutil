@@ -309,16 +309,24 @@ def cached(cache, timeout, headers=(), http_5xx=False):
       except HTTPException as e:
         return e
 
-    decorated = cache.cached(timeout.total_seconds(), query_string=True,
-                             response_filter=response_filter, unless=unless
-                             )(httpexception_to_return)
+    decorated = cache.cached(
+      timeout.total_seconds(),
+      query_string=True,
+      response_filter=response_filter,
+      unless=unless,
+    )(httpexception_to_return)
 
     # include specified headers in cache key:
     # https://flask-caching.readthedocs.io/en/latest/api.html#flask_caching.Cache.cached
     orig_cache_key = decorated.make_cache_key
     def make_cache_key(*args, **kwargs):
       header_vals = '  '.join(request.headers.get(h, '') for h in sorted(headers))
-      k = f'{orig_cache_key(*args, **kwargs)}  {header_vals}'
+      # an alternative to including host_url would be to pass
+      # key_prefix=f'view/{request.base_url}' to cache.cached above, but
+      # flask-caching doesn't currently support query_string and key_prefix
+      # together :(
+      # https://github.com/pallets-eco/flask-caching/issues/302
+      k = f'{request.host_url} {orig_cache_key(*args, **kwargs)}  {header_vals}'
       if request.method != 'GET':
         k = f'{request.method} {k}'
       return k

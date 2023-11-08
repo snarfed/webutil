@@ -116,6 +116,14 @@ class FlaskUtilTest(unittest.TestCase):
     self.assertEqual(11, calls)
     self.assertEqual('11', resp.get_data(as_text=True))
 
+    # cache key should use full URL
+    resp = client.get('/foo', base_url='https://foo/')
+    self.assertEqual(12, calls)
+
+    # cache key should include scheme
+    resp = client.get('/foo', base_url='http://foo/')
+    self.assertEqual(13, calls)
+
   def test_cached_http_5xx(self):
     cache = Cache(self.app)
     calls = 0
