@@ -8,10 +8,12 @@ import http.client
 import socket
 import ssl
 import io
+from unittest import skipUnless
 from urllib.error import HTTPError, URLError
 import urllib.parse, urllib.request
 
 from flask import Flask, request
+import mf2py
 import prawcore.exceptions
 import requests
 import tumblpy
@@ -1412,6 +1414,8 @@ class UtilTest(testutil.TestCase):
     self.assertIsNotNone(util.fetch_mf2(
       'http://xyz',require_backlink=['http://link', 'http://back']))
 
+  # TODO: remove skipIf once mf2py 2.0 is released
+  @skipUnless(hasattr(mf2py, 'metaformats'), 'mf2py 2.0 breaking changes')
   def test_parse_mf2_metaformats_hcard(self):
     # metaformats
     self.assert_equals({

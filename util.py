@@ -2004,6 +2004,10 @@ def parse_mf2(input, url=None, id=None, metaformats_hcard=False):
     if not input:
       return None
 
+  # TODO: remove once mf2py 2.0 is released
+  if not hasattr(mf2py, 'metaformats'):
+    return mf2py.parse(url=url, doc=input, img_with_alt=True)
+
   mf2 = mf2py.parse(url=url, doc=input, metaformats=metaformats_hcard)
 
   if metaformats_hcard and url and urlparse(url).path.strip('/') == '':
