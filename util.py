@@ -1973,7 +1973,7 @@ def parse_html(input, **kwargs):
   return bs4.BeautifulSoup(input, **kwargs)
 
 
-def parse_mf2(input, url=None, id=None):
+def parse_mf2(input, url=None, id=None, metaformats_hcard=False):
   """Parses microformats2 out of HTML.
 
   Currently uses mf2py.
@@ -1983,6 +1983,10 @@ def parse_mf2(input, url=None, id=None):
     url (str): optional, URL of the input page, used as the base for relative URLs
     id (str): optional id of specific element to extract and parse. defaults
       to the whole page.
+    metaformats_hcard (bool): if True, always return an ``h-card`` item for home
+      pages. If no explicit mf2 ``h-card`` is present, generate one with
+      metaformats, https://microformats.org/wiki/metaformats , or worst case, from
+      just the URL itself.
 
   Returns:
     dict: parsed mf2 data, or ``None`` if id is provided and not found in the
@@ -2000,7 +2004,29 @@ def parse_mf2(input, url=None, id=None):
     if not input:
       return None
 
-  return mf2py.parse(url=url, doc=input, img_with_alt=True)
+  mf2 = mf2py.parse(url=url, doc=input, metaformats=metaformats_hcard)
+
+  if metaformats_hcard and url and urlparse(url).path.strip('/') == '':
+    if not mf2:
+      mf2 = {}
+    if items := mf2.setdefault('items', []):
+      item = mf2['items'][-1]
+      if item['type'] == ['h-entry']:
+        # metaformats synthetic item
+        # https://microformats.org/wiki/metaformats
+        item['type'] = ['h-card']
+        item['properties'].setdefault('url', item['properties'].pop('author', [url]))
+    else:
+      # no metaformats, generate an h-card from the URL itself
+      mf2['items'].append({
+        'type': ['h-card'],
+        'properties': {
+          'url': [url],
+          'name': [domain_from_link(url)],
+        },
+      })
+
+  return mf2
 
 
 def parse_http_equiv(content):
@@ -2046,7 +2072,7 @@ def fetch_http_equiv(input, **kwargs):
 
 
 def fetch_mf2(url, get_fn=requests_get, gateway=False, require_backlink=None,
-              **kwargs):
+              metaformats_hcard=False, **kwargs):
   """Fetches an HTML page over HTTP, parses it, and returns its microformats2.
 
   If url includes a fragment, or redirects to a URL with a fragment, only that
@@ -2058,6 +2084,7 @@ def fetch_mf2(url, get_fn=requests_get, gateway=False, require_backlink=None,
     gateway (bool): see :func:`requests_fn`
     require_backlink (str or sequence of strs): If provided, one of these must
       be in the response body, in any form. Generally used for webmention validation.
+    metaformats_hcard (bool): passed through to :func:`parse_mf2`
     kwargs: passed through to :func:`requests.get`
 
   Returns:
@@ -2079,9 +2106,11 @@ def fetch_mf2(url, get_fn=requests_get, gateway=False, require_backlink=None,
     else:
       raise ValueError(f"Couldn't find {require_backlink} in {url}")
 
-  fragment = urllib.parse.urlparse(url).fragment
-  mf2 = parse_mf2(resp, id=fragment)
-  if mf2 is None:
+  parsed = urlparse(url)
+  fragment = parsed.fragment
+  mf2 = parse_mf2(resp, id=fragment, metaformats_hcard=metaformats_hcard)
+
+  if not mf2:
     return None
 
   assert 'url' not in mf2

@@ -1411,3 +1411,36 @@ class UtilTest(testutil.TestCase):
     self.assertIsNotNone(util.fetch_mf2('http://xyz', require_backlink='http://back'))
     self.assertIsNotNone(util.fetch_mf2(
       'http://xyz',require_backlink=['http://link', 'http://back']))
+
+  def test_parse_mf2_metaformats_hcard(self):
+    # metaformats
+    self.assert_equals({
+      'items': [{
+        'type': ['h-card'],
+        'properties': {
+          'url': ['http://xyz/me'],
+          'name': ['Ms. ☕ Baz'],
+        },
+      }],
+    }, util.parse_mf2("""\
+<html>
+<head>
+<title>Ms. ☕ Baz</title>
+<meta property="article:author" content="/me" />
+</head>
+</html>
+""", url='http://xyz', metaformats_hcard=True),
+    ignore=['debug', 'rels', 'rel-urls'])
+
+    # nothing
+    self.assert_equals({
+      'items': [{
+        'type': ['h-card'],
+        'properties': {
+          'url': ['http://xyz'],
+          'name': ['xyz'],
+        },
+      }],
+    }, util.parse_mf2('<html><body>foo<body><html>', url='http://xyz',
+                      metaformats_hcard=True),
+      ignore=['debug', 'rels', 'rel-urls'])
