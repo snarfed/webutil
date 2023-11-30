@@ -20,7 +20,7 @@ import sys
 import threading
 import traceback
 import urllib.error, urllib.parse, urllib.request
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 from xml.sax import saxutils
 
 from cachetools import cached, TTLCache
@@ -202,6 +202,35 @@ characters, and that the ``?`` added in :attr:`LINK_RE` only applies to the
 parenthesized group in :attr:`SCHEME_RE`, not the ``\b``. I tried changing
 ``\b`` to ``'(?:^|[\s%s])' % PUNCT``, but that broke other things.
 """
+
+# https://microformats.org/wiki/metaformats
+METAFORMAT_TO_MF2 = [
+    # in priority order, descending
+    # OGP
+    ("property", "article:author", "url"),
+    ("property", "article:published_time", "published"),
+    ("property", "article:modified_time", "updated"),
+    ("property", "og:audio", "audio"),
+    ("property", "og:description", "summary"),
+    ("property", "og:image", "photo"),
+    ("property", "og:title", "name"),
+    ("property", "og:video", "video"),
+    # Twitter
+    ("name", "twitter:title", "name"),
+    ("name", "twitter:description", "summary"),
+    ("name", "twitter:image", "photo"),
+    # HTML standard meta names
+    # https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta/name
+    ("name", "description", "summary"),
+]
+METAFORMAT_URL_PROPERTIES = {
+    "article:author",
+    "og:audio",
+    "og:image",
+    "og:video",
+    "twitter:image",
+}
+
 
 class Struct(object):
   """A generic class that initializes its attributes from constructor kwargs."""
@@ -588,7 +617,7 @@ def base_url(url):
   Args:
     url (str)
   """
-  return urllib.parse.urljoin(url, 'x')[:-1] if url else None
+  return urljoin(url, 'x')[:-1] if url else None
 
 
 def is_web(url):
@@ -2004,29 +2033,64 @@ def parse_mf2(input, url=None, id=None, metaformats_hcard=False):
     if not input:
       return None
 
-  mf2 = mf2py.parse(url=url, doc=input, metaformats=metaformats_hcard)
+  mf2 = mf2py.parse(url=url, doc=input, img_with_alt=True)
 
-  if metaformats_hcard and url and urlparse(url).path.strip('/') == '':
-    if not mf2:
-      mf2 = {}
-    if items := mf2.setdefault('items', []):
-      item = mf2['items'][-1]
-      if item['type'] == ['h-entry']:
-        # metaformats synthetic item
-        # https://microformats.org/wiki/metaformats
-        item['type'] = ['h-card']
-        item['properties'].setdefault('url', item['properties'].pop('author', [url]))
-    else:
-      # no metaformats, generate an h-card from the URL itself
-      mf2['items'].append({
-        'type': ['h-card'],
-        'properties': {
-          'url': [url],
-          'name': [domain_from_link(url)],
-        },
-      })
+  if (metaformats_hcard and url and urlparse(url).path in ('', '/')
+          # only look at metaformats if we don't already have an h-card
+          and not [i for i in mf2['items'] if 'h-card' in i.get('type', [])]):
+      mf2['items'].append(parse_metaformats_hcard(input, url))
 
   return mf2
+
+
+def parse_metaformats_hcard(soup, url):
+  """Converts metadata in an HTML page to a microformats2 h-card.
+
+  Approximately implements the metaformats standard:
+  https://microformats.org/wiki/metaformats
+
+  More background: https://github.com/microformats/mf2py/pull/213
+
+  Args:
+    soup: (:class:`bs4.BeautifulSoup`): parsed input HTML page
+    url (str): optional, URL of the input page, used as the base for relative URLs
+
+  Returns:
+    dict: parsed mf2 ``h-card`` item
+  """
+  assert isinstance(soup, (bs4.BeautifulSoup, bs4.Tag))
+  assert url and isinstance(url, str)
+
+  hcard = {
+    'type': ['h-card'],
+    'properties': {},
+  }
+
+  if soup.head:
+    base = url
+    if soup.head.base:
+      if href := soup.head.base.get('href'):
+        base = href
+
+    # properties
+    for attr, meta, mf2 in METAFORMAT_TO_MF2:
+      if val := soup.head.find('meta', attrs={attr: meta}):
+        if content := val.get('content'):
+          if meta in METAFORMAT_URL_PROPERTIES:
+            content = urljoin(base, content)
+          hcard['properties'].setdefault(mf2, [content])
+
+    if soup.head.title:
+      if text := soup.head.title.text:
+        hcard['properties'].setdefault('name', [text])
+
+  # fall back to the URL itself
+  hcard['properties'].setdefault('name', [domain_from_link(url)])
+  urls = hcard['properties'].setdefault('url', [])
+  if url not in urls:
+    urls.append(url)
+
+  return hcard
 
 
 def parse_http_equiv(content):

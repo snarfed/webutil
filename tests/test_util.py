@@ -1412,13 +1412,25 @@ class UtilTest(testutil.TestCase):
     self.assertIsNotNone(util.fetch_mf2(
       'http://xyz',require_backlink=['http://link', 'http://back']))
 
-  def test_parse_mf2_metaformats_hcard(self):
-    # metaformats
+  def test_parse_mf2_metaformats_hcard_nothing(self):
     self.assert_equals({
       'items': [{
         'type': ['h-card'],
         'properties': {
-          'url': ['http://xyz/me'],
+          'url': ['http://xyz'],
+          'name': ['xyz'],
+        },
+      }],
+    }, util.parse_mf2('<html><body>foo<body><html>', url='http://xyz',
+                      metaformats_hcard=True),
+      ignore=['debug', 'rels', 'rel-urls'])
+
+  def test_parse_mf2_metaformats_hcard_mixed(self):
+    self.assert_equals({
+      'items': [{
+        'type': ['h-card'],
+        'properties': {
+          'url': ['http://xyz/me', 'http://xyz'],
           'name': ['Ms. ☕ Baz'],
         },
       }],
@@ -1432,15 +1444,101 @@ class UtilTest(testutil.TestCase):
 """, url='http://xyz', metaformats_hcard=True),
     ignore=['debug', 'rels', 'rel-urls'])
 
-    # nothing
+  def test_parse_mf2_metaformats_hcard_ogp(self):
     self.assert_equals({
       'items': [{
         'type': ['h-card'],
         'properties': {
-          'url': ['http://xyz'],
-          'name': ['xyz'],
+          'name': ['Titull foo'],
+          'summary': ['Descrypshun bar'],
+          'photo': ['http://example.com/baz.jpg'],
+          'audio': ['http://example.com/biff.mp3'],
+          'video': ['http://example.com/boff.mov'],
+          'published': ['2023-01-02T03:04Z'],
+          'updated': ['2023-01-02T05:06Z'],
+          'url': ['http://tantek.com/me', 'http://xyz'],
         },
       }],
-    }, util.parse_mf2('<html><body>foo<body><html>', url='http://xyz',
-                      metaformats_hcard=True),
-      ignore=['debug', 'rels', 'rel-urls'])
+    }, util.parse_mf2("""\
+<html>
+<head>
+  <title>Hello World</title>
+  <base href="http://tantek.com/" />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Titull foo" />
+  <meta property="og:description" content="Descrypshun bar" />
+  <meta property="og:image" content="http://example.com/baz.jpg" />
+  <meta property="og:audio" content="http://example.com/biff.mp3" />
+  <meta property="og:video" content="http://example.com/boff.mov" />
+  <meta property="article:author" content="/me" />
+  <meta property="article:published_time" content="2023-01-02T03:04Z" />
+  <meta property="article:modified_time" content="2023-01-02T05:06Z" />
+</head>
+</html>
+""", url='http://xyz', metaformats_hcard=True),
+    ignore=['debug', 'rels', 'rel-urls'])
+
+  def test_parse_mf2_metaformats_hcard_twitter(self):
+    self.assert_equals({
+      'items': [{
+        'type': ['h-card'],
+        'properties': {
+          'name': ['Titull foo'],
+          'summary': ['Descrypshun bar'],
+          'photo': ['http://tantek.com/baz.jpg'],
+          'url': ['http://xyz'],
+        },
+      }],
+    }, util.parse_mf2("""\
+<html>
+<head>
+  <title>Hello World</title>
+  <base href="http://tantek.com/" />
+  <meta name="twitter:title" content="Titull foo" />
+  <meta name="twitter:description" content="Descrypshun bar" />
+  <meta name="twitter:image" content="/baz.jpg" />
+</head>
+</html>
+""", url='http://xyz', metaformats_hcard=True),
+    ignore=['debug', 'rels', 'rel-urls'])
+
+  def test_parse_mf2_metaformats_hcard_html_meta(self):
+    self.assert_equals({
+      'items': [{
+        'type': ['h-card'],
+        'properties': {
+          'name': ['Hello World'],
+          'summary': ['Descrypshun bar'],
+          'url': ['http://xyz'],
+        },
+      }],
+    }, util.parse_mf2("""\
+<html>
+<head>
+  <title>Hello World</title>
+  <base href="http://tantek.com/" />
+  <meta name="description" content="Descrypshun bar" />
+</head>
+</html>
+""", url='http://xyz', metaformats_hcard=True),
+    ignore=['debug', 'rels', 'rel-urls'])
+
+  def test_parse_mf2_metaformats_existing_hcard(self):
+    self.assert_equals({
+      'items': [{
+        'type': ['h-card'],
+        'properties': {
+          'name': ['Ms. ☕ Baz'],
+        },
+      }],
+    }, util.parse_mf2("""\
+<html>
+<head>
+<title>other</title>
+</head>
+<body class="h-card">
+<p class="p-name">Ms. ☕ Baz</p>
+</body>
+</html>
+""", url='http://xyz', metaformats_hcard=True),
+    ignore=['debug', 'rels', 'rel-urls'])
