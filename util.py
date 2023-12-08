@@ -2033,7 +2033,7 @@ def parse_mf2(input, url=None, id=None, metaformats_hcard=False):
     if not input:
       return None
 
-  mf2 = mf2py.parse(url=url, doc=input, img_with_alt=True)
+  mf2 = mf2py.parse(url=url, doc=input)
 
   if (metaformats_hcard and url and urlparse(url).path in ('', '/')
           # only look at metaformats if we don't already have an h-card
