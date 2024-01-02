@@ -26,6 +26,7 @@ RE_TYPE = (re.Pattern if hasattr(re, 'Pattern')  # python >=3.7
            else re._pattern_type)                # python <3.7
 
 NOW = datetime(2022, 1, 2, 3, 4, 5, tzinfo=timezone.utc)
+NOW_SECONDS = (NOW - datetime(1970, 1, 1, tzinfo=timezone.utc)).total_seconds()
 
 # don't truncate assertion error diffs
 import unittest.util
