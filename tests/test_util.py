@@ -18,6 +18,13 @@ import tumblpy
 import tweepy
 import urllib3
 from webob import exc
+from websockets import http11
+from websockets.exceptions import (
+  InvalidHandshake,
+  InvalidStatus,
+  InvalidStatusCode,
+  ProtocolError,
+)
 from werkzeug.exceptions import BadGateway, BadRequest
 
 from .. import testutil, util
@@ -1001,6 +1008,13 @@ class UtilTest(testutil.TestCase):
       ('504', '[Errno -1] foo bar'),
       ihc(HTTPError('url', None, err, {}, None)))
 
+    # websockets exceptions
+    resp = http11.Response
+    resp.status_code = 345
+    resp.body = b'foo bar'
+    self.assertEqual(('345', 'foo bar'), ihc(InvalidStatus(resp)))
+    self.assertEqual(('345', ''), ihc(InvalidStatusCode(345, None)))
+
     # upstream connection failures are converted to 504
     self.assertEqual(('504', 'foo bar'), ihc(socket.timeout('foo bar')))
 
@@ -1033,6 +1047,8 @@ class UtilTest(testutil.TestCase):
         Exception('Connection closed unexpectedly by server at URL: ...'),
         ssl.SSLError(),
         prawcore.exceptions.RequestException(None, None, None),
+        InvalidHandshake(),
+        ProtocolError(),
     ):
       self.assertTrue(util.is_connection_failure(e), repr(e))
 

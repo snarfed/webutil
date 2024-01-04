@@ -74,6 +74,17 @@ except ImportError:
   exc = None
 
 try:
+  import websockets
+  from websockets.exceptions import (
+    InvalidHandshake,
+    InvalidStatus,
+    InvalidStatusCode,
+    ProtocolError,
+  )
+except ImportError:
+  websockets = None
+
+try:
   import werkzeug
   import werkzeug.exceptions
 except ImportError:
@@ -1329,6 +1340,14 @@ def interpret_http_exception(exception):
     elif body.startswith('internal_failure'):
       code = '502'
 
+  elif websockets and isinstance(e, InvalidStatus):
+    code = str(e.response.status_code)
+    body = e.response.body.decode()
+
+  elif websockets and isinstance(e, InvalidStatusCode):
+    code = str(e.status_code)
+    body = ''
+
   # hack to interpret gdata.client.RequestError since gdata isn't a dependency
   elif e.__class__.__name__ == 'RequestError':
     code = getattr(e, 'status')
@@ -1419,7 +1438,11 @@ def interpret_http_exception(exception):
   # upstream errors and connection failures become 502s and 504s, respectively
   if code == '500':
     code = '502'
-  elif is_connection_failure(e):
+  elif (is_connection_failure(e)
+          # websockets exceptions. InvalidHandshake is a connection failure, but
+          # these are subclasses of InvalidHandshake and are HTTP-level errors)
+          and not isinstance(e, InvalidStatus)
+          and not isinstance(e, InvalidStatusCode)):
     code = '504'
     if not body:
       body = str(e)
@@ -1468,6 +1491,12 @@ def is_connection_failure(exception):
     types += [
       urllib3.exceptions.HTTPError,
       urllib3.exceptions.ReadTimeoutError,
+    ]
+
+  if websockets:
+    types += [
+      InvalidHandshake,
+      ProtocolError,
     ]
 
   msg = str(exception)
