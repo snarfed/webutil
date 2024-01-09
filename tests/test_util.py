@@ -1539,6 +1539,21 @@ class UtilTest(testutil.TestCase):
 """, url='http://xyz', metaformats_hcard=True),
     ignore=['debug', 'rels', 'rel-urls'])
 
+  def test_parse_mf2_metaformats_link_rel_icon(self):
+    parsed = util.parse_mf2("""\
+<html>
+<head>
+  <link rel="icon" href="http://med" sizes="5x5" />
+  <link rel="icon" href="http://unknown" />
+  <link rel="icon" href="http://small-big" sizes="2x2 10x10" />
+</head>
+</html>
+""", url='http://xyz', metaformats_hcard=True)
+
+    # should be ordered by size, large to small
+    self.assert_equals(['http://small-big', 'http://med', 'http://unknown'],
+                       parsed['items'][0]['properties']['photo'])
+
   def test_parse_mf2_metaformats_existing_hcard(self):
     self.assert_equals({
       'items': [{

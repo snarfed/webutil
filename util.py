@@ -2075,8 +2075,9 @@ def parse_mf2(input, url=None, id=None, metaformats_hcard=False):
 def parse_metaformats_hcard(soup, url):
   """Converts metadata in an HTML page to a microformats2 h-card.
 
-  Approximately implements the metaformats standard:
-  https://microformats.org/wiki/metaformats
+  Approximately implements the metaformats standard,
+  https://microformats.org/wiki/metaformats , and includes extras like
+  ``<title>``, ``<meta description>``, and ``<link rel=icon>``.
 
   More background: https://github.com/microformats/mf2py/pull/213
 
@@ -2112,6 +2113,24 @@ def parse_metaformats_hcard(soup, url):
     if soup.head.title:
       if text := soup.head.title.text:
         hcard['properties'].setdefault('name', [text])
+
+    def max_size(link):
+      # https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link#sizes
+      sizes = link.get('sizes', '').split(' ')
+      if not sizes:
+        return 0
+      elif 'any' in sizes:
+        return 99999999
+
+      try:
+        return max(int(size.split('x')[0]) for size in sizes)
+      except (ValueError, TypeError):
+        return 0
+
+    icons = soup.head.find_all('link', rel='icon', href=re.compile('.+'))
+    if icons:
+      icons_by_size = [i['href'] for i in sorted(icons, key=max_size, reverse=True)]
+      hcard['properties'].setdefault('photo', [])[0:0] = icons_by_size
 
   # fall back to the URL itself
   hcard['properties'].setdefault('name', [domain_from_link(url)])
