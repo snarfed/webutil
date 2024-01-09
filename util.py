@@ -2129,8 +2129,9 @@ def parse_metaformats_hcard(soup, url):
 
     icons = soup.head.find_all('link', rel='icon', href=re.compile('.+'))
     if icons:
-      icons_by_size = [i['href'] for i in sorted(icons, key=max_size, reverse=True)]
-      hcard['properties'].setdefault('photo', [])[0:0] = icons_by_size
+      urls_by_size = [urljoin(base, i['href'])
+                      for i in sorted(icons, key=max_size, reverse=True)]
+      hcard['properties'].setdefault('photo', [])[0:0] = urls_by_size
 
   # fall back to the URL itself
   hcard['properties'].setdefault('name', [domain_from_link(url)])

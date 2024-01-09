@@ -1545,13 +1545,13 @@ class UtilTest(testutil.TestCase):
 <head>
   <link rel="icon" href="http://med" sizes="5x5" />
   <link rel="icon" href="http://unknown" />
-  <link rel="icon" href="http://small-big" sizes="2x2 10x10" />
+  <link rel="icon" href="/small-big" sizes="2x2 10x10" />
 </head>
 </html>
 """, url='http://xyz', metaformats_hcard=True)
 
     # should be ordered by size, large to small
-    self.assert_equals(['http://small-big', 'http://med', 'http://unknown'],
+    self.assert_equals(['http://xyz/small-big', 'http://med', 'http://unknown'],
                        parsed['items'][0]['properties']['photo'])
 
   def test_parse_mf2_metaformats_existing_hcard(self):
