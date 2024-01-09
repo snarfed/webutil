@@ -1573,3 +1573,24 @@ class UtilTest(testutil.TestCase):
 </html>
 """, url='http://xyz', metaformats_hcard=True),
     ignore=['debug', 'rels', 'rel-urls'])
+
+  def test_parse_mf2_metaformats_hcard_without_photo_fallback(self):
+    self.assert_equals({
+      'items': [{
+        'type': ['h-card'],
+        'properties': {
+          'name': ['Ms. ☕ Baz'],
+          'photo': ['http://pic'],
+        },
+      }],
+    }, util.parse_mf2("""\
+<html>
+<head>
+  <link rel="icon" href="http://pic" />
+</head>
+<body class="h-card">
+  <p class="p-name">Ms. ☕ Baz</p>
+</body>
+</html>
+""", url='http://xyz', metaformats_hcard=True),
+    ignore=['debug', 'rels', 'rel-urls'])

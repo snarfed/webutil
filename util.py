@@ -2064,10 +2064,21 @@ def parse_mf2(input, url=None, id=None, metaformats_hcard=False):
 
   mf2 = mf2py.parse(url=url, doc=input)
 
-  if (metaformats_hcard and url and urlparse(url).path in ('', '/')
-          # only look at metaformats if we don't already have an h-card
-          and not [i for i in mf2['items'] if 'h-card' in i.get('type', [])]):
-      mf2['items'].append(parse_metaformats_hcard(input, url))
+  hcard = None
+  for item in mf2['items']:
+    if 'h-card' in item.get('type', []):
+      hcard = item
+
+  if metaformats_hcard and url and urlparse(url).path in ('', '/'):
+    meta_hcard = parse_metaformats_hcard(input, url)
+    if not hcard:
+      hcard = meta_hcard
+      mf2['items'].append(hcard)
+
+    # use metaformats photo if h-card doesn't have one
+    photos = meta_hcard['properties'].get('photo')
+    if photos:
+      hcard.setdefault('properties', {})['photo'] = photos
 
   return mf2
 
