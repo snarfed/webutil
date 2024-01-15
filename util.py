@@ -2071,14 +2071,15 @@ def parse_mf2(input, url=None, id=None, metaformats_hcard=False):
 
   if metaformats_hcard and url and urlparse(url).path in ('', '/'):
     meta_hcard = parse_metaformats_hcard(input, url)
-    if not hcard:
+    if hcard:
+      # if h-card doesn't have a photo, fall back to metaformats
+      meta_photos = meta_hcard['properties'].get('photo')
+      props = hcard.setdefault('properties', {})
+      if meta_photos and not props.get('photo'):
+        props['photo'] = meta_photos
+    else:
       hcard = meta_hcard
       mf2['items'].append(hcard)
-
-    # use metaformats photo if h-card doesn't have one
-    photos = meta_hcard['properties'].get('photo')
-    if photos:
-      hcard.setdefault('properties', {})['photo'] = photos
 
   return mf2
 
@@ -2106,6 +2107,7 @@ def parse_metaformats_hcard(soup, url):
     'type': ['h-card'],
     'properties': {},
   }
+  props = hcard['properties']
 
   if soup.head:
     base = url
@@ -2119,11 +2121,11 @@ def parse_metaformats_hcard(soup, url):
         if content := val.get('content'):
           if meta in METAFORMAT_URL_PROPERTIES:
             content = urljoin(base, content)
-          hcard['properties'].setdefault(mf2, [content])
+          props.setdefault(mf2, [content])
 
     if soup.head.title:
       if text := soup.head.title.text:
-        hcard['properties'].setdefault('name', [text])
+        props.setdefault('name', [text])
 
     def max_size(link):
       # https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link#sizes
@@ -2142,11 +2144,11 @@ def parse_metaformats_hcard(soup, url):
     if icons:
       urls_by_size = [urljoin(base, i['href'])
                       for i in sorted(icons, key=max_size, reverse=True)]
-      hcard['properties'].setdefault('photo', [])[0:0] = urls_by_size
+      props.setdefault('photo', [])[0:0] = urls_by_size
 
   # fall back to the URL itself
-  hcard['properties'].setdefault('name', [domain_from_link(url)])
-  urls = hcard['properties'].setdefault('url', [])
+  props.setdefault('name', [domain_from_link(url)])
+  urls = props.setdefault('url', [])
   if url not in urls:
     urls.append(url)
 

@@ -1428,6 +1428,23 @@ class UtilTest(testutil.TestCase):
     self.assertIsNotNone(util.fetch_mf2(
       'http://xyz',require_backlink=['http://link', 'http://back']))
 
+  def test_fetch_mf2_metaformats_hcard(self):
+    self.expect_requests_get('http://xyz',
+                             '<html><head><title>Ms. ☕ Baz</title></head></html>')
+    self.mox.ReplayAll()
+
+    self.assert_equals({
+      'items': [{
+        'type': ['h-card'],
+        'properties': {
+          'url': ['http://xyz'],
+          'name': ['Ms. ☕ Baz'],
+        },
+      }],
+      'url': 'http://xyz',
+    }, util.fetch_mf2('http://xyz', metaformats_hcard=True),
+       ignore=['debug', 'rels', 'rel-urls'])
+
   def test_parse_mf2_metaformats_hcard_nothing(self):
     self.assert_equals({
       'items': [{
@@ -1554,27 +1571,30 @@ class UtilTest(testutil.TestCase):
     self.assert_equals(['http://xyz/small-big', 'http://med', 'http://unknown'],
                        parsed['items'][0]['properties']['photo'])
 
-  def test_parse_mf2_metaformats_existing_hcard(self):
+  def test_parse_mf2_metaformats_real_hcard_real_uphoto(self):
     self.assert_equals({
       'items': [{
         'type': ['h-card'],
         'properties': {
           'name': ['Ms. ☕ Baz'],
+          'photo': ['http://xyz/me.png'],
         },
       }],
     }, util.parse_mf2("""\
 <html>
 <head>
-<title>other</title>
+  <title>other</title>
+  <meta property="og:image" content="http://other/pic.jpg">
 </head>
 <body class="h-card">
-<p class="p-name">Ms. ☕ Baz</p>
+  <p class="p-name">Ms. ☕ Baz</p>
+  <img class="u-photo" src="/me.png" />
 </body>
 </html>
 """, url='http://xyz', metaformats_hcard=True),
     ignore=['debug', 'rels', 'rel-urls'])
 
-  def test_parse_mf2_metaformats_hcard_without_photo_fallback(self):
+  def test_parse_mf2_metaformats_real_hcard_photo_fallback(self):
     self.assert_equals({
       'items': [{
         'type': ['h-card'],
