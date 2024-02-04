@@ -20,6 +20,7 @@ import urllib3
 from webob import exc
 from websockets import http11
 from websockets.exceptions import (
+  ConnectionClosedError,
   InvalidHandshake,
   InvalidStatus,
   InvalidStatusCode,
@@ -1014,6 +1015,8 @@ class UtilTest(testutil.TestCase):
     resp.body = b'foo bar'
     self.assertEqual(('345', 'foo bar'), ihc(InvalidStatus(resp)))
     self.assertEqual(('345', ''), ihc(InvalidStatusCode(345, None)))
+    self.assertEqual(('502', 'no close frame received or sent'),
+                     ihc(ConnectionClosedError(None, None)))
 
     # upstream connection failures are converted to 504
     self.assertEqual(('504', 'foo bar'), ihc(socket.timeout('foo bar')))

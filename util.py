@@ -76,6 +76,7 @@ except ImportError:
 try:
   import websockets
   from websockets.exceptions import (
+    ConnectionClosedError,
     InvalidHandshake,
     InvalidStatus,
     InvalidStatusCode,
@@ -1347,6 +1348,10 @@ def interpret_http_exception(exception):
   elif websockets and isinstance(e, InvalidStatusCode):
     code = str(e.status_code)
     body = ''
+
+  elif websockets and isinstance(e, ConnectionClosedError):
+    code = '502'
+    body = str(e)
 
   # hack to interpret gdata.client.RequestError since gdata isn't a dependency
   elif e.__class__.__name__ == 'RequestError':
