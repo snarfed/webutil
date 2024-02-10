@@ -564,6 +564,7 @@ class UtilTest(testutil.TestCase):
   def test_parse_iso8601(self):
     for val, offset, usecs in (
       ('2012-07-23 05:54:49', None, 0),
+      ('   2012-07-23 05:54:49   ', None, 0),
       ('2012-07-23T05:54:49', None, 0),
       ('2012-07-23 05:54:49.123', None, 123000),
       ('2012-07-23T05:54:49.0', None, 0),

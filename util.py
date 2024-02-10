@@ -835,7 +835,7 @@ def parse_iso8601(val):
   # http://stackoverflow.com/questions/9959778/is-there-a-wildcard-format-directive-for-strptime
   assert val
 
-  val = val.replace('T', ' ')
+  val = val.strip().replace('T', ' ')
   tz = None
   zone = TIMEZONE_OFFSET_RE.search(val)
 
