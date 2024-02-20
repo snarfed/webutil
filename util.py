@@ -1479,6 +1479,8 @@ def is_connection_failure(exception):
       http.client.IncompleteRead,
       http.client.NotConnected,
       prawcore.exceptions.RequestException,
+      socket.gaierror,
+      socket.herror,
       socket.timeout,
       TimeoutError,
       ssl.SSLError,
