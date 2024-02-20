@@ -53,7 +53,8 @@ class NoContent(HTTPException):
 
 class Redirect(HTTPException):
     def __init__(self, *args, location=None, **kwargs):
-      assert location
+      # this evidently isn't provided when flask-caching unpickles a pickled instance
+      # assert location
       self.location = location
       super().__init__(**kwargs)
 
@@ -289,6 +290,7 @@ def cached(cache, timeout, headers=(), http_5xx=False):
     headers: sequence of str, optional headers to include in the cache key
     http_5xx (bool): optional, whether to cache HTTP 5xx (server error) responses
   """
+  # TODO: make new thread-safe Cache subclass
   def response_filter(resp):
     """Return False if the response shouldn't be cached."""
     resp = make_response(resp)
