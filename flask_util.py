@@ -291,6 +291,7 @@ def cached(cache, timeout, headers=(), http_5xx=False):
     http_5xx (bool): optional, whether to cache HTTP 5xx (server error) responses
   """
   # TODO: make new thread-safe Cache subclass
+  # for eg https://console.cloud.google.com/errors/detail/CKL6udCe3IuR9QE;time=P30D?project=brid-gy
   def response_filter(resp):
     """Return False if the response shouldn't be cached."""
     resp = make_response(resp)
