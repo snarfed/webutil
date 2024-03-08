@@ -70,6 +70,6 @@ try:
 except ImportError:
   pass
 
-for logger in ('google.cloud', 'oauthlib', 'requests', 'requests_oauthlib',
-               'urllib3'):
+for logger in ('google.cloud', 'oauthlib', 'requests', 'requests_cache',
+               'requests_oauthlib', 'urllib3'):
   logging.getLogger(logger).setLevel(logging.INFO)
