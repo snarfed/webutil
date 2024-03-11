@@ -4,6 +4,11 @@ from google.cloud import ndb
 
 from oauth_dropins.webutil.util import json_dumps, json_loads
 
+# 1MB limit: https://cloud.google.com/datastore/docs/concepts/limits
+# use this to check an entity's size:
+#   len(entity._to_pb().Encode())
+MAX_ENTITY_SIZE = 1 * 1000 * 1000
+
 
 class StringIdModel(ndb.Model):
   """An :class:`ndb.Model` class that requires a string id."""

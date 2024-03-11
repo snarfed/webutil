@@ -83,7 +83,7 @@ def enable_flask_caching(app, cache):
   Usage::
 
       from app import app, cache
-       
+
       class FooTest(TestCase):
         @enable_flask_caching(app, cache)
         def test_foo(self):

@@ -1642,8 +1642,7 @@ def requests_fn(fn):
   Use :func:`set_user_agent` to change the ``User-Agent`` header to be sent.
 
   Args:
-    method (callable): :func:`requests.get`\, :func:`requests.head`\, or
-      :func:`requests.post`
+    fn (str): 'head', 'get', or 'post'
 
   Returns:
     callable, ``(str url, gateway=None, **kwargs)`` => :class:`requests.Response`:
@@ -1657,7 +1656,7 @@ def requests_fn(fn):
       (HTTP 502).
   """
   def call(url, session=None, *args, **kwargs):
-    logger.info(f'{session or "requests"}.{fn} {url} {_prune(kwargs)}')
+    logger.info(f'{"requests_cache" if session else "requests"}.{fn} {url} {_prune(kwargs)}')
 
     gateway = kwargs.pop('gateway', None)
     kwargs.setdefault('timeout', HTTP_TIMEOUT)
