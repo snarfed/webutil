@@ -12,6 +12,7 @@ from urllib.error import HTTPError, URLError
 import urllib.parse, urllib.request
 
 from flask import Flask, request
+from oauthlib.oauth2.rfc6749.errors import OAuth2Error, TokenExpiredError
 import prawcore.exceptions
 import requests
 import tumblpy
@@ -846,6 +847,8 @@ class UtilTest(testutil.TestCase):
 
     ex = prawcore.exceptions.Forbidden(util.Struct(status_code='403', text='foo'))
     self.assertEqual(('403', 'foo'), ihc(ex))
+
+    self.assertEqual(('400', '(token_expired) foo'), ihc(TokenExpiredError('foo')))
 
     # Flickr
     #

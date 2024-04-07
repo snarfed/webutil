@@ -49,6 +49,11 @@ except ImportError:
   AccessTokenRefreshError = None
 
 try:
+  from oauthlib.oauth2.rfc6749.errors import OAuth2Error
+except ImportError:
+  OAuth2Error = None
+
+try:
   import requests
 except ImportError:
   requests = None
@@ -1340,6 +1345,10 @@ def interpret_http_exception(exception):
       code = '401'
     elif body.startswith('internal_failure'):
       code = '502'
+
+  elif OAuth2Error and isinstance(e, OAuth2Error):
+    code = e.status_code
+    body = str(e)
 
   elif websockets and isinstance(e, InvalidStatus):
     code = str(e.response.status_code)
