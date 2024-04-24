@@ -2294,6 +2294,13 @@ def send_email(*, smtp_host=None, smtp_port=None, from_=None, to=None,
   logger.info(f'Sending email:\n{msg}')
 
   with SMTP(smtp_host, port=smtp_port) as smtp:
+    # necessary for Gmail SMTP to prevent
+    # smtplib.SMTPNotSupportedError: SMTP AUTH extension not supported by server
+    # https://groups.google.com/g/google-appengine/c/pStvI8TpabM/m/uIXF6efnhm8J
+    smtp.ehlo()
+    smtp.starttls()
+    smtp.ehlo()
+
     if user and password:
       smtp.login(user, password)
     smtp.send_message(msg)
