@@ -5,6 +5,7 @@ import collections
 from collections.abc import Iterator
 import contextlib
 from datetime import datetime, timedelta, timezone
+from email.message import EmailMessage
 import http.client
 import humanize
 import inspect
@@ -13,6 +14,7 @@ import mimetypes
 import numbers
 import os
 import re
+from smtplib import SMTP
 import socket
 import ssl
 import string
@@ -2261,6 +2263,40 @@ def fetch_mf2(url, get_fn=requests_get, gateway=False, require_backlink=None,
   assert 'url' not in mf2
   mf2['url'] = resp.url
   return mf2
+
+
+def send_email(*, smtp_host=None, smtp_port=None, from_=None, to=None,
+               subject=None, body=None):
+  """Sends an email via a given SMTP server.
+
+  If ``smtp_user`` and ``smtp_password`` files exist in the current directory,
+  they're used to log into the SMTP server.
+
+  Args:
+    smtp_host (str)
+    smtp_port (str, optional)
+    from_ (str)
+    to (str or list)
+    subject (str)
+    body (str)
+  """
+  assert smtp_host
+
+  user = read('smtp_user')
+  password = read('smtp_password')
+
+  msg = EmailMessage()
+  msg.set_content(body)
+  msg['Subject'] = subject
+  msg['From'] = from_
+  msg['To'] = to
+
+  logger.info(f'Sending email:\n{msg}')
+
+  with SMTP(smtp_host, port=smtp_port) as smtp:
+    if user and password:
+      smtp.login(user, password)
+    smtp.send_message(msg)
 
 
 def d(*objs):
