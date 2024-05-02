@@ -1070,12 +1070,12 @@ def remove_query_param(url, param):
   return url, removed
 
 
-def dedupe_urls(urls, key=None):
+def dedupe_urls(urls, key=None, trailing_slash=True):
   """Normalizes and de-dupes http(s) URLs.
 
-  Converts domain to lower case, adds trailing slash when path is empty, and
-  ignores scheme (http vs https), preferring https. Preserves order. Removes
-  Nones and blank strings.
+  Converts domain to lower case, optionally adds trailing slash when path is
+  empty, and ignores scheme (http vs https), preferring https. Preserves order.
+  Removes Nones and blank strings.
 
   Domains are case insensitive, even modern domains with Unicode/punycode
   characters:
@@ -1092,6 +1092,7 @@ def dedupe_urls(urls, key=None):
     urls (sequence of str): URLs or dict objects with ``url`` keys
     key (str): optional, inner key to be dereferenced in a dict object before
       looking for the ``url`` key
+    trailing_slash (bool): whether to add trailing slash if it's missing
 
   Returns:
     sequence of str: URLs
@@ -1105,10 +1106,15 @@ def dedupe_urls(urls, key=None):
       continue
 
     p = urllib.parse.urlsplit(url)
+
     # normalize domain and path
     # (the hostname param is automatically lower cased, but we can't use it
     # because it doesn't include port)
-    norm = [p.scheme, p.netloc.lower(), p.path or '/', p.query, p.fragment]
+    path = p.path
+    if trailing_slash and not path:
+      path = '/'
+
+    norm = [p.scheme, p.netloc.lower(), path, p.query, p.fragment]
 
     if p.scheme == 'http' and urllib.parse.urlunsplit(['https'] + norm[1:]) in result:
       continue
