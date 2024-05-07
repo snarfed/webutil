@@ -1699,9 +1699,11 @@ def requests_fn(fn):
           # https://github.com/psf/requests/issues/3687
           # https://github.com/kjd/idna/issues/18
           # https://github.com/kjd/idna/issues/40
-          resp = call(punycode, *args, **kwargs)
-          resp.url = resp.url.replace(urlparse(punycode).netloc,
-                                      urlparse(url).netloc)
+          punycode_domain = urlparse(punycode).netloc
+          domain = urlparse(url).netloc
+          kwargs['headers']['Host'] = punycode_domain
+          resp = call(punycode, session=session, *args, **kwargs)
+          resp.url = resp.url.replace(punycode_domain, domain)
           return resp
 
       if gateway:

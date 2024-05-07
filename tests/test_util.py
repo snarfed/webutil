@@ -1368,6 +1368,18 @@ class UtilTest(testutil.TestCase):
     self.assertEqual(200, resp.status_code)
     self.assertEqual(url, resp.url)
 
+  def test_requests_get_invalid_emoji_domain_Host_header(self):
+    url = 'http://abc⊙.de/foo?bar'
+    self.expect_requests_get(url).AndRaise(requests.exceptions.InvalidURL())
+    self.expect_requests_get('http://xn--abc-yr2a.de/foo?bar', 'okayie',
+                             headers={'Host': 'xn--abc-yr2a.de'})
+    self.mox.ReplayAll()
+
+    resp = util.requests_get(url)
+    self.assertEqual(200, resp.status_code)
+    self.assertEqual(url, resp.url)
+    self.assertEqual('okayie', resp.text)
+
   def test_set_user_agent_requests(self):
     self.expect_requests_get('http://xyz', 'abc', headers={'User-Agent': 'Fooey'})
     self.mox.ReplayAll()
