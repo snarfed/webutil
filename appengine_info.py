@@ -24,4 +24,5 @@ if creds and not creds.endswith('fake_user_account.json'):
   LOCAL_SERVER = True
 else:
   DEBUG = gae_env in (None, 'localdev') and not gae_instance
-  LOCAL_SERVER = gae_env != 'standard' and not gae_instance
+  LOCAL_SERVER = (gae_env != 'standard' and not gae_instance
+                  and 'unittest' not in ' '.join(sys.argv))
