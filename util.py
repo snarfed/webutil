@@ -516,7 +516,9 @@ def domain_or_parent_in(input, domains):
   Returns:
     bool
   """
-  if not input or not domains:
+  if isinstance(domains, str):
+    raise ValueError(f'Expected domains to be sequence, got {domains.__class__}')
+  elif not input or not domains:
     return False
   elif input in domains:
     return True

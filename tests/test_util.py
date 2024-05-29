@@ -257,6 +257,9 @@ class UtilTest(testutil.TestCase):
         self.assertEqual(expected, util.domain_or_parent_in(input, domains),
                           repr((input, domains, expected)))
 
+    with self.assertRaises(ValueError):
+      util.domain_or_parent_in('x', 'y')
+
   def test_update_scheme(self):
     # Should only upgrade http -> https, never downgrade
     with Flask(__name__).test_request_context('/'):
