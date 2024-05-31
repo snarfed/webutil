@@ -207,6 +207,7 @@ def ndb_context_middleware(app, client=None, **kwargs):
     with client.context(**kwargs):
       return app(environ, start_response)
 
+  wrapper.kwargs = kwargs
   return wrapper
 
 
