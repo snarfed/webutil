@@ -193,6 +193,42 @@ class FlaskUtilTest(unittest.TestCase):
     client.get('/foo', headers={'Accept': 'baz', 'Vary': 'biff'})
     self.assertEqual(3, calls)
 
+  def test_headers(self):
+    ret = 'OK'
+    headers = {'A': 'B', 'C': 'D'}
+
+    @self.app.route('/foo')
+    @flask_util.headers(headers)
+    def foo():
+      nonlocal ret
+      return ret
+
+    client = self.app.test_client()
+
+    resp = client.get('/foo')
+    self.assertEqual(200, resp.status_code)
+    self.assertEqual('OK', resp.get_data(as_text=True))
+    self.assertEqual('B', resp.headers['A'])
+    self.assertEqual('D', resp.headers['C'])
+
+    ret = ('?', {'X': 'Y'})
+    resp = client.get('/foo')
+    self.assertEqual(200, resp.status_code)
+    self.assertEqual('?', resp.get_data(as_text=True))
+    self.assertEqual('B', resp.headers['A'])
+    self.assertEqual('D', resp.headers['C'])
+    self.assertEqual('Y', resp.headers['X'])
+
+    with self.app.test_request_context():
+      ret = make_response(ret)
+
+    resp = client.get('/foo')
+    self.assertEqual(200, resp.status_code)
+    self.assertEqual('?', resp.get_data(as_text=True))
+    self.assertEqual('B', resp.headers['A'])
+    self.assertEqual('D', resp.headers['C'])
+    self.assertEqual('Y', resp.headers['X'])
+
   def test_canonicalize_domain_get(self):
     @self.app.route('/', defaults={'_': ''})
     @self.app.route('/<path:_>')

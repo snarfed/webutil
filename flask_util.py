@@ -6,7 +6,7 @@ import re
 import urllib.parse
 
 import flask
-from flask import abort, get_flashed_messages, make_response, redirect, render_template, request
+from flask import abort, get_flashed_messages, make_response, redirect, render_template, request, Response
 from flask.views import View
 from google.cloud import ndb
 import werkzeug.exceptions
@@ -335,6 +335,25 @@ def cached(cache, timeout, headers=(), http_5xx=False):
       return k
 
     decorated.make_cache_key = make_cache_key
+
+    return decorated
+
+  return decorator
+
+
+def headers(headers):
+  """Flask decorator that adds headers to the response.
+
+  Args:
+    headers (dict mapping str header name to str value)
+  """
+  def decorator(fn):
+    @functools.wraps(fn)
+    def decorated(*args, **kwargs):
+      resp = make_response(fn(*args, **kwargs))
+      # if not isinstance(resp, Response):
+      resp.headers.update(headers)
+      return resp
 
     return decorated
 
