@@ -13,19 +13,20 @@ import werkzeug.exceptions
 from werkzeug.exceptions import BadRequestKeyError, HTTPException
 from werkzeug.routing import BaseConverter
 
+from .appengine_info import DEBUG
 from . import util
 
 logger = logging.getLogger(__name__)
 
 # Modern HTTP headers for CORS, CSP, other security, etc.
+CSP_HOSTS = 'localhost:8080 my.dev.com:8080' if DEBUG else ''
 MODERN_HEADERS = {
   'Access-Control-Allow-Headers': '*',
   'Access-Control-Allow-Methods': '*',
   'Access-Control-Allow-Origin': '*',
   # see https://content-security-policy.com/
   'Content-Security-Policy':
-    "script-src https: localhost:8080 my.dev.com:8080 'unsafe-inline'; "
-    "frame-ancestors 'self'; ",
+    f"script-src https: {CSP_HOSTS} 'unsafe-inline'; frame-ancestors 'self'",
   # 16070400 seconds is 6 months
   'Strict-Transport-Security': 'max-age=16070400; preload',
   'X-Content-Type-Options': 'nosniff',
