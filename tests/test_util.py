@@ -476,10 +476,12 @@ class UtilTest(testutil.TestCase):
         ('<a href="http://a☕⊙b.com">http://a☕⊙b.com</a>', 'http://a☕⊙b.com'),
         ('<a href="http://a☕⊙b.com">a☕⊙b.com</a>', 'a☕⊙b.com'),
         ('<a href="http://☕⊙.ws">http://☕⊙.ws</a>', 'http://☕⊙.ws'),
+        ('ぴくしぶ：<a href="http://pixiv.net/users/222255">pixiv.net/users/222255</a>', 'ぴくしぶ：pixiv.net/users/222255')
         # TODO: implement
         # see comments in regexps at top of util.py for details
         # ('<a href="http://☕⊙.ws">☕⊙.ws</a>', '☕⊙.ws'),
     ):
+      with self.subTest(input=input, expected=expected):
         self.assertEqual(expected, util.linkify(input))
 
     # test skip_bare_cc_tlds
@@ -568,6 +570,10 @@ class UtilTest(testutil.TestCase):
     self.assertEqual(
       'x <a title="foo.co/bar?baz=baj#biff" href="http://foo.co/bar?baz=baj#biff">foo.co...</a> y',
       lp('x http://foo.co/bar?baz=baj#biff y'))
+
+    self.assertEqual(
+      'ぴくしぶ：<a title="pixiv.net/users/222255" href="http://pixiv.net/users/222255">pixiv....</a>',
+      lp('ぴくしぶ：pixiv.net/users/222255'))
 
   def test_parse_iso8601(self):
     for val, offset, usecs in (
