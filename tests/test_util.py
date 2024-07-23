@@ -1477,7 +1477,7 @@ class UtilTest(testutil.TestCase):
     }, util.fetch_mf2('http://xyz/post', metaformats=True),
        ignore=['debug', 'rels', 'rel-urls'])
 
-  def test_fetch_mf2_metaformats(self):
+  def test_fetch_mf2_metaformats_hcard(self):
     self.expect_requests_get('http://xyz',
                              '<html><head><title>Ms. ☕ Baz</title></head></html>')
     self.mox.ReplayAll()
