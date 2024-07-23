@@ -2175,11 +2175,13 @@ def parse_metaformats(soup, url, type='h-card'):
       except (ValueError, TypeError):
         return 0
 
-    icons = soup.head.find_all('link', rel='icon', href=re.compile('.+'))
-    if icons:
-      urls_by_size = [urljoin(base, i['href'])
-                      for i in sorted(icons, key=max_size, reverse=True)]
-      props.setdefault('photo', [])[0:0] = urls_by_size
+    # rel-icon is generally site-wide, not per page
+    if type == 'h-card':
+      icons = soup.head.find_all('link', rel='icon', href=re.compile('.+'))
+      if icons:
+        urls_by_size = [urljoin(base, i['href'])
+                        for i in sorted(icons, key=max_size, reverse=True)]
+        props.setdefault('photo', [])[0:0] = urls_by_size
 
   if type == 'h-card':
     # fall back to the URL itself

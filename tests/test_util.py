@@ -1681,12 +1681,20 @@ class UtilTest(testutil.TestCase):
     }, util.parse_mf2("""\
 <html>
 <head>
-  <link rel="icon" href="http://pic" />
+  <meta property="og:image" content="http://pic">
 </head>
 <body class="h-entry">
   <p class="p-name">A ☕ post</p>
 </body>
 </html>
+""", url='http://xyz/post', metaformats=True),
+    ignore=['debug', 'rels', 'rel-urls'])
+
+  def test_parse_mf2_metaformats_entry_no_rel_icon(self):
+    self.assert_equals({
+      'items': []
+    }, util.parse_mf2("""\
+<html><head><link rel="icon" href="http://pic" /></head></html>
 """, url='http://xyz/post', metaformats=True),
     ignore=['debug', 'rels', 'rel-urls'])
 
