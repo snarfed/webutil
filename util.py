@@ -2062,7 +2062,7 @@ def parse_html(input, **kwargs):
   return bs4.BeautifulSoup(input, **kwargs)
 
 
-def parse_mf2(input, url=None, id=None, metaformats_hcard=False):
+def parse_mf2(input, url=None, id=None, metaformats=None):
   """Parses microformats2 out of HTML.
 
   Currently uses mf2py.
@@ -2072,10 +2072,10 @@ def parse_mf2(input, url=None, id=None, metaformats_hcard=False):
     url (str): optional, URL of the input page, used as the base for relative URLs
     id (str): optional id of specific element to extract and parse. defaults
       to the whole page.
-    metaformats_hcard (bool): if True, always return an ``h-card`` item for home
-      pages. If no explicit mf2 ``h-card`` is present, generate one with
-      metaformats, https://microformats.org/wiki/metaformats , or worst case, from
-      just the URL itself.
+    metaformats (bool): if True, extract and include data from metaformats,
+      https://microformats.org/wiki/metaformats , as well as from mf2. The
+      generated item will be ``h-card`` for home pages (ie URL path ``/``),
+      ``h-entry`` otherwise.
 
   Returns:
     dict: parsed mf2 data, or ``None`` if id is provided and not found in the
@@ -2095,28 +2095,31 @@ def parse_mf2(input, url=None, id=None, metaformats_hcard=False):
 
   mf2 = mf2py.parse(url=url, doc=input)
 
-  hcard = None
+  mf2_item = mf2['items'][0] if mf2['items'] else None
+
+  mf2_hcard = None
   for item in mf2['items']:
     if 'h-card' in item.get('type', []):
-      hcard = item
+      mf2_hcard = item
 
-  if metaformats_hcard and url and urlparse(url).path in ('', '/'):
-    meta_hcard = parse_metaformats_hcard(input, url)
-    if hcard:
-      # if h-card doesn't have a photo, fall back to metaformats
-      meta_photos = meta_hcard['properties'].get('photo')
-      props = hcard.setdefault('properties', {})
-      if meta_photos and not props.get('photo'):
-        props['photo'] = meta_photos
-    else:
-      hcard = meta_hcard
-      mf2['items'].append(hcard)
+  if metaformats and url:
+    type = 'h-card' if urlparse(url).path in ('', '/') else 'h-entry'
+    if meta_item := parse_metaformats(input, url, type=type):
+      if mf2_item:
+        # if mf2 item doesn't have a photo, fall back to metaformats
+        meta_photos = meta_item['properties'].get('photo')
+        props = mf2_item.setdefault('properties', {})
+        if meta_photos and not props.get('photo'):
+          props['photo'] = meta_photos
+
+      if not mf2_item or type == 'h-card' and not mf2_hcard:
+        mf2['items'].append(meta_item)
 
   return mf2
 
 
-def parse_metaformats_hcard(soup, url):
-  """Converts metadata in an HTML page to a microformats2 h-card.
+def parse_metaformats(soup, url, type='h-card'):
+  """Converts metadata in an HTML page to a microformats2 item.
 
   Approximately implements the metaformats standard,
   https://microformats.org/wiki/metaformats , and includes extras like
@@ -2127,18 +2130,19 @@ def parse_metaformats_hcard(soup, url):
   Args:
     soup: (:class:`bs4.BeautifulSoup`): parsed input HTML page
     url (str): optional, URL of the input page, used as the base for relative URLs
+    type (str): optional, ``type`` of the returned mf2 item
 
   Returns:
-    dict: parsed mf2 ``h-card`` item
+    dict: parsed mf2 item, or None if no metadata is available
   """
   assert isinstance(soup, (bs4.BeautifulSoup, bs4.Tag))
   assert url and isinstance(url, str)
 
-  hcard = {
-    'type': ['h-card'],
+  item = {
+    'type': [type],
     'properties': {},
   }
-  props = hcard['properties']
+  props = item['properties']
 
   if soup.head:
     base = url
@@ -2177,13 +2181,18 @@ def parse_metaformats_hcard(soup, url):
                       for i in sorted(icons, key=max_size, reverse=True)]
       props.setdefault('photo', [])[0:0] = urls_by_size
 
-  # fall back to the URL itself
-  props.setdefault('name', [domain_from_link(url)])
+  if type == 'h-card':
+    # fall back to the URL itself
+    props.setdefault('name', [domain_from_link(url)])
+
+  if not props:
+    return None
+
   urls = props.setdefault('url', [])
   if url not in urls:
     urls.append(url)
 
-  return hcard
+  return item
 
 
 def parse_http_equiv(content):
@@ -2229,7 +2238,7 @@ def fetch_http_equiv(input, **kwargs):
 
 
 def fetch_mf2(url, get_fn=requests_get, gateway=False, require_backlink=None,
-              metaformats_hcard=False, **kwargs):
+              metaformats=False, **kwargs):
   """Fetches an HTML page over HTTP, parses it, and returns its microformats2.
 
   If url includes a fragment, or redirects to a URL with a fragment, only that
@@ -2241,7 +2250,7 @@ def fetch_mf2(url, get_fn=requests_get, gateway=False, require_backlink=None,
     gateway (bool): see :func:`requests_fn`
     require_backlink (str or sequence of strs): If provided, one of these must
       be in the response body, in any form. Generally used for webmention validation.
-    metaformats_hcard (bool): passed through to :func:`parse_mf2`
+    metaformats (bool): passed through to :func:`parse_mf2`
     kwargs: passed through to :func:`requests.get`
 
   Returns:
@@ -2265,7 +2274,7 @@ def fetch_mf2(url, get_fn=requests_get, gateway=False, require_backlink=None,
 
   parsed = urlparse(url)
   fragment = parsed.fragment
-  mf2 = parse_mf2(resp, id=fragment, metaformats_hcard=metaformats_hcard)
+  mf2 = parse_mf2(resp, id=fragment, metaformats=metaformats)
 
   if not mf2:
     return None

@@ -1460,7 +1460,24 @@ class UtilTest(testutil.TestCase):
     self.assertIsNotNone(util.fetch_mf2(
       'http://xyz',require_backlink=['http://link', 'http://back']))
 
-  def test_fetch_mf2_metaformats_hcard(self):
+  def test_fetch_mf2_metaformats(self):
+    self.expect_requests_get('http://xyz/post',
+                             '<html><head><title>A ☕ post</title></head></html>')
+    self.mox.ReplayAll()
+
+    self.assert_equals({
+      'items': [{
+        'type': ['h-entry'],
+        'properties': {
+          'url': ['http://xyz/post'],
+          'name': ['A ☕ post'],
+        },
+      }],
+      'url': 'http://xyz/post',
+    }, util.fetch_mf2('http://xyz/post', metaformats=True),
+       ignore=['debug', 'rels', 'rel-urls'])
+
+  def test_fetch_mf2_metaformats(self):
     self.expect_requests_get('http://xyz',
                              '<html><head><title>Ms. ☕ Baz</title></head></html>')
     self.mox.ReplayAll()
@@ -1474,8 +1491,15 @@ class UtilTest(testutil.TestCase):
         },
       }],
       'url': 'http://xyz',
-    }, util.fetch_mf2('http://xyz', metaformats_hcard=True),
+    }, util.fetch_mf2('http://xyz', metaformats=True),
        ignore=['debug', 'rels', 'rel-urls'])
+
+  def test_parse_mf2_metaformats_nothing(self):
+    self.assert_equals({
+      'items': [],
+    }, util.parse_mf2('<html><body>foo<body><html>', url='http://xyz/post',
+                      metaformats=True),
+      ignore=['debug', 'rels', 'rel-urls'])
 
   def test_parse_mf2_metaformats_hcard_nothing(self):
     self.assert_equals({
@@ -1487,8 +1511,27 @@ class UtilTest(testutil.TestCase):
         },
       }],
     }, util.parse_mf2('<html><body>foo<body><html>', url='http://xyz',
-                      metaformats_hcard=True),
+                      metaformats=True),
       ignore=['debug', 'rels', 'rel-urls'])
+
+  def test_parse_mf2_metaformats_mixed(self):
+    self.assert_equals({
+      'items': [{
+        'type': ['h-entry'],
+        'properties': {
+          'url': ['http://xyz/post/url', 'http://xyz/post'],
+          'name': ['A ☕ post'],
+        },
+      }],
+    }, util.parse_mf2("""\
+<html>
+<head>
+<title>A ☕ post</title>
+<meta property="article:author" content="/post/url" />
+</head>
+</html>
+""", url='http://xyz/post', metaformats=True),
+    ignore=['debug', 'rels', 'rel-urls'])
 
   def test_parse_mf2_metaformats_hcard_mixed(self):
     self.assert_equals({
@@ -1506,7 +1549,7 @@ class UtilTest(testutil.TestCase):
 <meta property="article:author" content="/me" />
 </head>
 </html>
-""", url='http://xyz', metaformats_hcard=True),
+""", url='http://xyz', metaformats=True),
     ignore=['debug', 'rels', 'rel-urls'])
 
   def test_parse_mf2_metaformats_hcard_ogp(self):
@@ -1540,7 +1583,7 @@ class UtilTest(testutil.TestCase):
   <meta property="article:modified_time" content="2023-01-02T05:06Z" />
 </head>
 </html>
-""", url='http://xyz', metaformats_hcard=True),
+""", url='http://xyz', metaformats=True),
     ignore=['debug', 'rels', 'rel-urls'])
 
   def test_parse_mf2_metaformats_hcard_twitter(self):
@@ -1564,7 +1607,7 @@ class UtilTest(testutil.TestCase):
   <meta name="twitter:image" content="/baz.jpg" />
 </head>
 </html>
-""", url='http://xyz', metaformats_hcard=True),
+""", url='http://xyz', metaformats=True),
     ignore=['debug', 'rels', 'rel-urls'])
 
   def test_parse_mf2_metaformats_hcard_html_meta(self):
@@ -1585,7 +1628,7 @@ class UtilTest(testutil.TestCase):
   <meta name="description" content="Descrypshun bar" />
 </head>
 </html>
-""", url='http://xyz', metaformats_hcard=True),
+""", url='http://xyz', metaformats=True),
     ignore=['debug', 'rels', 'rel-urls'])
 
   def test_parse_mf2_metaformats_link_rel_icon(self):
@@ -1597,7 +1640,7 @@ class UtilTest(testutil.TestCase):
   <link rel="icon" href="/small-big" sizes="2x2 10x10" />
 </head>
 </html>
-""", url='http://xyz', metaformats_hcard=True)
+""", url='http://xyz', metaformats=True)
 
     # should be ordered by size, large to small
     self.assert_equals(['http://xyz/small-big', 'http://med', 'http://unknown'],
@@ -1623,10 +1666,31 @@ class UtilTest(testutil.TestCase):
   <img class="u-photo" src="/me.png" />
 </body>
 </html>
-""", url='http://xyz', metaformats_hcard=True),
+""", url='http://xyz', metaformats=True),
     ignore=['debug', 'rels', 'rel-urls'])
 
-  def test_parse_mf2_metaformats_real_hcard_photo_fallback(self):
+  def test_parse_mf2_metaformats_entry_photo_fallback(self):
+    self.assert_equals({
+      'items': [{
+        'type': ['h-entry'],
+        'properties': {
+          'name': ['A ☕ post'],
+          'photo': ['http://pic'],
+        },
+      }],
+    }, util.parse_mf2("""\
+<html>
+<head>
+  <link rel="icon" href="http://pic" />
+</head>
+<body class="h-entry">
+  <p class="p-name">A ☕ post</p>
+</body>
+</html>
+""", url='http://xyz/post', metaformats=True),
+    ignore=['debug', 'rels', 'rel-urls'])
+
+  def test_parse_mf2_metaformats_hcard_photo_fallback(self):
     self.assert_equals({
       'items': [{
         'type': ['h-card'],
@@ -1644,5 +1708,5 @@ class UtilTest(testutil.TestCase):
   <p class="p-name">Ms. ☕ Baz</p>
 </body>
 </html>
-""", url='http://xyz', metaformats_hcard=True),
+""", url='http://xyz', metaformats=True),
     ignore=['debug', 'rels', 'rel-urls'])
