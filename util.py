@@ -28,6 +28,7 @@ from xml.sax import saxutils
 from cachetools import cached, TTLCache
 from domain2idna import domain2idna
 from flask import abort
+import mf2util
 
 try:
   import ujson
@@ -226,28 +227,28 @@ parenthesized group in :attr:`SCHEME_RE`, not the ``\b``. I tried changing
 METAFORMAT_TO_MF2 = [
     # in priority order, descending
     # OGP
-    ("property", "article:author", "url"),
-    ("property", "article:published_time", "published"),
-    ("property", "article:modified_time", "updated"),
-    ("property", "og:audio", "audio"),
-    ("property", "og:description", "summary"),
-    ("property", "og:image", "photo"),
-    ("property", "og:title", "name"),
-    ("property", "og:video", "video"),
+    ('property', 'article:author', 'url'),
+    ('property', 'article:published_time', 'published'),
+    ('property', 'article:modified_time', 'updated'),
+    ('property', 'og:audio', 'audio'),
+    ('property', 'og:description', 'summary'),
+    ('property', 'og:image', 'photo'),
+    ('property', 'og:title', 'name'),
+    ('property', 'og:video', 'video'),
     # Twitter
-    ("name", "twitter:title", "name"),
-    ("name", "twitter:description", "summary"),
-    ("name", "twitter:image", "photo"),
+    ('name', 'twitter:title', 'name'),
+    ('name', 'twitter:description', 'summary'),
+    ('name', 'twitter:image', 'photo'),
     # HTML standard meta names
     # https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta/name
-    ("name", "description", "summary"),
+    ('name', 'description', 'summary'),
 ]
 METAFORMAT_URL_PROPERTIES = {
-    "article:author",
-    "og:audio",
-    "og:image",
-    "og:video",
-    "twitter:image",
+    'article:author',
+    'og:audio',
+    'og:image',
+    'og:video',
+    'twitter:image',
 }
 
 
@@ -2094,8 +2095,15 @@ def parse_mf2(input, url=None, id=None, metaformats=None):
       return None
 
   mf2 = mf2py.parse(url=url, doc=input)
+  if urlparse(url).path in ('', '/'):
+    type = 'h-card'
+    mf2_item = mf2util.representative_hcard(mf2, mf2.get('url') or url)
+  else:
+    type = 'h-entry'
+    mf2_item = mf2util.find_first_entry(mf2, ['h-entry'])
 
-  mf2_item = mf2['items'][0] if mf2['items'] else None
+  if not mf2_item and mf2['items']:
+    mf2_item = mf2['items'][0]
 
   mf2_hcard = None
   for item in mf2['items']:
@@ -2103,7 +2111,6 @@ def parse_mf2(input, url=None, id=None, metaformats=None):
       mf2_hcard = item
 
   if metaformats and url:
-    type = 'h-card' if urlparse(url).path in ('', '/') else 'h-entry'
     if meta_item := parse_metaformats(input, url, type=type):
       if mf2_item:
         # if mf2 item doesn't have a photo, fall back to metaformats

@@ -1718,3 +1718,27 @@ class UtilTest(testutil.TestCase):
 </html>
 """, url='http://xyz', metaformats=True),
     ignore=['debug', 'rels', 'rel-urls'])
+
+  def test_parse_mf2_metaformats_hentry_inside_hfeed(self):
+    self.assert_equals({
+      'items': [{
+        'type': ['h-feed'],
+        'properties': {},
+        'children': [{
+          'type': ['h-entry'],
+          'properties': {
+            'name': ['foo'],
+            'photo': ['http://pic'],
+          },
+        }],
+      }],
+    }, util.parse_mf2("""\
+<html>
+<head><meta property="og:image" content="http://pic" /></head>
+<body>
+<div class="h-feed"><div class="h-entry">foo</div></div>
+</body>
+</html>
+""", url='http://xyz/post', metaformats=True),
+    ignore=['debug', 'rels', 'rel-urls'])
+
