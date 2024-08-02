@@ -235,7 +235,7 @@ def handle_exception(e):
       resp.status_code = e.code
       return resp
     else:
-      return str(e), e.code
+      return str(e), e.code, e.get_headers()
 
   code, body = util.interpret_http_exception(e)
   if code:
@@ -343,17 +343,27 @@ def cached(cache, timeout, headers=(), http_5xx=False):
   return decorator
 
 
-def headers(headers):
+def headers(headers, error_codes=(404,)):
   """Flask decorator that adds headers to the response.
 
   Args:
     headers (dict mapping str header name to str value)
+    error_codes (sequence of int): 4xx and 5xx HTTP codes to cache along with
+      2xx and 3xx.
   """
   def decorator(fn):
     @functools.wraps(fn)
     def decorated(*args, **kwargs):
-      resp = make_response(fn(*args, **kwargs))
-      # if not isinstance(resp, Response):
+      try:
+        ret = fn(*args, **kwargs)
+      except HTTPException as e:
+        if e.code in error_codes:
+          if not e.response:
+            e.response = make_response(e.description, e.code, e.get_headers())
+          e.response.headers.update(headers)
+        raise
+
+      resp = make_response(ret)
       resp.headers.update(headers)
       return resp
 

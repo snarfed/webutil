@@ -3,8 +3,8 @@ import datetime
 import os
 import unittest
 
+from flask import abort, Flask, flash, get_flashed_messages, make_response, request
 from flask_caching import Cache
-from flask import Flask, flash, get_flashed_messages, make_response, request
 from werkzeug.exceptions import BadRequest
 
 from .. import flask_util
@@ -228,6 +228,22 @@ class FlaskUtilTest(unittest.TestCase):
     self.assertEqual('B', resp.headers['A'])
     self.assertEqual('D', resp.headers['C'])
     self.assertEqual('Y', resp.headers['X'])
+
+  def test_headers_exception(self):
+    @self.app.route('/foo')
+    @flask_util.headers({'A': 'B'}, error_codes=(431,))
+    def foo():
+      abort(int(request.args['code']), 'fooey')
+
+    client = self.app.test_client()
+
+    resp = client.get('/foo?code=431')
+    self.assertEqual(431, resp.status_code)
+    self.assertEqual('B', resp.headers['A'])
+
+    resp = client.get('/foo?code=501')
+    self.assertEqual(501, resp.status_code)
+    self.assertNotIn('A', resp.headers)
 
   def test_canonicalize_domain_get(self):
     @self.app.route('/', defaults={'_': ''})
