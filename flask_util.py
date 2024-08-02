@@ -379,7 +379,7 @@ def cloud_tasks_only(fn):
     if CLOUD_TASKS_QUEUE_HEADER not in request.headers:
       return 'Internal only', 401
 
-    logger.info(f"Running {request.headers.get('X-AppEngine-QueueName')} task {request.headers.get('X-AppEngine-TaskName')}")
+    logger.info(f"Task {request.headers.get('X-AppEngine-TaskName')}")
 
     return fn(*args, **kwargs)
 

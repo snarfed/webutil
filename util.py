@@ -1789,14 +1789,11 @@ def requests_post_with_redirects(url, *args, **kwargs):
 
 
 def _prune(kwargs):
-  pruned = dict(kwargs)
-
-  headers = pruned.get('headers')
-  if headers:
-    pruned['headers'] = {k: '...' for k in headers}
-
-  return {k: v for k, v in list(pruned.items())
-          if k not in ('allow_redirects', 'stream', 'timeout')}
+  return {
+    k: v for k, v in list(kwargs.items())
+    if k not in ('allow_redirects', 'auth', 'gateway', 'headers',
+                 'stream', 'timeout')
+  }
 
 
 @cached(follow_redirects_cache, lock=follow_redirects_cache_lock,
