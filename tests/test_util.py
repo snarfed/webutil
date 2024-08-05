@@ -584,6 +584,9 @@ class UtilTest(testutil.TestCase):
       ('2012-07-23T05:54:49.0', None, 0),
       ('2012-07-23 05:54:49Z', 0, 0),
       ('2012-07-23 05:54:49.000123Z', 0, 123),
+      # TODO: currently raises ValueError since strptime %f only accepts six digit
+      # seconds. uncomment once this is fixed
+      # ('2012-07-23T05:54:49.00012300Z', 0, 123),
       ('2012-07-23T05:54:49+0000', 0, 0),
       ('2012-07-23 05:54:49.00-0000', 0, 0),
       ('2012-07-23T05:54:49.010203+0130', 90, 10203),

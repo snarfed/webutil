@@ -866,6 +866,9 @@ def parse_iso8601(val):
   if '.' not in val:
     val += '.0'
 
+  # TODO: this raises ValueError if seconds has more than six decimal digits
+  # since strptime %f only accepts at most six. best fix is probably to switch
+  # to datetime.fromisoformat, which handles this but only in Python 3.11+
   return datetime.strptime(val, '%Y-%m-%d %H:%M:%S.%f').replace(tzinfo=tz)
 
 
