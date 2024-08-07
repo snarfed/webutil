@@ -441,6 +441,10 @@ class UtilTest(testutil.TestCase):
         'asdf <a href="http://foo.com">foo</a> qwert ',
         'http://a<b>.com',
         '<a href="http://www.example.com/?feature_embedded">',
+        # should ignore email addresses, handles
+        'hi@gmail.com',
+        'hi＠gmail.com',
+        '@foo.com',
     ):
       self.assertEqual(unchanged, util.linkify(unchanged))
 
@@ -558,8 +562,8 @@ class UtilTest(testutil.TestCase):
     self.assertEqual('<a href="foo.com">foo.com</a>', pl('foo.com'))
 
   def test_linkify_pretty(self):
-    def lp(url):
-      return util.linkify(url, pretty=True, max_length=6)
+    def lp(val):
+      return util.linkify(val, pretty=True, max_length=6)
 
     self.assertEqual('', lp(''))
     self.assertEqual('asdf qwert', lp('asdf qwert'))
@@ -574,6 +578,10 @@ class UtilTest(testutil.TestCase):
     self.assertEqual(
       'ぴくしぶ：<a title="pixiv.net/users/222255" href="http://pixiv.net/users/222255">pixiv....</a>',
       lp('ぴくしぶ：pixiv.net/users/222255'))
+
+    # should ignore email addresses
+    val = 'ᵖᵒᵉᵗʳʸ • ᵃʳᵗ ♡︎ －\n📩 hi＠gmail.com '
+    self.assertEqual(val, util.linkify(val))
 
   def test_parse_iso8601(self):
     for val, offset, usecs in (

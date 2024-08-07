@@ -181,10 +181,10 @@ May be set at runtime.
 https://www.crummy.com/software/BeautifulSoup/bs4/doc/#installing-a-parser
 """
 
-PUNCT = string.punctuation.replace('-', '').replace('.', '')
+PUNCT = string.punctuation.replace('-', '').replace('.', '') + '＠'
 SCHEME_RE = r'\b(?:[a-z]{3,9}:/{1,3})'
 HOST_RE = r'(?:[^\s%s])+(?::\d{2,6})?' % PUNCT
-DOMAIN_RE = r'(?:[^\s.%s:﹕：]+\.)+[a-z]{2,}(?::\d{2,6})?' % PUNCT
+DOMAIN_RE = r'(?<![@＠])(?:[^\s.%s:﹕：]+\.)+[a-z]{2,}(?::\d{2,6})?' % PUNCT
 PATH_QUERY_RE = r'(?:(?:/[\w/.\-_~.;:%?@$#&()=+]*)|\b)'
 URL_RE = re.compile(SCHEME_RE + HOST_RE + PATH_QUERY_RE,  # scheme required
                     re.UNICODE | re.IGNORECASE)
