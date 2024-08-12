@@ -11,6 +11,7 @@ import time
 import urllib.request, urllib.parse, urllib.error
 
 from flask import request
+from google.api_core.exceptions import InvalidArgument
 from google.cloud import ndb
 from google.cloud.logging import Client
 from oauth_dropins.webutil.util import json_dumps, json_loads
@@ -206,7 +207,7 @@ def log(module=None, path=None):
     try:
       # https://googleapis.dev/python/logging/latest/client.html#google.cloud.logging_v2.client.Client.list_entries
       log = next(iter(client.list_entries(filter_=query, page_size=1)))
-    except StopIteration:
+    except (InvalidArgument, StopIteration):
       logger.info('No log found!')
       return 'No log found!', 404
 
