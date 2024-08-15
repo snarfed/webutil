@@ -293,6 +293,9 @@ class TestCase(mox.MoxTestBase, Asserts):
 
   def setUp(self):
     # suppress a few warnings
+    # local/lib/python3.11/site-packages/bs4/builder/_lxml.py:124: DeprecationWarning: The 'strip_cdata' option of HTMLParser() has never done anything and will eventually be removed.
+    warnings.filterwarnings('ignore', category=DeprecationWarning,
+                            message="The 'strip_cdata' option of HTMLParser")
     # local/lib/python3.8/site-packages/mf2util.py:556: DeprecationWarning: The 'warn' function is deprecated, use 'warning' instead
     # logging.warn(f'Failed to parse datetime {date_str}')
     warnings.filterwarnings('ignore', module='mf2util',
