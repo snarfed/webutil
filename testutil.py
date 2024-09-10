@@ -299,6 +299,9 @@ class TestCase(mox.MoxTestBase, Asserts):
     # local/lib/python3.12/site-packages/google/cloud/ndb/model.py:3900: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
     warnings.filterwarnings('ignore', category=DeprecationWarning,
                             message=r'datetime.datetime.utcnow\(\) is deprecated')
+    # local/lib/python3.12/site-packages/google/cloud/ndb/tasklets.py:319: DeprecationWarning: the (type, exc, tb) signature of throw() is deprecated, use the single-arg signature instead.
+    warnings.filterwarnings('ignore', category=DeprecationWarning,
+                            message=r'the \(type, exc, tb\) signature of throw\(\) is deprecated')
     # local/lib/python3.8/site-packages/mf2util.py:556: DeprecationWarning: The 'warn' function is deprecated, use 'warning' instead
     # logging.warn(f'Failed to parse datetime {date_str}')
     warnings.filterwarnings('ignore', module='mf2util',
