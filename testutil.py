@@ -292,29 +292,7 @@ class TestCase(mox.MoxTestBase, Asserts):
   maxDiff = None
 
   def setUp(self):
-    # suppress a few warnings
-    # local/lib/python3.11/site-packages/bs4/builder/_lxml.py:124: DeprecationWarning: The 'strip_cdata' option of HTMLParser() has never done anything and will eventually be removed.
-    warnings.filterwarnings('ignore', category=DeprecationWarning,
-                            message="The 'strip_cdata' option of HTMLParser")
-    # local/lib/python3.12/site-packages/google/cloud/ndb/model.py:3900: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
-    warnings.filterwarnings('ignore', category=DeprecationWarning,
-                            message=r'datetime.datetime.utcnow\(\) is deprecated')
-    # local/lib/python3.12/site-packages/google/cloud/ndb/tasklets.py:319: DeprecationWarning: the (type, exc, tb) signature of throw() is deprecated, use the single-arg signature instead.
-    warnings.filterwarnings('ignore', category=DeprecationWarning,
-                            message=r'the \(type, exc, tb\) signature of throw\(\) is deprecated')
-    # local/lib/python3.8/site-packages/mf2util.py:556: DeprecationWarning: The 'warn' function is deprecated, use 'warning' instead
-    # logging.warn(f'Failed to parse datetime {date_str}')
-    warnings.filterwarnings('ignore', module='mf2util',
-                            message="The 'warn' function is deprecated")
-    # local/lib/python3.6/site-packages/mox3/mox.py:909: DeprecationWarning: inspect.getargspec() is deprecated, use inspect.signature() or inspect.getfullargspec()
-    warnings.filterwarnings('ignore', module='mox', message=r'inspect\.getargspec')
-    # local/lib/python3.8/site-packages/webmentiontools/send.py:65: GuessedAtParserWarning: No parser was explicitly specified, so I'm using the best available HTML parser for this system ("lxml"). This usually isn't a problem, but if you run this code on another system, or in a different virtual environment, it may use a different parser and behave differently.
-    warnings.filterwarnings('ignore', category=GuessedAtParserWarning)
-    # local/lib/python3.9/site-packages/bs4/__init__.py:435: MarkupResemblesLocatorWarning: The input looks more like a filename than markup. You may want to open this file and pass the filehandle into Beautiful Soup.
-    warnings.filterwarnings('ignore', category=MarkupResemblesLocatorWarning)
-    # local/lib/python3.9/site-packages/bs4/builder/__init__.py:545: XMLParsedAsHTMLWarning: It looks like you're parsing an XML document using an HTML parser. If this really is an HTML document (maybe it's XHTML?)...
-    warnings.filterwarnings('ignore', category=XMLParsedAsHTMLWarning)
-
+    suppress_warnings()
     super(TestCase, self).setUp()
 
     appengine_info.APP_ID = 'my-app'
@@ -482,3 +460,27 @@ class TestCase(mox.MoxTestBase, Asserts):
                                    headers=response_headers))
 
     return call
+
+
+def suppress_warnings():
+    # local/lib/python3.11/site-packages/bs4/builder/_lxml.py:124: DeprecationWarning: The 'strip_cdata' option of HTMLParser() has never done anything and will eventually be removed.
+    warnings.filterwarnings('ignore', category=DeprecationWarning,
+                            message="The 'strip_cdata' option of HTMLParser")
+    # local/lib/python3.12/site-packages/google/cloud/ndb/model.py:3900: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    warnings.filterwarnings('ignore', category=DeprecationWarning,
+                            message=r'datetime\.datetime\.utcnow\(\) is deprecated')
+    # local/lib/python3.12/site-packages/google/cloud/ndb/tasklets.py:319: DeprecationWarning: the (type, exc, tb) signature of throw() is deprecated, use the single-arg signature instead.
+    warnings.filterwarnings('ignore', category=DeprecationWarning,
+                            message=r'the \(type, exc, tb\) signature of throw\(\) is deprecated')
+    # local/lib/python3.8/site-packages/mf2util.py:556: DeprecationWarning: The 'warn' function is deprecated, use 'warning' instead
+    # logging.warn(f'Failed to parse datetime {date_str}')
+    warnings.filterwarnings('ignore', module='mf2util',
+                            message="The 'warn' function is deprecated")
+    # local/lib/python3.6/site-packages/mox3/mox.py:909: DeprecationWarning: inspect.getargspec() is deprecated, use inspect.signature() or inspect.getfullargspec()
+    warnings.filterwarnings('ignore', module='mox', message=r'inspect\.getargspec')
+    # local/lib/python3.8/site-packages/webmentiontools/send.py:65: GuessedAtParserWarning: No parser was explicitly specified, so I'm using the best available HTML parser for this system ("lxml"). This usually isn't a problem, but if you run this code on another system, or in a different virtual environment, it may use a different parser and behave differently.
+    warnings.filterwarnings('ignore', category=GuessedAtParserWarning)
+    # local/lib/python3.9/site-packages/bs4/__init__.py:435: MarkupResemblesLocatorWarning: The input looks more like a filename than markup. You may want to open this file and pass the filehandle into Beautiful Soup.
+    warnings.filterwarnings('ignore', category=MarkupResemblesLocatorWarning)
+    # local/lib/python3.9/site-packages/bs4/builder/__init__.py:545: XMLParsedAsHTMLWarning: It looks like you're parsing an XML document using an HTML parser. If this really is an HTML document (maybe it's XHTML?)...
+    warnings.filterwarnings('ignore', category=XMLParsedAsHTMLWarning)
