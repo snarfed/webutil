@@ -312,12 +312,11 @@ class FlaskUtilTest(unittest.TestCase):
       return 'OK'
 
     got = self.client.post('/', headers={
-        flask_util.CLOUD_TASKS_QUEUE_HEADER: '',
+        flask_util.CLOUD_TASKS_TASK_HEADER: '123',
     })
     self.assertEqual(200, got.status_code)
     self.assertEqual('OK', got.get_data(as_text=True))
 
-    # with self.app.test_request_context('/'):
     got = self.client.post('/')
     self.assertEqual(401, got.status_code)
 

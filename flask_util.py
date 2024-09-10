@@ -35,9 +35,11 @@ MODERN_HEADERS = {
   'X-XSS-Protection': '1; mode=block',
 }
 
-# https://cloud.google.com/tasks/docs/creating-appengine-handlers#reading_task_request_headers
-CLOUD_TASKS_QUEUE_HEADER = 'X-AppEngine-QueueName'
+# https://cloud.google.com/tasks/docs/creating-appengine-handlers#reading-headers
+CLOUD_TASKS_TASK_HEADER = 'X-AppEngine-TaskName'
 
+# https://cloud.google.com/appengine/docs/standard/scheduling-jobs-with-cron-yaml#securing_urls_for_cron
+APP_ENGINE_CRON_HEADER = 'X-Appengine-Cron'
 
 # A few extra non-error HTTPExceptions
 class Created(HTTPException):
@@ -375,7 +377,10 @@ def headers(headers, error_codes=(404,)):
 def cloud_tasks_only(fn):
   """Flask decorator that returns HTTP 401 if the request isn't from Cloud Tasks.
 
-  https://cloud.google.com/tasks/docs/creating-appengine-handlers#reading_task_request_headers
+  (...or from App Engine Cron.)
+
+  https://cloud.google.com/tasks/docs/creating-appengine-handlers#reading-headers
+  https://cloud.google.com/appengine/docs/standard/scheduling-jobs-with-cron-yaml#securing_urls_for_cron
 
   Must be used *below* :meth:`flask.Flask.route`, eg::
 
@@ -386,10 +391,11 @@ def cloud_tasks_only(fn):
   """
   @functools.wraps(fn)
   def decorator(*args, **kwargs):
-    if CLOUD_TASKS_QUEUE_HEADER not in request.headers:
-      return 'Internal only', 401
+    if task := request.headers.get('X-AppEngine-TaskName'):
+      logger.info(f"Task {task}")
 
-    logger.info(f"Task {request.headers.get('X-AppEngine-TaskName')}")
+    if not task and APP_ENGINE_CRON_HEADER not in request.headers:
+      return 'Internal only', 401
 
     return fn(*args, **kwargs)
 
