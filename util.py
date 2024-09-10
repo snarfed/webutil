@@ -190,7 +190,7 @@ URL_RE = re.compile(SCHEME_RE + HOST_RE + PATH_QUERY_RE,  # scheme required
                     re.UNICODE | re.IGNORECASE)
 LINK_RE = re.compile(SCHEME_RE + '?' + DOMAIN_RE + PATH_QUERY_RE,  # scheme optional
                      re.UNICODE | re.IGNORECASE)
-"""Regexps for domains, hostnames, and URLs.
+r"""Regexps for domains, hostnames, and URLs.
 
 Based on kylewm's from redwind:
 
@@ -948,7 +948,7 @@ def maybe_timestamp_to_rfc3339(input):
   Assumes UNIX timestamps are always UTC. (They're generally supposed to be.)
   """
   try:
-    dt = datetime.utcfromtimestamp(float(input)).replace(tzinfo=timezone.utc)
+    dt = datetime.fromtimestamp(float(input), tz=timezone.utc)
     return dt.isoformat('T', 'milliseconds' if dt.microsecond else 'seconds')
   except (ValueError, TypeError):
     return input

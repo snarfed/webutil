@@ -296,6 +296,9 @@ class TestCase(mox.MoxTestBase, Asserts):
     # local/lib/python3.11/site-packages/bs4/builder/_lxml.py:124: DeprecationWarning: The 'strip_cdata' option of HTMLParser() has never done anything and will eventually be removed.
     warnings.filterwarnings('ignore', category=DeprecationWarning,
                             message="The 'strip_cdata' option of HTMLParser")
+    # local/lib/python3.12/site-packages/google/cloud/ndb/model.py:3900: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    warnings.filterwarnings('ignore', category=DeprecationWarning,
+                            message=r'datetime.datetime.utcnow\(\) is deprecated')
     # local/lib/python3.8/site-packages/mf2util.py:556: DeprecationWarning: The 'warn' function is deprecated, use 'warning' instead
     # logging.warn(f'Failed to parse datetime {date_str}')
     warnings.filterwarnings('ignore', module='mf2util',
