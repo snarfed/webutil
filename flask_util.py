@@ -177,10 +177,10 @@ def get_required_param(name):
   try:
     val = request.values.get(name)
   except (UnicodeDecodeError, UnicodeEncodeError) as e:
-    abort(400, f"Couldn't decode parameters as UTF-8: {e}")
+    error(f"Couldn't decode parameters as UTF-8: {e}")
 
   if not val:
-    abort(400, f'Missing required parameter: {name}')
+    error(f'Missing required parameter: {name}')
 
   return val
 
