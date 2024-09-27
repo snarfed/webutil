@@ -2263,14 +2263,19 @@ def fetch_mf2(url, get_fn=requests_get, gateway=False, require_backlink=None,
     kwargs: passed through to :func:`requests.get`
 
   Returns:
-    dict: parsed mf2 data. Includes the final URL of the parsed document
-      (after redirects) in the top-level ``url`` field.
+    dict: parsed mf2 data. Includes the final URL of the parsed document (after
+      redirects) in the top-level ``url`` field. If the url doesn't return HTML
+      or has can't be parsed for microformats2, returns ``None``.
 
   Raises:
     ValueError: if a backlink in ``require_backlink`` is not found
   """
   resp = get_fn(fragmentless(url), gateway=gateway, **kwargs)
   resp.raise_for_status()
+
+  content_type = resp.headers.get('Content-Type')
+  if content_type and content_type.split(';')[0].strip() != 'text/html':
+    return None
 
   if require_backlink:
     if not isinstance(require_backlink, (tuple, list)):

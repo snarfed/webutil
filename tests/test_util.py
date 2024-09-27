@@ -1505,6 +1505,12 @@ class UtilTest(testutil.TestCase):
     }, util.fetch_mf2('http://xyz', metaformats=True),
        ignore=['debug', 'rels', 'rel-urls'])
 
+  def test_fetch_mf2_wrong_content_type(self):
+    self.expect_requests_get('http://xyz', '',
+                             response_headers={'Content-Type': 'not/html'})
+    self.mox.ReplayAll()
+    self.assertIsNone(util.fetch_mf2('http://xyz'))
+
   def test_parse_mf2_metaformats_nothing(self):
     self.assert_equals({
       'items': [],
