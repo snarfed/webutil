@@ -349,6 +349,24 @@ def pop_list(obj, key):
   return val
 
 
+def add(seq, val):
+    """Appends ``val`` to ``seq`` if seq doesn't already contain it.
+
+    Useful for treating repeated ndb properties like sets instead of lists.
+    """
+    if val not in seq:
+        seq.append(val)
+
+
+def remove(seq, val):
+    """Removes ``val`` from ``seq`` if seq contains it.
+
+    Useful for treating repeated ndb properties like sets instead of lists.
+    """
+    if val in seq:
+        seq.remove(val)
+
+
 def encode(obj, encoding='utf-8'):
   """Character encodes all unicode strings in a collection, recursively.
 
