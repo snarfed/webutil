@@ -55,14 +55,18 @@ class NoContent(HTTPException):
     description = 'No Content'
 
 class Redirect(HTTPException):
-    def __init__(self, *args, location=None, **kwargs):
+    def __init__(self, *args, location=None, headers=None, **kwargs):
       # this evidently isn't provided when flask-caching unpickles a pickled instance
       # assert location
       self.location = location
+      self.headers = headers or {}
       super().__init__(**kwargs)
 
     def get_headers(self, *args, **kwargs):
-      return {'Location': self.location}
+      return {
+        **self.headers,
+        'Location': self.location,
+      }
 
 class MovedPermanently(Redirect):
     code = 301
@@ -350,8 +354,8 @@ def headers(headers, error_codes=(404,)):
 
   Args:
     headers (dict mapping str header name to str value)
-    error_codes (sequence of int): 4xx and 5xx HTTP codes to cache along with
-      2xx and 3xx.
+    error_codes (sequence of int): 4xx and 5xx HTTP codes to include the headers
+      with, along with 2xx and 3xx.
   """
   def decorator(fn):
     @functools.wraps(fn)
