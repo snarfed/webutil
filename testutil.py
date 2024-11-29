@@ -484,3 +484,6 @@ def suppress_warnings():
     warnings.filterwarnings('ignore', category=MarkupResemblesLocatorWarning)
     # local/lib/python3.9/site-packages/bs4/builder/__init__.py:545: XMLParsedAsHTMLWarning: It looks like you're parsing an XML document using an HTML parser. If this really is an HTML document (maybe it's XHTML?)...
     warnings.filterwarnings('ignore', category=XMLParsedAsHTMLWarning)
+
+    # https://stackoverflow.com/a/78803598/186123
+    os.environ['GRPC_VERBOSITY'] = 'ERROR'
