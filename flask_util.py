@@ -378,7 +378,7 @@ def headers(headers, error_codes=(404,)):
   return decorator
 
 
-def cloud_tasks_only(fn):
+def cloud_tasks_only(log=True):
   """Flask decorator that returns HTTP 401 if the request isn't from Cloud Tasks.
 
   (...or from App Engine Cron.)
@@ -389,19 +389,26 @@ def cloud_tasks_only(fn):
   Must be used *below* :meth:`flask.Flask.route`, eg::
 
       @app.route('/path')
-      @cloud_tasks_only
+      @cloud_tasks_only()
       def handler():
           ...
+
+  Args:
+    log (boolean): whether to log the task name
   """
-  @functools.wraps(fn)
-  def decorator(*args, **kwargs):
-    if task := request.headers.get('X-AppEngine-TaskName'):
-      logger.info(f"Task {task}")
+  def decorator(fn):
+    @functools.wraps(fn)
+    def decorated(*args, **kwargs):
+      task = request.headers.get('X-AppEngine-TaskName')
+      if not task and APP_ENGINE_CRON_HEADER not in request.headers:
+        return 'Internal only', 401
 
-    if not task and APP_ENGINE_CRON_HEADER not in request.headers:
-      return 'Internal only', 401
+      if log:
+        logger.info(f"Task {task}")
 
-    return fn(*args, **kwargs)
+      return fn(*args, **kwargs)
+
+    return decorated
 
   return decorator
 

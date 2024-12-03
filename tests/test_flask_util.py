@@ -307,7 +307,7 @@ class FlaskUtilTest(unittest.TestCase):
 
   def test_cloud_tasks_only(self):
     @self.app.route('/', methods=['POST'])
-    @flask_util.cloud_tasks_only
+    @flask_util.cloud_tasks_only()
     def handler():
       return 'OK'
 
