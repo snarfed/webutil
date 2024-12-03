@@ -1711,9 +1711,15 @@ def requests_fn(fn):
     try:
       # use getattr so that stubbing out with mox still works
       resp = getattr((session or requests), fn)(url, *args, **kwargs)
+      msg = f'Received {resp.status_code}'
+      if resp.status_code // 100 == 3:
+        msg += f' {resp.headers.get("Location") or "no Location header"}'
+      elif not resp.ok:
+        msg += resp.text[:200]
+      logger.info(msg)
       if gateway:
-        logger.info(f'Received {resp.status_code}: {"" if resp.ok else resp.text[:100]}')
         resp.raise_for_status()
+
     except (ValueError, requests.URLRequired) as e:
       if isinstance(e, requests.exceptions.InvalidURL):
         punycode = domain2idna(url)  # surprisingly, this handles full URLs fine
@@ -1769,11 +1775,6 @@ def requests_fn(fn):
         if gateway:
           resp.raise_for_status()
 
-    msg = f'Received {resp.status_code}'
-    if resp.status_code // 100 == 3:
-      msg += f' {resp.headers.get("Location") or "no Location header"}'
-    logger.info(msg)
-
     return resp
 
   return call
@@ -1812,8 +1813,8 @@ def requests_post_with_redirects(url, *args, **kwargs):
 def _prune(kwargs):
   return {
     k: v for k, v in list(kwargs.items())
-    if k not in ('allow_redirects', 'auth', 'gateway', 'headers',
-                 'stream', 'timeout')
+    if k is not None and k not in ('allow_redirects', 'auth', 'gateway', 'headers',
+                                   'stream', 'timeout')
   }
 
 
