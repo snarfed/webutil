@@ -392,7 +392,8 @@ def cloud_tasks_only(log=True):
           ...
 
   Args:
-    log (boolean): whether to log the task name
+    log (boolean): whether to log the task name. If None, task name is logged
+      only if the traceparent HTTP header is not set.
   """
   def decorator(fn):
     @functools.wraps(fn)
@@ -401,7 +402,7 @@ def cloud_tasks_only(log=True):
       if not task and APP_ENGINE_CRON_HEADER not in request.headers:
         return 'Internal only', 401
 
-      if log:
+      if log or (log is None and not request.headers.get('traceparent')):
         logger.info(f"Task {task}")
 
       return fn(*args, **kwargs)
