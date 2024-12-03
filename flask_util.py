@@ -231,8 +231,6 @@ def handle_exception(e):
       else:
           e.show_exception = True
 
-  logger.error(f'{e.__class__}: {e}')
-
   if isinstance(e, HTTPException):
     # raised by this app itself, pass it through. use body and headers from
     # response if available (but not status code).
