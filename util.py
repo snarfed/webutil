@@ -1712,7 +1712,7 @@ def requests_fn(fn):
       # use getattr so that stubbing out with mox still works
       resp = getattr((session or requests), fn)(url, *args, **kwargs)
       if gateway:
-        logger.info(f'Received {resp.status_code}: {"" if resp.ok else resp.text[:500]}')
+        logger.info(f'Received {resp.status_code}: {"" if resp.ok else resp.text[:100]}')
         resp.raise_for_status()
     except (ValueError, requests.URLRequired) as e:
       if isinstance(e, requests.exceptions.InvalidURL):
@@ -1744,9 +1744,9 @@ def requests_fn(fn):
       if gateway:
         msg = str(e)
         if e.response is not None:
-          msg += f' ; {e.response.text}'
+          msg += f' ; {e.response.text[:500]}'
         logger.warning(msg)
-        logger.warning('\n'.join(traceback.format_tb(sys.exc_info()[2])))
+        logger.debug('\n'.join(traceback.format_tb(sys.exc_info()[2])))
         abort(502, msg)
       raise
 
