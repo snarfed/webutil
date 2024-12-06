@@ -227,7 +227,6 @@ parenthesized group in :attr:`SCHEME_RE`, not the ``\b``. I tried changing
 METAFORMAT_TO_MF2 = [
     # in priority order, descending
     # OGP
-    ('property', 'article:author', 'url'),
     ('property', 'article:published_time', 'published'),
     ('property', 'article:modified_time', 'updated'),
     ('property', 'og:audio', 'audio'),
@@ -235,6 +234,8 @@ METAFORMAT_TO_MF2 = [
     ('property', 'og:image', 'photo'),
     ('property', 'og:title', 'name'),
     ('property', 'og:video', 'video'),
+    # handled in parse_metaformats manually since it's only for h-cards
+    # ('property', 'article:author', 'url'),
     # Twitter
     ('name', 'twitter:title', 'name'),
     ('name', 'twitter:description', 'summary'),
@@ -2177,7 +2178,12 @@ def parse_metaformats(soup, url, type='h-card'):
         base = href
 
     # properties
-    for attr, meta, mf2 in METAFORMAT_TO_MF2:
+
+    metaformat_to_mf2 = METAFORMAT_TO_MF2
+    if type == 'h-card':
+      metaformat_to_mf2 = metaformat_to_mf2 + [('property', 'article:author', 'url')]
+
+    for attr, meta, mf2 in metaformat_to_mf2:
       if val := soup.head.find('meta', attrs={attr: meta}):
         if content := val.get('content'):
           if meta in METAFORMAT_URL_PROPERTIES:

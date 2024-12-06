@@ -1531,12 +1531,12 @@ class UtilTest(testutil.TestCase):
                       metaformats=True),
       ignore=['debug', 'rels', 'rel-urls'])
 
-  def test_parse_mf2_metaformats_mixed(self):
+  def test_parse_mf2_entry_metaformats_mixed(self):
     self.assert_equals({
       'items': [{
         'type': ['h-entry'],
         'properties': {
-          'url': ['http://xyz/post/url', 'http://xyz/post'],
+          'url': ['http://xyz/post'],
           'name': ['A ☕ post'],
         },
       }],
@@ -1544,7 +1544,7 @@ class UtilTest(testutil.TestCase):
 <html>
 <head>
 <title>A ☕ post</title>
-<meta property="article:author" content="/post/url" />
+<meta property="article:author" content="/me" />
 </head>
 </html>
 """, url='http://xyz/post', metaformats=True),
