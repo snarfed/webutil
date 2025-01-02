@@ -46,7 +46,7 @@ except ImportError:
 try:
   from google.cloud import error_reporting
   error_reporting_client = error_reporting.Client()
-  if DEBUG:
+  if DEBUG or LOCAL_SERVER:
     error_reporting_client.host = 'localhost:9999'
     error_reporting_client.secure = False
 except ImportError:
@@ -61,7 +61,7 @@ try:
   import google.cloud.logging
   logging_client = google.cloud.logging.Client()
 
-  if not DEBUG:
+  if not DEBUG and not LOCAL_SERVER:
     logging_client.setup_logging(log_level=logging.DEBUG)
     # this currently occasionally hits the 256KB stackdriver logging limit and
     # crashes in the background service. i've tried batch_size=1 and
