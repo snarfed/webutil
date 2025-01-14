@@ -224,6 +224,7 @@ parenthesized group in :attr:`SCHEME_RE`, not the ``\b``. I tried changing
 """
 
 # https://microformats.org/wiki/metaformats
+# (<meta> tag attribute, value, microformats2 property)
 METAFORMAT_TO_MF2 = [
     # in priority order, descending
     # OGP
