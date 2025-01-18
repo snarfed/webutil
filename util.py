@@ -355,9 +355,15 @@ def add(seq, val):
     """Appends ``val`` to ``seq`` if seq doesn't already contain it.
 
     Useful for treating repeated ndb properties like sets instead of lists.
+
+    Returns:
+      True if val was added to seq, ie it wasn't already in seq, False otherwise
     """
     if val not in seq:
         seq.append(val)
+        return True
+
+    return False
 
 
 def remove(seq, val):
