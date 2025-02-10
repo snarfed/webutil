@@ -2106,8 +2106,9 @@ def parse_mf2(input, url=None, id=None, metaformats=None):
       ``h-entry`` otherwise.
 
   Returns:
-    dict: parsed mf2 data, or ``None`` if id is provided and not found in the
-      input HTML
+    dict: parsed mf2 data, or {} if the HTML can't be parsed, eg mf2py raises
+      ``RecursionError``, https://github.com/microformats/mf2py/issues/78, or
+      ``None`` if id is provided and not found in the input HTML
   """
   if isinstance(input, requests.Response) and not url:
     url = input.url
@@ -2121,7 +2122,12 @@ def parse_mf2(input, url=None, id=None, metaformats=None):
     if not input:
       return None
 
-  mf2 = mf2py.parse(url=url, doc=input)
+  try:
+    mf2 = mf2py.parse(url=url, doc=input)
+  except RecursionError as e:
+    logger.warning(f"Couldn't parse {url}: {e}")
+    return {}
+
   if urlparse(url).path in ('', '/'):
     type = 'h-card'
     mf2_item = mf2util.representative_hcard(mf2, mf2.get('url') or url)

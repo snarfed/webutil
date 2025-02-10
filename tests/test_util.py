@@ -5,9 +5,10 @@ Supports Python 3. Should not depend on App Engine API or SDK packages.
 """
 import datetime
 import http.client
+import io
 import socket
 import ssl
-import io
+from unittest.mock import patch
 from urllib.error import HTTPError, URLError
 import urllib.parse, urllib.request
 
@@ -1759,3 +1760,7 @@ class UtilTest(testutil.TestCase):
 """, url='http://xyz/post', metaformats=True),
     ignore=['debug', 'rels', 'rel-urls'])
 
+  @patch('mf2py.parse', side_effect=RecursionError('foo'))
+  def test_parse_mf2_RecursionError(self, _):
+    # https://github.com/microformats/mf2py/issues/78
+    self.assert_equals({}, util.parse_mf2('unused',))
