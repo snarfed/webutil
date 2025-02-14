@@ -261,7 +261,10 @@ def error(msg, status=400, exc_info=False, **kwargs):
     kwargs: passed through to :func:`flask.abort`
   """
   logger.info(f'Returning {status}: {msg} {kwargs}', exc_info=exc_info)
-  abort(int(status), msg, **kwargs)
+  try:
+    abort(int(status), msg, **kwargs)
+  except LookupError:  # probably an unknown status code
+    raise HTTPException(response=Response(response=msg, status=status), **kwargs)
 
 
 def flash(msg, **kwargs):

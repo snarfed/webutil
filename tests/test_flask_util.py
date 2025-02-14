@@ -5,7 +5,7 @@ import unittest
 
 from flask import abort, Flask, flash, get_flashed_messages, make_response, request
 from flask_caching import Cache
-from werkzeug.exceptions import BadRequest
+from werkzeug.exceptions import BadRequest, HTTPException
 
 from .. import flask_util
 from ..flask_util import get_required_param
@@ -161,6 +161,14 @@ class FlaskUtilTest(unittest.TestCase):
     resp = self.client.get('/error')
     self.assertEqual(400, resp.status_code)
     self.assertEqual(1, calls)
+
+  def test_error_unknown_status_code(self):
+    with self.assertRaises(HTTPException) as e:
+      flask_util.error('asdf', status=521)
+
+    self.assertEqual(HTTPException, e.exception.__class__)
+    self.assertEqual(521, e.exception.response.status_code)
+    self.assertEqual('asdf', e.exception.response.get_data(as_text=True))
 
   def test_cached_headers(self):
     cache = Cache(self.app)
