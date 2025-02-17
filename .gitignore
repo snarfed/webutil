@@ -1,1 +1,13 @@
+.coverage
+/build/
+/docs/_build/
+/dist/
+/.eggs/
+/*.egg-info
+/l
+/local*/
+circleci_token
+private_notes
 TAGS
+*.pyc
+.DS_Store

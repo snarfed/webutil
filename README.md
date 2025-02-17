@@ -9,7 +9,7 @@ Common utilities and handler code for Python web apps:
 * [`util`](https://oauth-dropins.readthedocs.io/en/stable/source/oauth_dropins.webutil.html#module-oauth_dropins.webutil.util): wide variety of utilities for data structures, web code, etc.
 * [`webmention`](https://oauth-dropins.readthedocs.io/en/stable/source/oauth_dropins.webutil.html#module-oauth_dropins.webutil.webmention): [Webmention](https://webmention.net/) endpoint discovery and sending
 
-webutil is not developed, maintained, or distributed as a standalone package. Instead, it's distributed as part of the [oauth-dropins](https://oauth-dropins.readthedocs.io/) library.
+webutil is not (yet) developed, maintained, or distributed as a standalone package. Instead, it's distributed as part of the [oauth-dropins](https://oauth-dropins.readthedocs.io/) library.
 
 * Install with `pip install oauth-dropins`.
 * Supports Python 3.7+.
