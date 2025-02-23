@@ -13,13 +13,13 @@ import werkzeug.exceptions
 from werkzeug.exceptions import BadRequestKeyError, HTTPException
 from werkzeug.routing import BaseConverter
 
-from .appengine_info import DEBUG
+from .appengine_info import LOCAL_SERVER
 from . import util
 
 logger = logging.getLogger(__name__)
 
 # Modern HTTP headers for CORS, CSP, other security, etc.
-CSP_HOSTS = 'localhost:8080 my.dev.com:8080' if DEBUG else ''
+CSP_HOSTS = 'localhost:8080 127.0.0.1:8080 my.dev.com:8080' if LOCAL_SERVER else ''
 MODERN_HEADERS = {
   'Access-Control-Allow-Headers': '*',
   'Access-Control-Allow-Methods': '*',
