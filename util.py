@@ -1719,9 +1719,9 @@ def requests_fn(fn):
     try:
       # use getattr so that stubbing out with mox still works
       resp = getattr((session or requests), fn)(url, *args, **kwargs)
-      msg = f'Received {resp.status_code}'
+      msg = f'Received {resp.status_code} '
       if resp.status_code // 100 == 3:
-        msg += f' {resp.headers.get("Location") or "no Location header"}'
+        msg += f'{resp.headers.get("Location") or "no Location header"}'
       elif not resp.ok:
         msg += resp.text[:200]
       logger.info(msg)
