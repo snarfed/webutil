@@ -2134,9 +2134,8 @@ def parse_mf2(input, url=None, id=None, metaformats=None):
   else:
     type = 'h-entry'
     mf2_item = mf2util.find_first_entry(mf2, ['h-entry'])
-
-  if not mf2_item and mf2['items']:
-    mf2_item = mf2['items'][0]
+    if not mf2_item and mf2['items'] and not metaformats:
+      mf2_item = mf2['items'][0]
 
   mf2_hcard = None
   for item in mf2['items']:
@@ -2153,7 +2152,7 @@ def parse_mf2(input, url=None, id=None, metaformats=None):
           props['photo'] = meta_photos
 
       if not mf2_item or type == 'h-card' and not mf2_hcard:
-        mf2['items'].append(meta_item)
+        mf2['items'].insert(0, meta_item)
 
   return mf2
 
@@ -2228,12 +2227,12 @@ def parse_metaformats(soup, url, type='h-card'):
                         for i in sorted(icons, key=max_size, reverse=True)]
         props.setdefault('photo', [])[0:0] = urls_by_size
 
+  if type != 'h-card' and not props:
+    return None
+
   if type == 'h-card':
     # fall back to the URL itself
     props.setdefault('name', [domain_from_link(url)])
-
-  if not props:
-    return None
 
   urls = props.setdefault('url', [])
   if url not in urls:

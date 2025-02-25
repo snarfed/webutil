@@ -1671,6 +1671,7 @@ class UtilTest(testutil.TestCase):
         'properties': {
           'name': ['Ms. ☕ Baz'],
           'photo': ['http://xyz/me.png'],
+          'url': ['http://xyz/'],
         },
       }],
     }, util.parse_mf2("""\
@@ -1682,9 +1683,10 @@ class UtilTest(testutil.TestCase):
 <body class="h-card">
   <p class="p-name">Ms. ☕ Baz</p>
   <img class="u-photo" src="/me.png" />
+  <a class="u-url" href="/"></a>
 </body>
 </html>
-""", url='http://xyz', metaformats=True),
+""", url='http://xyz/', metaformats=True),
     ignore=['debug', 'rels', 'rel-urls'])
 
   def test_parse_mf2_metaformats_entry_photo_fallback(self):
@@ -1723,6 +1725,7 @@ class UtilTest(testutil.TestCase):
         'properties': {
           'name': ['Ms. ☕ Baz'],
           'photo': ['http://pic'],
+          'url': ['http://xyz/'],
         },
       }],
     }, util.parse_mf2("""\
@@ -1732,9 +1735,10 @@ class UtilTest(testutil.TestCase):
 </head>
 <body class="h-card">
   <p class="p-name">Ms. ☕ Baz</p>
+  <a class="u-url" href="/"></a>
 </body>
 </html>
-""", url='http://xyz', metaformats=True),
+""", url='http://xyz/', metaformats=True),
     ignore=['debug', 'rels', 'rel-urls'])
 
   def test_parse_mf2_metaformats_hentry_inside_hfeed(self):
@@ -1755,6 +1759,36 @@ class UtilTest(testutil.TestCase):
 <head><meta property="og:image" content="http://pic" /></head>
 <body>
 <div class="h-feed"><div class="h-entry">foo</div></div>
+</body>
+</html>
+""", url='http://xyz/post', metaformats=True),
+    ignore=['debug', 'rels', 'rel-urls'])
+
+  def test_parse_mf2_metaformats_ignore_unknown_mf2_types(self):
+    self.assert_equals({
+      'items': [{
+        'type': ['h-entry'],
+        'properties': {
+          'name': ['Titull'],
+          'summary': ['Descrypshun'],
+          'photo': ['http://pic'],
+          'url': ['http://xyz/post'],
+        },
+      }, {
+        'type': ['h-full'],
+        'properties': {
+          'name': ['nope'],
+        },
+      }],
+    }, util.parse_mf2("""\
+<html>
+<head>
+  <meta property="og:title" content="Titull" />
+  <meta property="og:description" content="Descrypshun" />
+  <meta property="og:image" content="http://pic" />
+</head>
+<body>
+  <div class="h-full">nope</div>
 </body>
 </html>
 """, url='http://xyz/post', metaformats=True),
