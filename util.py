@@ -673,6 +673,19 @@ def is_web(url):
   return isinstance(url, str) and (url.startswith('http://') or
                                    url.startswith('https://'))
 
+def is_url(url):
+  """Returns True if the argument is a URL, False otherwise.
+
+  Very dumb, just checks for scheme, host/netloc, and no whitespace.
+  """
+  try:
+    if re.search(r'\s', url):
+      return False
+    parsed = urlparse(url)
+    return parsed.scheme and parsed.netloc
+  except BaseException:
+    return False
+
 
 def extract_links(text):
   """Returns a list of unique string URLs in the given text.

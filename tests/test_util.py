@@ -1134,6 +1134,14 @@ class UtilTest(testutil.TestCase):
                 'tag:foo.com:bar', 'acct:x@y.z', 'http:/x'):
       self.assertFalse(util.is_web(bad), bad)
 
+  def test_is_url(self):
+    for good in 'http://foo', 'ftp://a@b:c', 'http://localhost:123':
+      self.assertTrue(util.is_url(good), good)
+
+    for bad in (None, 3, '', ['http://foo'], 'foo', 'foo.com/bar',
+                'http://foo bar', ' http://foo'):
+      self.assertFalse(util.is_url(bad), bad)
+
   def test_follow_redirects(self):
     for _ in range(2):
       self.expect_requests_head('http://will/redirect',
