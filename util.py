@@ -2203,7 +2203,6 @@ def parse_metaformats(soup, url, type='h-card'):
         base = href
 
     # properties
-
     metaformat_to_mf2 = METAFORMAT_TO_MF2
     if type == 'h-card':
       metaformat_to_mf2 = metaformat_to_mf2 + [('property', 'article:author', 'url')]
