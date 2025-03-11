@@ -9,6 +9,7 @@ import flask
 from flask import abort, get_flashed_messages, make_response, redirect, render_template, request, Response
 from flask.views import View
 from google.cloud import ndb
+import requests
 import werkzeug.exceptions
 from werkzeug.exceptions import BadRequestKeyError, HTTPException
 from werkzeug.routing import BaseConverter
@@ -537,3 +538,18 @@ class XrdOrJrd(View):
     template = f'{self.template_prefix()}.{self._type()}'
     return (render_template(template, **data),
             {'Content-Type': 'application/xrd+xml; charset=utf-8'})
+
+
+class FlashErrors(View):
+    """Wraps a Flask :class:`flask.view.View` and flashes errors.
+
+    Mostly used with OAuth endpoints.
+    """
+    def dispatch_request(self):
+        try:
+            return super().dispatch_request()
+        except (ValueError, requests.RequestException) as e:
+            logger.warning(f'{self.__class__.__name__} error', exc_info=True)
+            _, body = util.interpret_http_exception(e)
+            flask_util.flash(util.linkify(body or str(e), pretty=True))
+            return redirect('/login')
