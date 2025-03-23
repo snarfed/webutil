@@ -6,6 +6,7 @@ from collections.abc import Iterator
 import contextlib
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
+import html
 import http.client
 import humanize
 import inspect
@@ -23,7 +24,6 @@ import threading
 import traceback
 import urllib.error, urllib.parse, urllib.request
 from urllib.parse import urljoin, urlparse
-from xml.sax import saxutils
 
 from cachetools import cached, TTLCache
 from domain2idna import domain2idna
@@ -820,6 +820,7 @@ def pretty_link(url, text=None, text_prefix=None, keep_host=True,
   Returns:
     str: HTML snippet with ``<a>`` tag
   """
+  title = None
   if text:
     if max_length is None:
       max_length = 30
@@ -846,8 +847,9 @@ def pretty_link(url, text=None, text_prefix=None, keep_host=True,
   full_text = text
   if max_length and len(text) > max_length:
     text = text[:max_length] + '...'
+    title = html.escape(full_text, quote=True)
 
-  escaped_text = saxutils.escape(text)
+  escaped_text = html.escape(text)
   if text_prefix:
     escaped_text = f'{text_prefix} {escaped_text}'
   if glyphicon is not None:
@@ -857,7 +859,7 @@ def pretty_link(url, text=None, text_prefix=None, keep_host=True,
               if attrs else '')
   target = 'target="_blank" ' if new_tab else ''
   return ('<a %s%s%shref="%s">%s</a>' %
-          (f'title="{full_text}" ' if text.endswith('...') else '',
+          (f'title="{title}" ' if title else '',
            attr_str, target,
            # not using urllib.parse.quote because it quotes a ton of chars we
            # want to pass through, including most unicode chars

@@ -546,10 +546,14 @@ class UtilTest(testutil.TestCase):
     self.assertEqual('<a title="barbazbaj" href="http://foo">bar...</a>',
                      pl('http://foo', text='barbazbaj', max_length=3))
 
-    # unquote URL escape chars and decode UTF-8 in link text
+    # unquote URL escape chars and decode UTF-8 in link text, title
     expected = '<a href="http://x/ben-werdm%C3%BCller">x/ben-werdmüller</a>'
     url = 'http://x/ben-werdm%C3%BCller'
     self.assertEqual(expected, pl(str(url)))
+
+    self.assertEqual(
+      """<a title="a &lt;b&quot; &#x27;c &amp;d" href="http://foo">a &lt;b&quot; &#x27;c &amp;...</a>""",
+      pl('http://foo', text="""a <b" 'c &d""", max_length=10))
 
     # pass through unicode chars gracefully(ish)
     self.assertEqual('<a href="http://x/ben-werdmüller">x/ben-werdmüller</a>',
