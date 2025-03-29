@@ -223,6 +223,8 @@ parenthesized group in :attr:`SCHEME_RE`, not the ``\b``. I tried changing
 ``\b`` to ``'(?:^|[\s%s])' % PUNCT``, but that broke other things.
 """
 
+PRETTY_LINK_TITLE_MAX_LEN = 1000
+
 # https://microformats.org/wiki/metaformats
 # (<meta> tag attribute, value, microformats2 property)
 METAFORMAT_TO_MF2 = [
@@ -848,6 +850,8 @@ def pretty_link(url, text=None, text_prefix=None, keep_host=True,
   if max_length and len(text) > max_length:
     text = text[:max_length] + '...'
     title = html.escape(full_text, quote=True)
+    if len(title) > PRETTY_LINK_TITLE_MAX_LEN:
+      title = title[:PRETTY_LINK_TITLE_MAX_LEN] + '...'
 
   escaped_text = html.escape(text)
   if text_prefix:

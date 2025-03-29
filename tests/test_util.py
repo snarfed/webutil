@@ -566,6 +566,12 @@ class UtilTest(testutil.TestCase):
     # no scheme, shouldn't try to strip it
     self.assertEqual('<a href="foo.com">foo.com</a>', pl('foo.com'))
 
+  @patch.object(util, 'PRETTY_LINK_TITLE_MAX_LEN', new=11)
+  def test_pretty_link_title_max_len(self):
+    self.assertEqual('<a title="foo bar baz..." href="http://a.com">foo bar...</a>',
+                     util.pretty_link('http://a.com', text='foo bar baz biff',
+                                      max_length=7))
+
   def test_linkify_pretty(self):
     def lp(val):
       return util.linkify(val, pretty=True, max_length=6)
