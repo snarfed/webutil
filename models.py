@@ -1,5 +1,6 @@
 """App Engine datastore model base classes, properties, and utilites.
 """
+import enum
 from google.cloud import ndb
 
 from oauth_dropins.webutil.util import json_dumps, json_loads
@@ -52,3 +53,29 @@ class ComputedJsonProperty(JsonProperty, ndb.ComputedProperty):
     def __init__(self, *args, **kwargs):
         kwargs['indexed'] = False
         super().__init__(*args, **kwargs)
+
+
+class EnumProperty(ndb.IntegerProperty):
+    """Property for storing Python Enum values.
+
+    Stores the enum's value in the datastore.
+    """
+    def __init__(self, enum_class, **kwargs):
+        if not issubclass(enum_class, enum.Enum):
+            raise TypeError('enum_class must be a subclass of enum.Enum')
+        self._enum_class = enum_class
+        super().__init__(**kwargs)
+
+    def _validate(self, value):
+        if value is not None and not isinstance(value, self._enum_class):
+            raise TypeError(f'Expected {self._enum_class.__name__}, got {type(value).__name__}')
+
+    def _to_base_type(self, value):
+        if value is None:
+            return None
+        return value.value
+
+    def _from_base_type(self, value):
+        if value is None:
+            return None
+        return next((item for item in self._enum_class if item.value == value), None)
