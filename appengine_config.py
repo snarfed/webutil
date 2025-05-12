@@ -1,12 +1,15 @@
 """App Engine config. local vs prod, logging, Google API clients, etc."""
 import logging
 import os
+import threading
 
 from .appengine_info import DEBUG, LOCAL_SERVER
 
 # Use lxml for BeautifulSoup explicitly.
 from . import util
 util.beautifulsoup_parser = 'lxml'
+
+thread_local = threading.local()
 
 # make oauthlib let us use non-SSL http://localhost when running locally
 # https://oauthlib.readthedocs.io/en/latest/oauth2/security.html#envvar-OAUTHLIB_INSECURE_TRANSPORT
@@ -28,7 +31,7 @@ try:
   # TODO: make thread local?
   # https://googleapis.dev/python/python-ndb/latest/migrating.html#setting-up-a-connection
   from google.cloud import ndb
-  ndb_client = ndb.Client()
+  ndb_client = thread_local.ndb_client = ndb.Client()
 except ImportError:
   pass
 
@@ -59,7 +62,7 @@ logging.getLogger().setLevel(logging.DEBUG)
 # Stackdriver Logging
 try:
   import google.cloud.logging
-  logging_client = google.cloud.logging.Client()
+  logging_client = thread_local.logging_client = google.cloud.logging.Client()
 
   if not DEBUG and not LOCAL_SERVER:
     logging_client.setup_logging(log_level=logging.DEBUG)
