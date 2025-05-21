@@ -1239,6 +1239,7 @@ class UtilTest(testutil.TestCase):
       ((), '   \n# asdf\n	\n# qwert\n'),
       (('asdf', 'qwert'), '# header\nasdf\n\nqwert\n\nqwert\n  # comment\n  asdf  '),
       (('zzang.kr', '›.ws'), 'zzang.kr\n›.ws'),
+      (('ab', 'cd'), 'ab # xy\ncd	#z'),
     ):
       self.assert_equals(set(expected),
                          util.load_file_lines(io.StringIO(contents)))

@@ -1644,7 +1644,7 @@ def load_file_lines(file):
   items = set()
 
   for line in file:
-    val = line.strip()
+    val = re.sub(r'\s+#.+$', '', line).strip()
     if val and not val.startswith('#'):
       items.add(val)
 
