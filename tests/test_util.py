@@ -1817,3 +1817,9 @@ class UtilTest(testutil.TestCase):
   def test_parse_mf2_RecursionError(self, _):
     # https://github.com/microformats/mf2py/issues/78
     self.assert_equals({}, util.parse_mf2('unused',))
+
+  def test_remove_invisible_chars(self):
+    self.assertEqual('', util.remove_invisible_chars(''))
+    self.assertEqual(' a\tb\nc ', util.remove_invisible_chars(' a\tb\nc '))
+    self.assertEqual('@x.bsky.social', util.remove_invisible_chars(
+      json_loads(r'"\u202a@x.bs\u202dky.social\u202c"')))

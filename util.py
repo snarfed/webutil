@@ -255,6 +255,22 @@ METAFORMAT_URL_PROPERTIES = {
     'twitter:image',
 }
 
+# Translation table for common invisible Unicode characters. Pass this to str.translate()
+# to remove these characters from strings.
+#
+# An alternative would be to use unicodedata to identify control and separator
+# characters: Cc (control), Cf (format), Zs (space separators), Zl (line separators),
+# Zp (paragraph separators).
+#
+#   unicodedata.category(char).startswith(('C', 'Z'))
+INVISIBLE_CHARS = {
+  i: None for i in
+  list(range(0x007F, 0x00A0))      # control chars (note that 0x00A0 is NBSP)
+  + list(range(0x200b, 0x200F+1))  # zero-width, LTR, RTL
+  + list(range(0x2028, 0x202F))    # line/paragraph separators
+  + [0xfeff]                       # Zero width no-break space (BOM)
+}
+
 
 class Struct(object):
   """A generic class that initializes its attributes from constructor kwargs."""
@@ -2065,6 +2081,18 @@ class WideUnicode(str):
 
   def __getslice__(self, i, j):
     return self.__getitem__(slice(i, j))
+
+
+def remove_invisible_chars(val):
+  """Removes invisible/non-printable Unicode control characters from a string.
+
+  Args:
+    val (str)
+
+  Returns:
+    str: val with invisible characters removed
+  """
+  return val.translate(INVISIBLE_CHARS)
 
 
 def parse_html(input, **kwargs):
