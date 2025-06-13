@@ -5,7 +5,7 @@ import unittest
 
 from flask import abort, Flask, flash, get_flashed_messages, make_response, request
 from flask_caching import Cache
-from werkzeug.exceptions import BadRequest, HTTPException
+from werkzeug.exceptions import BadRequest, HTTPException, NotFound
 
 from .. import flask_util
 from ..flask_util import get_required_param
@@ -236,6 +236,16 @@ class FlaskUtilTest(unittest.TestCase):
     self.assertEqual('B', resp.headers['A'])
     self.assertEqual('D', resp.headers['C'])
     self.assertEqual('Y', resp.headers['X'])
+
+  def test_headers_escape_exception_description(self):
+    @self.app.route('/foo')
+    @flask_util.headers({})
+    def foo():
+      raise NotFound('a<b')
+
+    resp = self.app.test_client().get('/foo')
+    self.assertEqual(404, resp.status_code)
+    self.assertEqual('a&lt;b', resp.get_data(as_text=True))
 
   def test_headers_exception(self):
     @self.app.route('/foo')

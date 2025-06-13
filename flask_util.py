@@ -1,5 +1,6 @@
 """Utilities for Flask. View classes, decorators, URL route converters, etc."""
 import functools
+import html
 import logging
 import os
 import re
@@ -367,7 +368,7 @@ def headers(headers, error_codes=(404,)):
       except HTTPException as e:
         if e.code in error_codes:
           if not e.response:
-            e.response = make_response(e.description, e.code, e.get_headers())
+            e.response = make_response(html.escape(e.description), e.code, e.get_headers())
           e.response.headers.update(headers)
         raise
 
