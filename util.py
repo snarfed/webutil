@@ -172,8 +172,9 @@ LOCAL_TLDS = {
   'localhost',
 }
 
-now = lambda tz=timezone.utc, **kwargs: datetime.now(tz=tz, **kwargs)
-"""Alias, allows unit tests to mock the function."""
+def now(tz=timezone.utc):
+  """Alias, allows unit tests to mock the function."""
+  return datetime.now(tz=tz)
 
 beautifulsoup_parser = None
 """Global config, string parser for BeautifulSoup to use, e.g. 'lxml'.

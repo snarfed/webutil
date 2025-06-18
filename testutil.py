@@ -309,7 +309,7 @@ class TestCase(mox.MoxTestBase, Asserts):
 
     util.follow_redirects_cache.clear()
 
-    util.now = lambda **kwargs: NOW
+    util.now = lambda tz=timezone.utc: NOW.replace(tzinfo=tz)
 
   def stub_requests_head(self):
     """Automatically return 200 to outgoing HEAD requests."""
