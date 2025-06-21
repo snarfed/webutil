@@ -1244,10 +1244,14 @@ class UtilTest(testutil.TestCase):
       self.assert_equals(set(expected),
                          util.load_file_lines(io.StringIO(contents)))
 
+  @patch('os.path.exists', return_value=True)
   @patch('builtins.open', return_value=io.StringIO('  \na\n# asdf\nb\n'))
-  def test_load_file_lines_string_filename(self, mock_open):
+  def test_load_file_lines_string_filename(self, mock_open, _):
     self.assert_equals(set(('a', 'b')), util.load_file_lines('file.name'))
     mock_open.assert_called_once_with('file.name')
+
+  def test_load_file_lines_string_filename_doesnt_exist(self):
+    self.assert_equals(set(), util.load_file_lines('file.name'))
 
   def test_wide_unicode(self):
     empty = util.WideUnicode('')

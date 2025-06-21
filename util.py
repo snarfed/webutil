@@ -1670,8 +1670,10 @@ def load_file_lines(file):
     return items
 
   if isinstance(file, str):
-    with open(file) as f:
-      return _load(f)
+    if os.path.exists(file):
+      with open(file) as f:
+        return _load(f)
+    return set()
   else:
     return _load(file)
 
