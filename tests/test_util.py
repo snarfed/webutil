@@ -1244,6 +1244,11 @@ class UtilTest(testutil.TestCase):
       self.assert_equals(set(expected),
                          util.load_file_lines(io.StringIO(contents)))
 
+  @patch('builtins.open', return_value=io.StringIO('  \na\n# asdf\nb\n'))
+  def test_load_file_lines_string_filename(self, mock_open):
+    self.assert_equals(set(('a', 'b')), util.load_file_lines('file.name'))
+    mock_open.assert_called_once_with('file.name')
+
   def test_wide_unicode(self):
     empty = util.WideUnicode('')
     self.assert_equals(0, len(empty))

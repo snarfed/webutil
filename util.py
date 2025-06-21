@@ -1653,19 +1653,27 @@ def load_file_lines(file):
   with ``#`` (ie comments) are ignored.
 
   Args:
-    file: a file object or other iterable that returns lines
+    file (str or file): either a string filename or a file object or other iterable
+      that returns lines
 
   Returns:
-    set of str
+    set of str:
   """
-  items = set()
+  def _load(stream):
+    items = set()
 
-  for line in file:
-    val = re.sub(r'\s+#.+$', '', line).strip()
-    if val and not val.startswith('#'):
-      items.add(val)
+    for line in stream:
+      val = re.sub(r'\s+#.+$', '', line).strip()
+      if val and not val.startswith('#'):
+        items.add(val)
 
-  return items
+    return items
+
+  if isinstance(file, str):
+    with open(file) as f:
+      return _load(f)
+  else:
+    return _load(file)
 
 
 def json_loads(*args, **kwargs):
