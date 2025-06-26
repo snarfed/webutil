@@ -556,7 +556,7 @@ def domain_or_parent_in(input, domains):
   * ``bar.com``, ``[fux.bar.com]`` => False
 
   Args:
-    input (str): domain
+    input (str): domain or URL
     domains (sequence of str): domain
 
   Returns:
@@ -566,7 +566,11 @@ def domain_or_parent_in(input, domains):
     raise ValueError(f'Expected domains to be sequence, got {domains.__class__}')
   elif not input or not domains:
     return False
-  elif input in domains:
+
+  if is_web(input) and (domain := domain_from_link(input)):
+    input = domain
+
+  if input in domains:
     return True
 
   for domain in domains:

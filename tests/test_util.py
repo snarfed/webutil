@@ -249,10 +249,15 @@ class UtilTest(testutil.TestCase):
           ('x.y', ['']), ('', ['x', 'y']), ('', ['x.y']), ('x', ['y']),
           ('xy', ['y', 'x']), ('x', ['yx']), ('v.w.x', ['v.w', 'x.w']),
           ('x', ['', 'y', 'xy', 'yx', 'xx', 'xxx']),
+          ('http://x/y', ['', 'y', 'xy', 'yx', 'xx', 'xxx']),
         ]),
         (True, [
           ('x', ['x']), ('x', ['x', 'y']), ('x', ['y', 'x']),
-          ('w.x', ['x']), ('u.v.w.x', ['y', 'v.w.x']),
+          ('http://x/a', ['y', 'x']),
+          ('w.x', ['x']),
+          ('http://w.x/a', ['x']),
+          ('u.v.w.x', ['y', 'v.w.x']),
+          ('https://u.v.w.x/b/c', ['y', 'v.w.x']),
         ])):
       for input, domains in inputs:
         self.assertEqual(expected, util.domain_or_parent_in(input, domains),
