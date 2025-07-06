@@ -1,14 +1,29 @@
-"""App Engine datastore model base classes, properties, and utilites.
-"""
+"""App Engine datastore model base classes, properties, and utilites."""
 import enum
+import os
 from google.cloud import ndb
 
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from oauth_dropins.webutil import util
 from oauth_dropins.webutil.util import json_dumps, json_loads
 
 # 1MB limit: https://cloud.google.com/datastore/docs/concepts/limits
 # use this to check an entity's size:
 #   len(entity._to_pb().Encode())
 MAX_ENTITY_SIZE = 1 * 1000 * 1000
+
+ENCRYPTED_PROPERTY_KEY = None
+if key_pem := util.read('encrypted_property_key.pem'):
+    private_key = serialization.load_pem_private_key(
+        _key_pem.encode('utf-8'),
+        password=None,
+    )
+    # for AES-256-GCM, we need the raw 32-byte key material
+    # convert the private value to bytes, use first 32 bytes for AES-256
+    key_bytes = private_key.private_numbers().private_value.to_bytes(
+        (private_numbers.private_value.bit_length() + 7) // 8, 'big')
+    ENCRYPTED_PROPERTY_KEY = AESGCM(key_bytes[:32])
 
 
 class StringIdModel(ndb.Model):
@@ -58,7 +73,7 @@ class ComputedJsonProperty(JsonProperty, ndb.ComputedProperty):
 class EnumProperty(ndb.IntegerProperty):
     """Property for storing Python Enum values.
 
-    Stores the enum's value in the datastore.
+    Stores the enum's integer value in the datastore.
     """
     def __init__(self, enum_class, **kwargs):
         if not issubclass(enum_class, enum.Enum):
@@ -79,3 +94,40 @@ class EnumProperty(ndb.IntegerProperty):
         if value is None:
             return None
         return next((item for item in self._enum_class if item.value == value), None)
+
+
+class EncryptedProperty(ndb.BlobProperty):
+    """Property that stores encrypted string values.
+
+    Encrypts string values using AES-256-GCM before storing in the datastore,
+    and decrypts them when reading back.
+    """
+    def _validate(self, value):
+        if value is not None and not isinstance(value, str):
+            raise TypeError('EncryptedProperty value must be a string')
+
+    def _to_base_type(self, value):
+        if value is None:
+            return None
+
+        if not ENCRYPTED_PROPERTY_KEY:
+            raise RuntimeError('No encryption key found in encrypted_property_key.pem')
+
+        nonce = os.urandom(12)  # 96-bit nonce for GCM
+        plaintext_bytes = value.encode('utf-8')
+        ciphertext = ENCRYPTED_PROPERTY_KEY.encrypt(nonce, plaintext_bytes, None)
+
+        # concatenate nonce and ciphertext for storage
+        return nonce + ciphertext
+
+    def _from_base_type(self, value):
+        if value is None:
+            return None
+
+        if not ENCRYPTED_PROPERTY_KEY:
+            raise RuntimeError('No encryption key found in encrypted_property_key.pem')
+
+        nonce = value[:12]
+        ciphertext = value[12:]
+        plaintext_bytes = ENCRYPTED_PROPERTY_KEY.decrypt(nonce, ciphertext, None)
+        return plaintext_bytes.decode('utf-8')
