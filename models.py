@@ -1,4 +1,5 @@
 """App Engine datastore model base classes, properties, and utilites."""
+import base64
 import enum
 import os
 from google.cloud import ndb
@@ -14,16 +15,10 @@ from oauth_dropins.webutil.util import json_dumps, json_loads
 MAX_ENTITY_SIZE = 1 * 1000 * 1000
 
 ENCRYPTED_PROPERTY_KEY = None
-if key_pem := util.read('encrypted_property_key.pem'):
-    private_key = serialization.load_pem_private_key(
-        _key_pem.encode('utf-8'),
-        password=None,
-    )
-    # for AES-256-GCM, we need the raw 32-byte key material
-    # convert the private value to bytes, use first 32 bytes for AES-256
-    key_bytes = private_key.private_numbers().private_value.to_bytes(
-        (private_numbers.private_value.bit_length() + 7) // 8, 'big')
-    ENCRYPTED_PROPERTY_KEY = AESGCM(key_bytes[:32])
+if key_base64 := util.read('encrypted_property_key'):  # base-64 encoded key bytes
+  key_bytes = base64.b64decode(key_base64)
+  assert len(key_bytes) == 32
+  ENCRYPTED_PROPERTY_KEY = AESGCM(key_bytes)
 
 
 class StringIdModel(ndb.Model):
@@ -101,6 +96,15 @@ class EncryptedProperty(ndb.BlobProperty):
 
     Encrypts bytes values using AES-256-GCM before storing in the datastore,
     and decrypts them when reading back.
+
+    The AES-256-GCM key should be in the ``encrypted_property_key`` file, base64
+    encoded. Here's example code to generate an AES-256-GCM key and base64 encode it:
+
+      import base64
+      from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+      key_bytes = AESGCM.generate_key(bit_length=256)
+      print(base64.b64encode(key_bytes))
     """
     def _validate(self, value):
         if value is not None and not isinstance(value, bytes):
