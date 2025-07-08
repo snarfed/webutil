@@ -8,7 +8,6 @@ from google.cloud import ndb
 
 import unittest.mock as mock
 
-from .. import models
 from ..models import EncryptedProperty, EnumProperty, StringIdModel
 from .. import appengine_config, models, testutil
 
