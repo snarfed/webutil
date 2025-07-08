@@ -89,24 +89,25 @@ class EncryptedPropertyTest(testutil.TestCase):
       EncryptedModel(secret=123).put()
 
     with self.assertRaises(TypeError):
-      EncryptedModel(secret=b'bytes').put()
+      EncryptedModel(secret='string').put()
 
   def test_round_trip(self):
-    entity = EncryptedModel(secret='seekret')
+    entity = EncryptedModel(secret=b'seekret')
     entity.put()
-    self.assertEqual('seekret', entity.key.get().secret)
+    self.assertEqual(b'seekret', entity.key.get().secret)
 
-    entity.secret = 'émojis 🔐'
+    utf8 = 'émojis 🔐'.encode('utf-8')
+    entity.secret = utf8
     entity.put()
-    self.assertEqual('émojis 🔐', entity.key.get().secret)
+    self.assertEqual(utf8, entity.key.get().secret)
 
   def test_encrypted_storage(self):
-    test_secret = 'plaintext secret'
+    test_secret = b'plaintext secret'
     entity = EncryptedModel(secret=test_secret)
     encrypted = EncryptedModel.secret._to_base_type(test_secret)
 
     self.assertIsInstance(encrypted, bytes)
-    self.assertNotIn(test_secret.encode('utf-8'), encrypted)
+    self.assertNotIn(test_secret, encrypted)
     self.assertEqual(12, len(encrypted[:12]))
     self.assertGreater(len(encrypted), 12 + len(test_secret))
 
@@ -121,11 +122,11 @@ class EncryptedPropertyTest(testutil.TestCase):
   def test_no_key_error(self):
     models.ENCRYPTED_PROPERTY_KEY = None
     with self.assertRaises(RuntimeError) as cm:
-      EncryptedModel(secret='test').put()
+      EncryptedModel(secret=b'test').put()
     self.assertIn('No encryption key found', str(cm.exception))
 
   def test_different_nonces(self):
-    test_secret = 'same secret'
+    test_secret = b'same secret'
     prop = EncryptedModel.secret
 
     encrypted1 = prop._to_base_type(test_secret)

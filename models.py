@@ -97,14 +97,14 @@ class EnumProperty(ndb.IntegerProperty):
 
 
 class EncryptedProperty(ndb.BlobProperty):
-    """Property that stores encrypted string values.
+    """Property that stores encrypted bytes.
 
-    Encrypts string values using AES-256-GCM before storing in the datastore,
+    Encrypts bytes values using AES-256-GCM before storing in the datastore,
     and decrypts them when reading back.
     """
     def _validate(self, value):
-        if value is not None and not isinstance(value, str):
-            raise TypeError('EncryptedProperty value must be a string')
+        if value is not None and not isinstance(value, bytes):
+            raise TypeError('EncryptedProperty value must be bytes')
 
     def _to_base_type(self, value):
         if value is None:
@@ -114,8 +114,7 @@ class EncryptedProperty(ndb.BlobProperty):
             raise RuntimeError('No encryption key found in encrypted_property_key.pem')
 
         nonce = os.urandom(12)  # 96-bit nonce for GCM
-        plaintext_bytes = value.encode('utf-8')
-        ciphertext = ENCRYPTED_PROPERTY_KEY.encrypt(nonce, plaintext_bytes, None)
+        ciphertext = ENCRYPTED_PROPERTY_KEY.encrypt(nonce, value, None)
 
         # concatenate nonce and ciphertext for storage
         return nonce + ciphertext
@@ -129,5 +128,4 @@ class EncryptedProperty(ndb.BlobProperty):
 
         nonce = value[:12]
         ciphertext = value[12:]
-        plaintext_bytes = ENCRYPTED_PROPERTY_KEY.decrypt(nonce, ciphertext, None)
-        return plaintext_bytes.decode('utf-8')
+        return ENCRYPTED_PROPERTY_KEY.decrypt(nonce, ciphertext, None)
