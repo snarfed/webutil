@@ -1,5 +1,6 @@
 """App Engine datastore model base classes, properties, and utilites."""
 import base64
+from datetime import timezone
 import enum
 import os
 from google.cloud import ndb
@@ -133,3 +134,34 @@ class EncryptedProperty(ndb.BlobProperty):
         nonce = value[:12]
         ciphertext = value[12:]
         return ENCRYPTED_PROPERTY_KEY.decrypt(nonce, ciphertext, None)
+
+
+class Cache(ndb.Model):
+    """Simple, dumb, datastore-backed key/value cache."""
+    value = ndb.BlobProperty()
+    expire = ndb.DateTimeProperty(tzinfo=timezone.utc)
+
+    @classmethod
+    def get(cls, key):
+        """
+        Args:
+          key (str)
+
+        Returns:
+          str or None: value
+        """
+        if got := cls.get_by_id(key):
+            if not got.expire or datetime.now(timezone.utc) < got.expire:
+                return got.value.decode()
+
+    @classmethod
+    def put(cls, key, value, expire=None):
+        """
+        Args:
+          key (str)
+          value (str)
+          expire (datetime.timedelta)
+        """
+        cached = cls(id=key, value=value.encode(),
+                     expire=datetime.now(timezone.utc) + expire)
+        super(cls, cached).put()

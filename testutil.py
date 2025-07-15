@@ -143,7 +143,7 @@ class Asserts(object):
     have populated keys, that their keys are equal too.
 
     Args:
-      a (:class:`ndb.Model`): instances or lists of instances
+      a (:class:`ndb.Model`): instance or list of instances
       b (:class:`ndb.Model`): same
       ignore (sequence of str): property names not to compare
       keys_only (bool): if True only compare keys
