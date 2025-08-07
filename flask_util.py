@@ -269,8 +269,15 @@ def error(msg, status=400, exc_info=False, **kwargs):
     raise HTTPException(response=Response(response=msg, status=status), **kwargs)
 
 
-def flash(msg, **kwargs):
-  """Wrapper for :func:`flask.flash`` that also logs the message."""
+def flash(msg, escape=True, **kwargs):
+  """Wrapper for :func:`flask.flash`` that also logs the message.
+
+  Args:
+    msg (str)
+    escape (bool): whether to HTML-escape ``msg``
+  """
+  if escape:
+    msg = html.escape(msg, quote=False)
   flask.flash(msg, **kwargs)
   logger.info(f'Flashed message: {msg}')
 

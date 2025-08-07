@@ -320,8 +320,9 @@ class FlaskUtilTest(unittest.TestCase):
   def test_flash(self):
     with self.app.test_request_context('/'):
       flask_util.flash('foo')
-      flask_util.flash('bar')
-      self.assertEqual(['foo', 'bar'], get_flashed_messages())
+      flask_util.flash('b<a>r')
+      flask_util.flash('b<a>z', escape=False)
+      self.assertEqual(['foo', 'b&lt;a&gt;r', 'b<a>z'], get_flashed_messages())
 
   def test_cloud_tasks_only(self):
     @self.app.route('/', methods=['POST'])
