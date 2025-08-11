@@ -1487,12 +1487,12 @@ def interpret_http_exception(exception):
     except BaseException:
       pass
 
-  # twitter
+  # twitter, discourse activitypub
   # https://dev.twitter.com/overview/api/response-codes
   if not error and body_json and isinstance(body_json, dict):
     errors = body_json.get('errors')
     if errors and isinstance(errors, list):
-      error = errors[0]
+      error = errors[0] if isinstance(errors[0], dict) else {'message': errors[0]}
 
   type = error.get('type')
   message = error.get('message')

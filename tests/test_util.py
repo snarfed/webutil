@@ -976,7 +976,7 @@ class UtilTest(testutil.TestCase):
         'code': 326,
         'message': 'To protect our users from spam and other malicious activity, this account is temporarily locked. ...',
       }]},
-      ):
+    ):
       for code in 400, 500:
         got_code, got_body = ihc(HTTPError(
           'url', code, 'BAD REQUEST', {}, json_str(body)))
@@ -1003,6 +1003,8 @@ class UtilTest(testutil.TestCase):
         'code': 100,
         'type': 'OAuthException',
       }},
+      # Discourse ActivityPub
+      {'errors': ['Bad request']},
     ):
       for code, expected in (400, 400), (500, 502):
         got_code, got_body = ihc(HTTPError(
