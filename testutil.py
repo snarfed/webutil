@@ -217,7 +217,7 @@ Actual value:
           self.fail(f"{expected!r} doesn't match {actual}")
       elif isinstance(expected, dict) and isinstance(actual, dict):
         for key in set(expected.keys()) | set(actual.keys()):
-          if key not in ignore:
+          if not isinstance(key, str) or key not in ignore:
             self._assert_equals(expected.get(key), actual.get(key),
                                 in_order=in_order, ignore=ignore)
       elif (isinstance(expected, (list, tuple, set)) and
