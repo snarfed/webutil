@@ -15,4 +15,4 @@ webutil is not (yet) developed, maintained, or distributed as a standalone packa
 * Supports Python 3.7+.
 * [Reference documentation.](https://oauth-dropins.readthedocs.io/en/stable/source/oauth_dropins.webutil.html)
 
-webutil is public domain. You may also use it under the [CC0 public domain dedication](https://creativecommons.org/share-your-work/public-domain/cc0/).
+webutil is dedicated to the public domain. You may also use it under the [CC0 public domain dedication](https://creativecommons.org/share-your-work/public-domain/cc0/).
