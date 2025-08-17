@@ -72,10 +72,6 @@ class EncryptedPropertyTest(testutil.TestCase):
   def setUp(self):
     super().setUp()
 
-    self.mox.StubOutWithMock(models, 'ENCRYPTED_PROPERTY_KEY')
-    # 32 bytes
-    models.ENCRYPTED_PROPERTY_KEY = AESGCM(b'test_key_32_bytes_for_aes_256___')
-
     self.ndb_context = appengine_config.ndb_client.context()
     self.ndb_context.__enter__()
 
@@ -119,6 +115,7 @@ class EncryptedPropertyTest(testutil.TestCase):
     self.assertIsNone(entity.key.get().secret)
 
   def test_no_key_error(self):
+    self.mox.StubOutWithMock(models, 'ENCRYPTED_PROPERTY_KEY')
     models.ENCRYPTED_PROPERTY_KEY = None
     with self.assertRaises(RuntimeError) as cm:
       EncryptedModel(secret=b'test').put()

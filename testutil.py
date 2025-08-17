@@ -15,11 +15,11 @@ from bs4 import (
     MarkupResemblesLocatorWarning,
     XMLParsedAsHTMLWarning,
 )
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from mox3 import mox
 import requests
 
-from . import appengine_info
-from . import util
+from . import appengine_info, models, util
 from .util import json_dumps, json_loads, HTTP_TIMEOUT
 
 RE_TYPE = (re.Pattern if hasattr(re, 'Pattern')  # python >=3.7
@@ -31,6 +31,8 @@ NOW_SECONDS = (NOW - datetime(1970, 1, 1, tzinfo=timezone.utc)).total_seconds()
 # don't truncate assertion error diffs
 import unittest.util
 unittest.util._MAX_LENGTH = 999999
+
+models.ENCRYPTED_PROPERTY_KEY = AESGCM(b'test_key_32_bytes_for_aes_256___')
 
 
 def requests_response(body='', url=None, status=200, content_type=None,
