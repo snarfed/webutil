@@ -26,6 +26,8 @@ MODERN_HEADERS = {
   'Access-Control-Allow-Headers': '*',
   'Access-Control-Allow-Methods': '*',
   'Access-Control-Allow-Origin': '*',
+  # https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cross-Origin-Opener-Policy
+  'Cross-Origin-Opener-Policy': 'same-origin',
   # see https://content-security-policy.com/
   'Content-Security-Policy':
     f"script-src https: {CSP_HOSTS} 'unsafe-inline'; frame-ancestors 'self'",
