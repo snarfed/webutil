@@ -395,6 +395,8 @@ def cloud_tasks_only(log=True):
 
   (...or from App Engine Cron.)
 
+  Ignored if ``LOCAL_SERVER`` is True.
+
   https://cloud.google.com/tasks/docs/creating-appengine-handlers#reading-headers
   https://cloud.google.com/appengine/docs/standard/scheduling-jobs-with-cron-yaml#securing_urls_for_cron
 
@@ -413,7 +415,8 @@ def cloud_tasks_only(log=True):
     @functools.wraps(fn)
     def decorated(*args, **kwargs):
       task = request.headers.get('X-AppEngine-TaskName')
-      if not task and APP_ENGINE_CRON_HEADER not in request.headers:
+      if (not task and APP_ENGINE_CRON_HEADER not in request.headers
+          and not LOCAL_SERVER):
         return 'Internal only', 401
 
       if log or (log is None and not request.headers.get('traceparent')):
