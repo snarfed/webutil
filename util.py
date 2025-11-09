@@ -567,7 +567,7 @@ def domain_or_parent_in(input, domains):
   elif not input or not domains:
     return False
 
-  if is_web(input) and (domain := domain_from_link(input)):
+  if is_web(input, websocket=True) and (domain := domain_from_link(input)):
     input = domain
 
   if input in domains:
@@ -691,10 +691,15 @@ def base_url(url):
   return urljoin(url, 'x')[:-1] if url else None
 
 
-def is_web(url):
-  """Returns True if the argument is an http or https URL, False otherwise."""
-  return isinstance(url, str) and (url.startswith('http://') or
-                                   url.startswith('https://'))
+def is_web(url, websocket=False):
+  """Returns True if the argument is an http or https URL, False otherwise.
+
+  Args:
+    websocket (bool): if True, also return True for ws and wss URLs.
+  """
+  return (isinstance(url, str)
+          and (url.startswith(('http://', 'https://'))
+               or (websocket and url.startswith(('ws://', 'wss://')))))
 
 def is_url(url):
   """Returns True if the argument is a URL, False otherwise.

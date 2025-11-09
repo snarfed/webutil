@@ -258,6 +258,7 @@ class UtilTest(testutil.TestCase):
           ('http://w.x/a', ['x']),
           ('u.v.w.x', ['y', 'v.w.x']),
           ('https://u.v.w.x/b/c', ['y', 'v.w.x']),
+          ('wss://x/a', ['y', 'x']),
         ])):
       for input, domains in inputs:
         self.assertEqual(expected, util.domain_or_parent_in(input, domains),
@@ -1150,6 +1151,9 @@ class UtilTest(testutil.TestCase):
     for bad in (None, 3, '', ['http://foo'], 'foo', 'foo.com/bar',
                 'tag:foo.com:bar', 'acct:x@y.z', 'http:/x'):
       self.assertFalse(util.is_web(bad), bad)
+
+    self.assertFalse(util.is_web('wss://foo.com/'))
+    self.assertTrue(util.is_web('wss://foo.com/', websocket=True))
 
   def test_is_url(self):
     for good in 'http://foo', 'ftp://a@b:c', 'http://localhost:123':
