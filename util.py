@@ -2456,3 +2456,9 @@ def d(*objs):
     dumped.append(str(o))
 
   print('@', inspect.stack()[1].function, ' '.join(dumped))
+
+
+def tb():
+  """Prints the current stack, for debugging."""
+  print('@', end='', file=sys.stderr)
+  traceback.print_stack()
