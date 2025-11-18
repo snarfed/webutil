@@ -394,6 +394,24 @@ def remove(seq, val):
         seq.remove(val)
 
 
+def overlaps(val, ranges):
+  """Returns True if val overlaps any range in ranges, False otherwise.
+
+  Args:
+    val (range)
+    ranges (sequence of range)
+
+  Returns:
+    bool:
+  """
+  for r in ranges:
+    assert r.step == 1, r
+    if val.start < r.stop and val.stop > r.start:
+      return True
+
+  return False
+
+
 def encode(obj, encoding='utf-8'):
   """Character encodes all unicode strings in a collection, recursively.
 

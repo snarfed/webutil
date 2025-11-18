@@ -1163,6 +1163,30 @@ class UtilTest(testutil.TestCase):
                 'http://foo bar', ' http://foo'):
       self.assertFalse(util.is_url(bad), bad)
 
+  def test_overlaps(self):
+    for val, ranges in (
+        ((0, 5), [(3, 7)]),
+        ((0, 5), [(4, 7)]),
+        ((3, 7), [(0, 5)]),
+        ((0, 10), [(3, 7)]),
+        ((3, 7), [(0, 10)]),
+        ((0, 5), [(10, 15), (3, 7)]),
+        ((0, 5), [(10, 15), (20, 25), (4, 7)]),
+    ):
+      with self.subTest(val=val, ranges=ranges):
+        self.assertTrue(util.overlaps(range(*val), [range(*r) for r in ranges]))
+
+    for val, ranges in (
+        ((0, 5), []),
+        ((0, 5), [(5, 10)]),
+        ((5, 10), [(0, 5)]),
+        ((0, 5), [(10, 15)]),
+        ((0, 5), [(10, 15), (20, 25)]),
+        ((0, 5), [(6, 10), (11, 15)]),
+    ):
+      with self.subTest(val=val, ranges=ranges):
+        self.assertFalse(util.overlaps(range(*val), [range(*r) for r in ranges]))
+
   def test_follow_redirects(self):
     for _ in range(2):
       self.expect_requests_head('http://will/redirect',
