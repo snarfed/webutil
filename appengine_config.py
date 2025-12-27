@@ -28,14 +28,14 @@ if DEBUG:
 
 # NDB (Cloud Datastore)
 try:
-  # TODO: make thread local?
   # https://googleapis.dev/python/python-ndb/latest/migrating.html#setting-up-a-connection
   from google.cloud import ndb
   ndb_client = thread_local.ndb_client = ndb.Client()
 except ImportError:
   pass
 
-# Google Cloud Tasks
+# Tasks
+# https://docs.cloud.google.com/python/docs/reference/cloudtasks/latest/google.cloud.tasks_v2.services.cloud_tasks.CloudTasksClient
 try:
   from google.cloud import tasks_v2
   tasks_client = tasks_v2.CloudTasksClient()
@@ -45,7 +45,8 @@ try:
 except ImportError:
   pass
 
-# Stackdriver Error Reporting
+# Error Reporting
+# https://docs.cloud.google.com/python/docs/reference/clouderrorreporting/latest/client
 try:
   from google.cloud import error_reporting
   error_reporting_client = error_reporting.Client()
@@ -59,14 +60,15 @@ except ImportError:
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
-# Stackdriver Logging
+# Logging
+# https://docs.cloud.google.com/python/docs/reference/logging/latest/google.cloud.logging_v2.client.Client
 try:
   import google.cloud.logging
   logging_client = thread_local.logging_client = google.cloud.logging.Client()
 
   if not DEBUG and not LOCAL_SERVER:
     logging_client.setup_logging(log_level=logging.DEBUG)
-    # this currently occasionally hits the 256KB stackdriver logging limit and
+    # this currently occasionally hits the 256KB batch limit and
     # crashes in the background service. i've tried batch_size=1 and
     # SyncTransport, but no luck, same thing.
     # https://stackoverflow.com/questions/59398479
