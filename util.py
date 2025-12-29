@@ -979,7 +979,7 @@ def parse_iso8601_duration(input):
     :class:`datetime.timedelta`: ...or None if input cannot be parsed as an ISO
     8601 duration
   """
-  if not input:
+  if not isinstance(input, str):
     return None
 
   match = ISO8601_DURATION_RE.fullmatch(input.strip())
