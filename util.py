@@ -134,7 +134,7 @@ EPOCH = datetime.fromtimestamp(0, timezone.utc)
 EPOCH_ISO = EPOCH.isoformat()
 # from https://stackoverflow.com/a/53140944/186123
 ISO8601_DURATION_RE = re.compile(
-  r'^ *P(?!$)(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)? *$')
+  r'P(?!$)(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)?')
 
 HTTP_TIMEOUT = 15  # seconds
 """Default HTTP request timeout, used in :func:`requests_get` etc."""
@@ -183,15 +183,19 @@ https://www.crummy.com/software/BeautifulSoup/bs4/doc/#installing-a-parser
 """
 
 PUNCT = string.punctuation.replace('-', '').replace('.', '') + '＠'
-SCHEME_RE = r'\b(?:[a-z]{3,9}:/{1,3})'
-HOST_RE = r'(?:[^\s%s])+(?::\d{2,6})?' % PUNCT
+SCHEME_RE = re.compile(r'\b(?:[a-z]{3,9}:/{1,3})')
+HOST_RE = re.compile(r'(?:[^\s%s])+(?::\d{2,6})?' % PUNCT)
 # TODO: unify with bridgy_fed.common.DOMAIN_RE?
-DOMAIN_RE = r'(?<![@＠])(?:[^\s.%s:﹕：]+\.)+[a-z]{2,}(?::\d{2,6})?' % PUNCT
-PATH_QUERY_RE = r'(?:(?:/[\w/.\-_~.;:%?@$#&()=+]*)|\b)'
-URL_RE = re.compile(SCHEME_RE + HOST_RE + PATH_QUERY_RE,  # scheme required
-                    re.UNICODE | re.IGNORECASE)
-LINK_RE = re.compile(SCHEME_RE + '?' + DOMAIN_RE + PATH_QUERY_RE,  # scheme optional
-                     re.UNICODE | re.IGNORECASE)
+DOMAIN_RE = re.compile(r'(?<![@＠])(?:[^\s.%s:﹕：]+\.)+[a-z]{2,}(?::\d{2,6})?' % PUNCT)
+PATH_QUERY_RE = re.compile(r'(?:(?:/[\w/.\-_~.;:%?@$#&()=+]*)|\b)')
+URL_RE = re.compile(
+  # scheme required
+  SCHEME_RE.pattern + HOST_RE.pattern + PATH_QUERY_RE.pattern,
+  re.UNICODE | re.IGNORECASE)
+LINK_RE = re.compile(
+  # scheme optional
+  SCHEME_RE.pattern + '?' + DOMAIN_RE.pattern + PATH_QUERY_RE.pattern,
+  re.UNICODE | re.IGNORECASE)
 r"""Regexps for domains, hostnames, and URLs.
 
 Based on kylewm's from redwind:
@@ -478,7 +482,7 @@ def tag_uri(domain, name, year=None):
   return f'tag:{domain}{year}:{name}'
 
 
-_TAG_URI_RE = re.compile(r'tag:([^,]+)(?:,\d+)?:(.+)$')
+_TAG_URI_RE = re.compile(r'tag:([^,]+)(?:,\d+)?:(.+)')
 
 def parse_tag_uri(uri):
   """Returns the domain and name in a tag URI string.
@@ -488,7 +492,7 @@ def parse_tag_uri(uri):
   Returns:
     (str domain, str name) tuple, or None if the tag URI couldn't be parsed
   """
-  match = _TAG_URI_RE.match(uri)
+  match = _TAG_URI_RE.fullmatch(uri)
   return match.groups() if match else None
 
 
@@ -526,8 +530,6 @@ def favicon_for_url(url):
   return f'http://{urlparse(url).netloc}/favicon.ico'
 
 
-FULL_HOST_RE = re.compile(HOST_RE + '$')
-
 def domain_from_link(url, minimize=True):
   """Extracts and returns the meaningful domain from a URL.
 
@@ -555,7 +557,7 @@ def domain_from_link(url, minimize=True):
       if domain.startswith(subdomain):
         domain = domain[len(subdomain):]
 
-  if domain and FULL_HOST_RE.match(domain):
+  if domain and HOST_RE.fullmatch(domain):
     return domain
 
   return None
@@ -784,7 +786,7 @@ def tokenize_links(text, skip_bare_cc_tlds=False, skip_html_links=True,
                               or splits[ii].strip().endswith("='")
                               or splits[ii + 1].strip().startswith('</a')))
         # skip domains with 2-letter TLDs and no schema or path
-        or (skip_bare_cc_tlds and re.match(r'[^\s%s]+\.[a-z]{2}$' % PUNCT, link))):
+        or (skip_bare_cc_tlds and re.fullmatch(r'[^\s%s]+\.[a-z]{2}' % PUNCT, link))):
       # collapse link into before text
       splits[ii] = splits[ii] + links[ii]
       links[ii] = None
@@ -980,7 +982,7 @@ def parse_iso8601_duration(input):
   if not input:
     return None
 
-  match = ISO8601_DURATION_RE.match(input)
+  match = ISO8601_DURATION_RE.fullmatch(input.strip())
   if not match:
     return None
 
@@ -1348,7 +1350,7 @@ def is_float(arg):
 
 def is_base64(arg):
   """Returns True if arg is a base64 encoded string, False otherwise."""
-  return isinstance(arg, str) and re.match('^[a-zA-Z0-9_=-]*$', arg)
+  return isinstance(arg, str) and re.fullmatch('[a-zA-Z0-9_=-]*', arg)
 
 
 def sniff_json_or_form_encoded(value):
