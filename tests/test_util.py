@@ -328,6 +328,15 @@ class UtilTest(testutil.TestCase):
     ):
       self.assertEqual(expected, util.quote_path(input))
 
+  def test_normalize_url(self):
+    for url in 'http://foo', 'http://FOO/', 'http://FoO/':
+      self.assertEqual('http://foo/', util.normalize_url(url))
+
+    self.assertEqual('http://foo',
+                     util.normalize_url('http://foo', trailing_slash=False))
+    self.assertEqual('http://foo/',
+                     util.normalize_url('http://foo/', trailing_slash=False))
+
   def test_dedupe_urls(self):
     self.assertEqual([], util.dedupe_urls([]))
     self.assertEqual([], util.dedupe_urls(['', None, '']))

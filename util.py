@@ -1168,6 +1168,25 @@ def remove_query_param(url, param):
   return url, removed
 
 
+def normalize_url(url, trailing_slash=True):
+  """Normalizes a URL by converting its hostname to lower case.
+
+  Args:
+    urls (str)
+    trailing_slash (bool): whether to add trailing slash if it's missing
+
+  Returns:
+    str: normalized URL
+  """
+  parsed = urllib.parse.urlsplit(url)
+
+  path = parsed.path
+  if trailing_slash and not path:
+    path = '/'
+
+  return parsed._replace(netloc=parsed.netloc.lower(), path=path).geturl()
+
+
 def dedupe_urls(urls, key=None, trailing_slash=True):
   """Normalizes and de-dupes http(s) URLs.
 
@@ -1203,22 +1222,14 @@ def dedupe_urls(urls, key=None, trailing_slash=True):
     if not url:
       continue
 
-    p = urllib.parse.urlsplit(url)
+    url = normalize_url(url, trailing_slash=trailing_slash)
+    norm = urllib.parse.urlsplit(url)
 
-    # normalize domain and path
-    # (the hostname param is automatically lower cased, but we can't use it
-    # because it doesn't include port)
-    path = p.path
-    if trailing_slash and not path:
-      path = '/'
-
-    norm = [p.scheme, p.netloc.lower(), path, p.query, p.fragment]
-
-    if p.scheme == 'http' and urllib.parse.urlunsplit(['https'] + norm[1:]) in result:
+    if norm.scheme == 'http' and norm._replace(scheme='https').geturl() in result:
       continue
-    elif p.scheme == 'https':
+    elif norm.scheme == 'https':
       try:
-        result.remove(urllib.parse.urlunsplit(['http'] + norm[1:]))
+        result.remove(norm._replace(scheme='http').geturl())
       except ValueError:
         pass
 
