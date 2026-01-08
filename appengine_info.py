@@ -19,10 +19,11 @@ APP_ID = PROJECT.split('~')[-1]
 creds = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 gae_env = os.environ.get('GAE_ENV')  # App Engine Standard
 gae_instance = 'GAE_INSTANCE' in os.environ  # App Engine Flex
+
+TESTING = 'unittest' in ' '.join(sys.argv)
 if creds and not creds.endswith('fake_user_account.json'):
   DEBUG = False
   LOCAL_SERVER = True
 else:
   DEBUG = gae_env in (None, 'localdev') and not gae_instance
-  LOCAL_SERVER = (gae_env != 'standard' and not gae_instance
-                  and 'unittest' not in ' '.join(sys.argv))
+  LOCAL_SERVER = gae_env != 'standard' and not gae_instance and not TESTING
