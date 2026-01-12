@@ -7,6 +7,7 @@ from google.cloud import ndb
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from google.cloud.ndb.model import _BaseValue
 from oauth_dropins.webutil import util
 from oauth_dropins.webutil.util import json_dumps, json_loads
 
@@ -165,3 +166,19 @@ class Cache(ndb.Model):
         cached = cls(id=key, value=value.encode(),
                      expire=datetime.now(timezone.utc) + expire)
         super(cls, cached).put()
+
+
+def stored_value(entity, prop):
+  """Returns an entity's stored or computed value for a given property.
+
+  This lets you the value that a entity currently has for a
+  :class:`ndb.ComputedProperty` *without* actually computing it.
+
+  This uses :class:`Model` 's undocumented internal ``_values`` attr. Ugh.
+
+  Args:
+    entity (ndb.Model)
+    prop (str)
+  """
+  if val := entity._values.get(prop):
+    return val.b_val if isinstance(val, _BaseValue) else val
