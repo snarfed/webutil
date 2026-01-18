@@ -16,11 +16,11 @@ from oauth_dropins.webutil.util import json_dumps, json_loads
 #   len(entity._to_pb().Encode())
 MAX_ENTITY_SIZE = 1 * 1000 * 1000
 
-ENCRYPTED_PROPERTY_KEY = None
+ENCRYPTED_PROPERTY_KEY = ENCRYPTED_PROPERTY_KEY_BYTES = None
 if key_base64 := util.read('encrypted_property_key'):  # base-64 encoded key bytes
-  key_bytes = base64.b64decode(key_base64)
-  assert len(key_bytes) == 32
-  ENCRYPTED_PROPERTY_KEY = AESGCM(key_bytes)
+  ENCRYPTED_PROPERTY_KEY_BYTES = base64.b64decode(key_base64)
+  assert len(ENCRYPTED_PROPERTY_KEY_BYTES) == 32
+  ENCRYPTED_PROPERTY_KEY = AESGCM(ENCRYPTED_PROPERTY_KEY_BYTES)
 
 
 class StringIdModel(ndb.Model):
