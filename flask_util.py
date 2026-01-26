@@ -540,6 +540,7 @@ class XrdOrJrd(View):
     assert self.DEFAULT_TYPE in (self.JRD, self.XRD)
     return self.DEFAULT_TYPE
 
+  @headers({'Vary': 'Accept'})
   def dispatch_request(self, **kwargs):
     data = self.template_vars(**kwargs)
     assert isinstance(data, dict)

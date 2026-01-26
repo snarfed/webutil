@@ -366,12 +366,14 @@ class XrdOrJrdTest(unittest.TestCase):
   def assert_jrd(self, resp, expected={'foo': 'bar'}):
     self.assertEqual(200, resp.status_code)
     self.assertEqual('application/jrd+json', resp.headers['Content-Type'])
+    self.assertEqual('Accept', resp.headers['Vary'])
     self.assertEqual(expected, resp.json)
 
   def assert_xrd(self, resp, expected='<XRD><Foo>bar</Foo></XRD>'):
     self.assertEqual(200, resp.status_code)
     self.assertEqual('application/xrd+xml; charset=utf-8',
                      resp.headers['Content-Type'])
+    self.assertEqual('Accept', resp.headers['Vary'])
     self.assertEqual(expected, resp.get_data(as_text=True))
 
   def test_xrd_or_jrd_handler_default_jrd(self):
