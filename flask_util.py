@@ -558,12 +558,18 @@ class FlashErrors(View):
     """Wraps a Flask :class:`flask.view.View` and flashes errors.
 
     Mostly used with OAuth endpoints.
+
+    Attributes:
+    * ON_ERROR_REDIRECT_TO (str): class level, path to redirect to on error.
+      Defaults to `` / login``.
     """
+    ON_ERROR_REDIRECT_TO = '/login'
+
     def dispatch_request(self):
         try:
             return super().dispatch_request()
         except (ValueError, requests.RequestException) as e:
             logger.warning(f'{self.__class__.__name__} error', exc_info=True)
             _, body = util.interpret_http_exception(e)
-            flash(util.linkify(body or str(e), pretty=True))
-            return redirect('/login')
+            flash(body or str(e))
+            return redirect(self.ON_ERROR_REDIRECT_TO)
