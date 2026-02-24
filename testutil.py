@@ -7,6 +7,7 @@ import os
 import pprint
 import re
 import traceback
+import unittest.mock
 import urllib.error, urllib.parse, urllib.request
 import warnings
 
@@ -223,6 +224,7 @@ Actual value:
             self._assert_equals(expected.get(key), actual.get(key),
                                 in_order=in_order, ignore=ignore)
       elif (isinstance(expected, (list, tuple, set)) and
+            not isinstance(expected, unittest.mock._Call) and
             isinstance(actual, (list, tuple, set))):
         if not in_order:
           # use custom key because Python 3 dicts are not comparable :/
@@ -235,7 +237,7 @@ Actual value:
           actual = sorted(actual, key=hash_or_json)
 
         self.assertEqual(len(expected), len(actual),
-                         f'Different lengths:\n expected {len(expected)}\n actual {len(actual)}')
+                         f'Different lengths:\n expected {len(expected)}\n actual {len(actual)}\nexpected {expected}\nactual {actual}')
         for key, (e, a) in enumerate(zip(expected, actual)):
           self._assert_equals(e, a, in_order=in_order, ignore=ignore)
       elif (isinstance(expected, str) and isinstance(actual, str) and
