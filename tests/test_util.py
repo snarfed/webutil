@@ -724,6 +724,23 @@ class UtilTest(testutil.TestCase):
     self.assertEqual('asdf...', util.ellipsize('asdf qwert', words=1, chars=9))
     self.assertEqual('asdf q...', util.ellipsize('asdf qwert', words=2, chars=9))
 
+  def test_humanize_number(self):
+    for num, noun, expected in (
+      (0, 'foo', '0 foos'),
+      (1, 'foo', '1 foo'),
+      (2, 'foo', '2 foos'),
+      (42, 'bar', '42 bars'),
+      (999, 'baz', '999 bazs'),
+      (1000, 'foo', '1K foos'),
+      (12000, 'foo', '12K foos'),
+      (1_000_000, 'foo', '1M foos'),
+      (1_200_000, 'foo', '1.2M foos'),
+      (3_000_000_000, 'foo', '3B foos'),
+      (3_040_000_000, 'foo', '3.04B foos'),
+    ):
+      with self.subTest(num=num, noun=noun):
+        self.assertEqual(expected, util.humanize_number(num, noun))
+
   def test_add_query_param(self):
     for expected, url, params in (
       ('http://a.com?x=', 'http://a.com', [('x', '')]),

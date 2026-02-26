@@ -1092,6 +1092,29 @@ def naturaltime(val, when=None, **kwargs):
   return humanize.naturaltime(val, when=when, **kwargs)
 
 
+def humanize_number(num, noun):
+    """Generates a string for a number of objects in a human-friendly form.
+
+    Eg ``12k widgets``, ``2M fluffs``, ``1 foo``.
+
+    Args:
+      num (int)
+      noun (str)
+
+    Returns:
+      str:
+    """
+    # hacky, uses humanize's file size function and then tweaks it
+    # https://humanize.readthedocs.io/en/latest/filesize/
+    number = humanize.naturalsize(num, format='%.3g')\
+                     .upper().removesuffix('BYTES').removesuffix('BYTE')\
+                     .rstrip('B').replace(' ', '').replace('G', 'B')
+    if num != 1:
+        noun += 's'
+
+    return f'{number} {noun}'
+
+
 def ellipsize(str, words=14, chars=140):
   """Truncates and ellipsizes str if it's longer than words or chars.
 
