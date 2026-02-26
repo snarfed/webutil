@@ -1453,7 +1453,7 @@ def interpret_http_exception(exception):
 
   elif apiclient and isinstance(e, apiclient.errors.HttpError):
     code = e.resp.status
-    body = e.response.text
+    body = e.content.decode() or e.resp.reason
 
   elif ((AccessTokenRefreshError and isinstance(e, AccessTokenRefreshError)) or
         (prawcore and isinstance(e, prawcore.exceptions.OAuthException))):

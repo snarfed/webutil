@@ -12,7 +12,9 @@ from unittest.mock import patch
 from urllib.error import HTTPError, URLError
 import urllib.parse, urllib.request
 
+import apiclient.errors
 from flask import Flask, request
+import httplib2
 from oauthlib.oauth2.rfc6749.errors import OAuth2Error, TokenExpiredError
 import prawcore.exceptions
 import requests
@@ -881,6 +883,10 @@ class UtilTest(testutil.TestCase):
     self.assertEqual(('429', 'my body'), ihc(ex))
 
     ex = RequestError(status=429, body=b'my body')
+    self.assertEqual(('429', 'my body'), ihc(ex))
+
+    ex = apiclient.errors.HttpError(httplib2.Response(
+      {'status': 429, 'reason': 'unused'}), b'my body')
     self.assertEqual(('429', 'my body'), ihc(ex))
 
     ex = tumblpy.TumblpyError('my body', error_code=429)
