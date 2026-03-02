@@ -36,20 +36,27 @@ MAX_LOG_AGE = timedelta(days=30)
 MIN_START_TIME = time.mktime(datetime(2008, 4, 1, tzinfo=timezone.utc).timetuple())
 MAX_START_TIME = time.mktime(datetime(2099, 1, 1, tzinfo=timezone.utc).timetuple())
 
-SANITIZE_RE = re.compile(r"""
+SANITIZE_RES = [re.compile(pattern, flags=re.VERBOSE | re.IGNORECASE) for pattern in [
+r'(DPoPToken)\(.+',  # these must be first!
+r"""(\{['"]auth['"]:).+""",
+r"""
   ((?:access|api|oauth)?[ _]?
-   (?:accessJwt|auth|code|consumer_key|consumer_secret|nonce|password|refreshJwt|secret|signature|token|verifier)
+   (?:accessJwt|code|consumer_key|consumer_secret|nonce|password|refreshJwt|secret|signature|token|verifier)
      (?:u?['"])?
    (?:=|:|\ |,\ |%3D)\ *
      (?:u?['"])?
   )
   [^ &='"]+
-""", flags=re.VERBOSE | re.IGNORECASE)
+""",
+]]
 
 
 def sanitize(msg):
   """Sanitizes access tokens and Authorization headers."""
-  return SANITIZE_RE.sub(r'\1...', msg)
+  for pattern in SANITIZE_RES:
+    msg = pattern.sub(r'\1...', msg)
+
+  return msg
 
 
 def url(when, key, **params):
@@ -203,11 +210,11 @@ def log(module=None, path=None):
       query += f' httpRequest.requestUrl:({or_paths})'
 
     # don't log key; would be a false positive for future searches
-    logger.info('Searching logs...')  # with: {query}')
+    logger.info(f'Searching logs...')  # with: {project} {query}')
     try:
       # https://googleapis.dev/python/logging/latest/client.html#google.cloud.logging_v2.client.Client.list_entries
       log = next(iter(client.list_entries(filter_=query, page_size=1)))
-    except (InvalidArgument, StopIteration):
+    except (InvalidArgument, StopIteration) as e:
       logger.info('No log found!')
       return 'No log found!', 404
 
