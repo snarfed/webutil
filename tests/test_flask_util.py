@@ -3,7 +3,15 @@ import datetime
 import os
 import unittest
 
-from flask import abort, Flask, flash, get_flashed_messages, make_response, request
+from flask import (
+  abort,
+  Flask,
+  flash,
+  get_flashed_messages,
+  make_response,
+  request,
+)
+from flask.views import View
 from flask_caching import Cache
 from werkzeug.exceptions import BadRequest, HTTPException, NotFound
 
@@ -324,6 +332,32 @@ class FlaskUtilTest(unittest.TestCase):
       flask_util.flash('b<a>z', escape=False)
       self.assertEqual(['foo', 'b&lt;a&gt;r', 'b<a>z'], get_flashed_messages())
 
+  def test_handle_exception_http_exception(self):
+    with self.app.test_request_context('/'):
+      resp = flask_util.handle_exception(NotFound())
+    self.assertEqual(404, resp.status_code)
+
+  def test_handle_exception_runtime_error(self):
+    with self.app.test_request_context('/'):
+      with self.assertRaises(RuntimeError):
+        flask_util.handle_exception(RuntimeError('oops'))
+
+  def test_flash_errors(self):
+    class Base(View):
+      def dispatch_request(self):
+        raise ValueError('bad input')
+
+    class MyView(flask_util.FlashErrors, Base):
+      pass
+
+    self.app.add_url_rule('/flash-errors', view_func=MyView.as_view('flash_errors'))
+
+    with self.app.test_client() as client:
+      resp = client.get('/flash-errors')
+      self.assertEqual(302, resp.status_code)
+      self.assertEqual('/login', resp.headers['Location'])
+      self.assertEqual(['bad input'], get_flashed_messages())
+
   def test_cloud_tasks_only(self):
     @self.app.route('/', methods=['POST'])
     @flask_util.cloud_tasks_only()
@@ -344,20 +378,20 @@ class XrdOrJrdTest(unittest.TestCase):
   def setUp(self):
     super().setUp()
 
-    class View(flask_util.XrdOrJrd):
+    class TestView(flask_util.XrdOrJrd):
       def template_prefix(self):
         return 'test_handler_template'
 
       def template_vars(self, **kwargs):
         return {'foo': 'bar'}
 
-    self.View = View
+    self.TestView = TestView
 
     self.app = Flask('XrdOrJrdTest')
     self.app.config['TESTING'] = True
     self.app.template_folder = os.path.dirname(__file__)
 
-    view_func = View.as_view('XrdOrJrdTest')
+    view_func = TestView.as_view('XrdOrJrdTest')
     self.app.add_url_rule('/', view_func=view_func)
     self.app.add_url_rule('/<path>', view_func=view_func)
 
@@ -388,7 +422,7 @@ class XrdOrJrdTest(unittest.TestCase):
       self.assert_xrd(resp)
 
   def test_xrd_or_jrd_handler_default_xrd(self):
-    self.View.DEFAULT_TYPE = flask_util.XrdOrJrd.XRD
+    self.TestView.DEFAULT_TYPE = flask_util.XrdOrJrd.XRD
 
     self.assert_xrd(self.client.get('/'))
     for resp in (self.client.get('/x.jrd'),

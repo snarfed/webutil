@@ -7,7 +7,15 @@ import re
 import urllib.parse
 
 import flask
-from flask import abort, get_flashed_messages, make_response, redirect, render_template, request, Response
+from flask import (
+  abort,
+  get_flashed_messages,
+  make_response,
+  redirect,
+  render_template,
+  request,
+  Response,
+)
 from flask.views import View
 from google.cloud import ndb
 import requests
@@ -228,6 +236,8 @@ def handle_exception(e):
   Install with::
 
       app.register_error_handler(Exception, handle_exception)
+
+  TODO: unify with :class:`FlashErrors`?
   """
   if isinstance(e, BadRequestKeyError):
       if e.args:
@@ -558,6 +568,8 @@ class FlashErrors(View):
     """Wraps a Flask :class:`flask.view.View` and flashes errors.
 
     Mostly used with OAuth endpoints.
+
+    TODO: unify with :func:`handle_exception`?
 
     Attributes:
     * ON_ERROR_REDIRECT_TO (str): class level, path to redirect to on error.
