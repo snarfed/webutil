@@ -41,7 +41,7 @@ r'(DPoPToken)\(.+',  # these must be first!
 r"""(\{['"]auth['"]:).+""",
 r"""
   ((?:access|api|oauth)?[ _]?
-   (?:accessJwt|code|consumer_key|consumer_secret|nonce|password|refreshJwt|secret|signature|token|verifier)
+   (?:accessJwt|Bearer|code|consumer_key|consumer_secret|nonce|password|refreshJwt|secret|signature|token|verifier)
      (?:u?['"])?
    (?:=|:|\ |,\ |%3D)\ *
      (?:u?['"])?
