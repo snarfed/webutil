@@ -5,6 +5,7 @@ import enum
 import os
 from google.cloud import ndb
 import logging
+from threading import Lock
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -201,6 +202,8 @@ class Reloader:
   ":class:`datetime.datetime`: when the entity was last loaded"
   _obj = None
   ":class:`ndb.Model`: datastore entity"
+  _lock = None
+  ":class:`threading.Lock`"
 
   def __init__(self, key, load_every):
     """Constructor.
@@ -213,6 +216,7 @@ class Reloader:
     assert load_every
     self.key = key
     self.load_every = load_every
+    self._lock = Lock()
 
   @property
   def obj(self):
@@ -220,10 +224,13 @@ class Reloader:
 
     Must be called inside an ndb context!
     """
-    now = util.now()
-    if not self.loaded_at or self.loaded_at + self.load_every < now:
+    with self._lock:
+      now = util.now()
+      if reload := not self.loaded_at or self.loaded_at + self.load_every < now:
+        self.loaded_at = now
+
+    if reload:
       logger.info(f'reloading {self.key}')
       self._obj = self.key.get()
-      self.loaded_at = now
 
     return self._obj
