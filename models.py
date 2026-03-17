@@ -4,6 +4,7 @@ from datetime import timezone
 import enum
 import os
 from google.cloud import ndb
+import logging
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -21,6 +22,8 @@ if key_base64 := util.read('encrypted_property_key'):  # base-64 encoded key byt
   ENCRYPTED_PROPERTY_KEY_BYTES = base64.b64decode(key_base64)
   assert len(ENCRYPTED_PROPERTY_KEY_BYTES) == 32
   ENCRYPTED_PROPERTY_KEY = AESGCM(ENCRYPTED_PROPERTY_KEY_BYTES)
+
+logger = logging.getLogger(__name__)
 
 
 class StringIdModel(ndb.Model):
@@ -182,3 +185,45 @@ def stored_value(entity, prop):
   """
   if val := entity._values.get(prop):
     return val.b_val if isinstance(val, _BaseValue) else val
+
+
+class Reloader:
+  """Singleton object that holds and periodically reloads a datastore entity.
+
+    When the entity is reloaded, :attr:`obj` is changed to point at the newly loaded
+    object.
+  """
+  key = None
+  "Key of the datastore entity."
+  load_every = None
+  ":class:`datetime.timedelta`: how often to reload the entity"
+  loaded_at = None
+  ":class:`datetime.datetime`: when the entity was last loaded"
+  _obj = None
+  ":class:`ndb.Model`: datastore entity"
+
+  def __init__(self, key, load_every):
+    """Constructor.
+
+    Args:
+      key (ndb.Key)
+      load_every (timedelta): how often to reload the entity
+    """
+    assert key
+    assert load_every
+    self.key = key
+    self.load_every = load_every
+
+  @property
+  def obj(self):
+    """Datastore entity. None if it doesn't exist in the datastore. Reloads lazily.
+
+    Must be called inside an ndb context!
+    """
+    now = util.now()
+    if not self.loaded_at or self.loaded_at + self.load_every < now:
+      logger.info(f'reloading {self.key}')
+      self._obj = self.key.get()
+      self.loaded_at = now
+
+    return self._obj
