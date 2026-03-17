@@ -17,55 +17,55 @@ class ReloaderTest(testutil.TestCase):
 
   def setUp(self):
     super().setUp()
-    self.ndb_context = appengine_config.ndb_client.context()
-    self.ndb_context.__enter__()
 
     class Foo(StringIdModel):
       num = ndb.IntegerProperty()
 
-    self.entity = Foo(id='x', num=4)
-    self.entity.put()
+    self.Foo = Foo
+    with appengine_config.ndb_client.context():
+      self.entity = Foo(id='x', num=4)
+      self.entity.put()
     self.t0 = datetime(2024, 1, 1, tzinfo=timezone.utc)
-    self.reloader = Reloader(self.entity.key, timedelta(minutes=5))
-
-  def tearDown(self):
-    self.ndb_context.__exit__(None, None, None)
-    super().tearDown()
+    self.reloader = Reloader(Foo, 'x', timedelta(minutes=5))
 
   def test_loads_on_first_access(self):
-    with mock.patch.object(util, 'now', return_value=self.t0):
-      got = self.reloader.obj
+    with appengine_config.ndb_client.context():
+      with mock.patch.object(util, 'now', return_value=self.t0):
+        got = self.reloader.obj
 
     self.assertEqual(self.entity.key, got.key)
     self.assertEqual(self.t0, self.reloader.loaded_at)
 
   def test_returns_none_if_missing(self):
-    reloader = Reloader(ndb.Key(StringIdModel, 'missing'), timedelta(minutes=5))
-    self.assertIsNone(reloader.obj)
+    reloader = Reloader(StringIdModel, 'missing', timedelta(minutes=5))
+    with appengine_config.ndb_client.context():
+      self.assertIsNone(reloader.obj)
 
   def test_caches_within_interval(self):
-    with mock.patch.object(util, 'now', return_value=self.t0):
-      first = self.reloader.obj
+    with appengine_config.ndb_client.context():
+      with mock.patch.object(util, 'now', return_value=self.t0):
+        first = self.reloader.obj
 
-    self.entity.key.delete()
+      self.entity.key.delete()
 
-    with mock.patch.object(util, 'now', return_value=self.t0 + timedelta(minutes=4)):
-      second = self.reloader.obj
+      with mock.patch.object(util, 'now', return_value=self.t0 + timedelta(minutes=4)):
+        second = self.reloader.obj
 
     self.assertIs(first, second)
 
   def test_reloads_after_interval(self):
-    with mock.patch.object(util, 'now', return_value=self.t0):
-      self.reloader.obj
+    with appengine_config.ndb_client.context():
+      with mock.patch.object(util, 'now', return_value=self.t0):
+        self.reloader.obj
 
-    self.entity.key.delete()
+      self.entity.key.delete()
 
-    t1 = self.t0 + timedelta(minutes=6)
-    self.entity.num = 9
-    self.entity.put()
+      t1 = self.t0 + timedelta(minutes=6)
+      self.entity.num = 9
+      self.entity.put()
 
-    with mock.patch.object(util, 'now', return_value=t1):
-      got = self.reloader.obj
+      with mock.patch.object(util, 'now', return_value=t1):
+        got = self.reloader.obj
 
     self.assertEqual(9, got.num)
 
