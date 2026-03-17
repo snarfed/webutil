@@ -236,3 +236,8 @@ class Reloader:
       self._obj = self.model_cls.get_by_id(self.key_id)
 
     return self._obj
+
+
+class Data(StringIdModel):
+  """Model class for storing arbitrary global state."""
+  value = JsonProperty()
