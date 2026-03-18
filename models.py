@@ -46,8 +46,8 @@ class JsonProperty(ndb.TextProperty):
     https://github.com/snarfed/arroba/blob/main/arroba/ndb_storage.py
     """
     def _validate(self, value):
-        if not isinstance(value, dict):
-            raise TypeError('JSON property must be a dict')
+        if not isinstance(value, (dict, list)):
+            raise TypeError('JSON property must be a dict or list')
 
     def _to_base_type(self, value):
         as_str = json_dumps(value, separators=(',', ':'), ensure_ascii=True)
