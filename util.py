@@ -731,7 +731,7 @@ def is_url(url):
     if re.search(r'\s', url):
       return False
     parsed = urlparse(url)
-    return (parsed.scheme and parsed.netloc) or parsed.scheme == 'acct'
+    return bool((parsed.scheme and parsed.netloc) or parsed.scheme == 'acct')
   except BaseException:
     return False
 
