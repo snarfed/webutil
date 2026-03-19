@@ -69,6 +69,22 @@ class ReloaderTest(testutil.TestCase):
 
     self.assertEqual(9, got.num)
 
+  def test_reload(self):
+    with appengine_config.ndb_client.context():
+      with mock.patch.object(util, 'now', return_value=self.t0):
+        self.reloader.obj
+
+      self.entity.key.delete()
+      self.entity.num = 9
+      self.entity.put()
+
+      t1 = self.t0 + timedelta(minutes=2)
+      with mock.patch.object(util, 'now', return_value=t1):
+        self.reloader.reload()
+
+    self.assertEqual(9, self.reloader.obj.num)
+    self.assertEqual(t1, self.reloader.loaded_at)
+
 
 class StringIdModelTest(testutil.TestCase):
 

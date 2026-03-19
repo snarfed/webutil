@@ -232,10 +232,18 @@ class Reloader:
         self.loaded_at = now
 
     if reload:
-      logger.info(f'reloading {self.model_cls.__name__} {self.key_id}')
-      self._obj = self.model_cls.get_by_id(self.key_id)
+      self.reload()
 
     return self._obj
+
+  def reload(self):
+    """Forces an immediate reload from the datastore.
+
+    Must be called inside an ndb context!
+    """
+    logger.info(f'reloading {self.model_cls.__name__} {self.key_id}')
+    self._obj = self.model_cls.get_by_id(self.key_id)
+    self.loaded_at = util.now()
 
 
 class Data(StringIdModel):
