@@ -228,7 +228,7 @@ class Reloader:
     """
     with self.lock:
       now = util.now()
-      if reload := not self.loaded_at or self.loaded_at + self.load_every < now:
+      if reload := (not self.loaded_at or self.loaded_at + self.load_every < now):
         self.loaded_at = now
 
     if reload:
