@@ -639,6 +639,19 @@ def schemeless(url, slashes=True):
   return url
 
 
+def is_homepage(url):
+  """Returns True if the URL is a web homepage, ie has no path and no fragment.
+
+  Args:
+    url (str)
+
+  Returns:
+    bool
+  """
+  parsed = urlparse(url)
+  return bool(parsed.netloc) and parsed.path.strip('/') == '' and not parsed.fragment
+
+
 def fragmentless(url):
   """Strips the fragment (e.g. '#foo') from a URL.
 
