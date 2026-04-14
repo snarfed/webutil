@@ -2264,7 +2264,7 @@ def parse_mf2(input, url=None, id=None, metaformats=None):
     logger.warning(f"Couldn't parse {url}: {e}")
     return {}
 
-  if urlparse(url).path in ('', '/'):
+  if is_homepage(url) and not id:
     type = 'h-card'
     mf2_item = mf2util.representative_hcard(mf2, mf2.get('url') or url)
   else:
@@ -2467,6 +2467,8 @@ def fetch_mf2(url, get_fn=requests_get, gateway=False, require_backlink=None,
 
   assert 'url' not in mf2
   mf2['url'] = resp.url
+  if fragment:
+    mf2['url'] += f'#{fragment}'
   return mf2
 
 

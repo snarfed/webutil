@@ -1553,7 +1553,7 @@ class UtilTest(testutil.TestCase):
           'content': [{'value': 'qwer', 'html': 'qwer'}],
         },
       }],
-      'url': 'http://xyz',
+      'url': 'http://xyz#b',
     }, util.fetch_mf2('http://xyz#b'), ignore=['debug', 'rels', 'rel-urls'])
 
   def test_fetch_mf2_require_backlink_missing(self):
@@ -1897,6 +1897,23 @@ class UtilTest(testutil.TestCase):
 </html>
 """, url='http://xyz/post', metaformats=True),
     ignore=['debug', 'rels', 'rel-urls'])
+
+  def test_parse_mf2_id(self):
+    self.assert_equals({
+      'items': [{
+        'type': ['h-entry'],
+        'id': 'second',
+        'properties': {
+          'name': ['second'],
+        },
+      }],
+    }, util.parse_mf2("""\
+<html><body>
+<div id="first" class="h-entry"><p class="p-name">first</p></div>
+<div id="second" class="h-entry"><p class="p-name">second</p></div>
+</body></html>
+""", url='http://xyz/post', id='second'),
+      ignore=['debug', 'rels', 'rel-urls'])
 
   @patch('mf2py.parse', side_effect=RecursionError('foo'))
   def test_parse_mf2_RecursionError(self, _):
