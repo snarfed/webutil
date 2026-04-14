@@ -305,10 +305,11 @@ class UtilTest(testutil.TestCase):
 
   def test_is_homepage(self):
     for url in ('http://foo', 'http://foo/', 'https://foo.com', 'https://foo.com/',
-                'https://foo.com/#'):
+                'https://foo.com/?', 'https://foo.com/#'):
       self.assertTrue(util.is_homepage(url), url)
 
-    for url in ('', 'http://foo/bar', 'http://foo/#baz', 'http://foo#baz'):
+    for url in ('', 'http://foo/bar', 'http://foo/?x=y', 'http://foo/#baz',
+                'http://foo#baz'):
       self.assertFalse(util.is_homepage(url), url)
 
   def test_clean_url(self):

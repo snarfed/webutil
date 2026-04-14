@@ -649,7 +649,8 @@ def is_homepage(url):
     bool
   """
   parsed = urlparse(url)
-  return bool(parsed.netloc) and parsed.path.strip('/') == '' and not parsed.fragment
+  return (bool(parsed.netloc) and parsed.path.strip('/') == ''
+          and not parsed.query and not parsed.fragment)
 
 
 def fragmentless(url):
