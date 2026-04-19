@@ -1408,17 +1408,23 @@ def sniff_json_or_form_encoded(value):
     value (str)
 
   Returns:
-    dict or list or str: dict if form-encoded, dict or list if JSON, otherwise str
+    dict or list or str: dict if form-encoded, dict or list if JSON, otherwise None
   """
+  def maybe_parse_json():
+    try:
+      return json_loads(value)
+    except json.JSONDecodeError:
+      return None
+
   if not value:
     return {}
   elif value[0] in ('{', '['):
-    return json_loads(value)
+    return maybe_parse_json()
   elif '=' in value:
     return {k: v[0] if len(v) == 1 else v
             for k, v in urllib.parse.parse_qs(value).items()}
   else:
-    return json_loads(value)
+    return maybe_parse_json()
 
 
 def interpret_http_exception(exception):

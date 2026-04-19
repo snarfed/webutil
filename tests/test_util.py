@@ -1394,6 +1394,8 @@ class UtilTest(testutil.TestCase):
       ({}, '{}'),
       ({}, ''),
       (False, 'false'),
+      (None, '{xyz'),
+      (None, 'xyz'),
     ):
       self.assert_equals(expected, util.sniff_json_or_form_encoded(input), input)
 
