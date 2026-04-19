@@ -30,7 +30,9 @@ if DEBUG:
 try:
   # https://googleapis.dev/python/python-ndb/latest/migrating.html#setting-up-a-connection
   from google.cloud import ndb
-  ndb_client = thread_local.ndb_client = ndb.Client()
+  db = os.environ.get('DATASTORE_DB')
+  ndb_client = thread_local.ndb_client = \
+    ndb.Client(database=db) if db else ndb.Client()
 except ImportError:
   pass
 
