@@ -23,6 +23,7 @@ import werkzeug.exceptions
 from werkzeug.exceptions import BadRequestKeyError, HTTPException
 from werkzeug.routing import BaseConverter
 
+from . import appengine_info
 from .appengine_info import LOCAL_SERVER
 from . import util
 
@@ -490,6 +491,21 @@ def canonicalize_request_domain(from_domains, to_domain):
 
   return decorator
 
+
+def disable_if_read_only(render_fn=render_template):
+    """Decorator that serves the planned maintenance page instead when READ_ONLY.
+
+    Requires
+    """
+    def decorator(fn):
+      @functools.wraps(fn)
+      def wrapper(*args, **kwargs):
+          if appengine_info.READ_ONLY:
+              return render_fn('planned_maintenance.html')
+          return fn(*args, **kwargs)
+      return wrapper
+
+    return decorator
 
 class XrdOrJrd(View):
   """Renders and serves an XRD or JRD file.

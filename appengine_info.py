@@ -20,6 +20,8 @@ creds = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 gae_env = os.environ.get('GAE_ENV')  # App Engine Standard
 gae_instance = 'GAE_INSTANCE' in os.environ  # App Engine Flex
 
+READ_ONLY = bool(os.environ.get('READ_ONLY'))
+
 args = ' '.join(sys.argv)
 TESTING = 'unittest' in args or 'pytest' in args
 if creds and not creds.endswith('fake_user_account.json'):
