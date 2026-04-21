@@ -266,6 +266,24 @@ def handle_exception(e):
   raise e
 
 
+def handle_read_only_permission_denied(e):
+  """Flask error handler that converts ``PermissionDenied` to HTTP 503 when read only.
+
+  If datastore writes are disabled, they raise
+  :class:`google.api_core.exceptions.PermissionDenied`. Convert that to a
+  plain text HTTP 503 error.
+
+  Note that this takes precedence over exception handlers registered with more
+  generic exception classes like :class:`BaseException`.
+  https://flask.palletsprojects.com/en/stable/errorhandling/#generic-exception-handlers
+  """
+  if appengine_info.READ_ONLY:
+    logger.info('Read only, failing and returning 503')
+    return 'Currently undergoing planned maintenance, please try again later', 503
+
+  return flask_util.handle_exception(e)
+
+
 def error(msg, status=400, exc_info=False, **kwargs):
   """Logs and returns an HTTP error via :class:`werkzeug.exceptions.HTTPException`.
 
@@ -493,19 +511,20 @@ def canonicalize_request_domain(from_domains, to_domain):
 
 
 def disable_if_read_only(render_fn=render_template):
-    """Decorator that serves the planned maintenance page instead when READ_ONLY.
+  """Decorator that serves the planned maintenance page instead when READ_ONLY.
 
-    Requires
-    """
-    def decorator(fn):
-      @functools.wraps(fn)
-      def wrapper(*args, **kwargs):
-          if appengine_info.READ_ONLY:
-              return render_fn('planned_maintenance.html')
-          return fn(*args, **kwargs)
-      return wrapper
+  Requires
+  """
+  def decorator(fn):
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+      if appengine_info.READ_ONLY:
+        return render_fn('planned_maintenance.html'), 503
+      return fn(*args, **kwargs)
+    return wrapper
 
-    return decorator
+  return decorator
+
 
 class XrdOrJrd(View):
   """Renders and serves an XRD or JRD file.
