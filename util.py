@@ -58,8 +58,18 @@ except ImportError:
 
 try:
   import requests
+  from requests_hardened import Config as RequestsHardenedConfig, HTTPSession
+  # prevents SSRF attacks
+  # https://github.com/snarfed/webutil/issues/11
+  session = HTTPSession(RequestsHardenedConfig(
+    ip_filter_enable=True,
+    ip_filter_allow_loopback_ips=False,
+    never_redirect=False,
+    default_timeout=None,
+  ))
 except ImportError:
   requests = None
+  session = None
 
 try:
   import urllib3
@@ -1834,6 +1844,8 @@ def requests_fn(fn):
       and HTTP 4xx and 5xx result in :class:`werkzeug.exceptions.BadGateway`
       (HTTP 502).
   """
+  hardened_session = session
+
   def call(url, session=None, *args, **kwargs):
     logger.info(f'{"requests_cache" if session else "requests"}.{fn} {url} {_prune(kwargs)}')
 
@@ -1848,7 +1860,7 @@ def requests_fn(fn):
 
     try:
       # use getattr so that stubbing out with mox still works
-      resp = getattr((session or requests), fn)(url, *args, **kwargs)
+      resp = getattr((session or hardened_session), fn)(url, *args, **kwargs)
       msg = f'Received {resp.status_code} '
       if resp.status_code // 100 == 3:
         msg += f'{resp.headers.get("Location") or "no Location header"}'

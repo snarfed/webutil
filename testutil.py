@@ -303,7 +303,7 @@ class TestCase(mox.MoxTestBase, Asserts):
     appengine_info.LOCAL_SERVER = False
 
     for method in 'get', 'post', 'delete':
-      self.mox.StubOutWithMock(requests, method, use_mock_anything=True)
+      self.mox.StubOutWithMock(util.session, method, use_mock_anything=True)
     self.stub_requests_head()
 
     self.mox.StubOutWithMock(util.urllib.request, 'urlopen')
@@ -326,37 +326,40 @@ class TestCase(mox.MoxTestBase, Asserts):
       else:
         resp.status_code = 404
       return resp
-    self.mox.stubs.Set(requests, 'head', fake_head)
+    self.mox.stubs.Set(util.session, 'head', fake_head)
 
     self._is_head_mocked = False  # expect_requests_head() sets this to True
 
   def unstub_requests_head(self):
     """Mock outgoing ``HEAD`` requests so they must be expected individually."""
     if not self._is_head_mocked:
-      self.mox.StubOutWithMock(requests, 'head', use_mock_anything=True)
+      self.mox.StubOutWithMock(util.session, 'head', use_mock_anything=True)
       self._is_head_mocked = True
 
   def expect_requests_head(self, *args, **kwargs):
     self.unstub_requests_head()
-    return self._expect_requests_call(*args, method=requests.head, **kwargs)
+    return self._expect_requests_call(*args, method=util.session.head, **kwargs)
 
   def expect_requests_get(self, *args, **kwargs):
-    return self._expect_requests_call(*args, method=requests.get, **kwargs)
+    return self._expect_requests_call(*args, method=util.session.get, **kwargs)
 
   def expect_requests_post(self, *args, **kwargs):
-    return self._expect_requests_call(*args, method=requests.post, **kwargs)
+    return self._expect_requests_call(*args, method=util.session.post, **kwargs)
 
   def expect_requests_delete(self, *args, **kwargs):
-    return self._expect_requests_call(*args, method=requests.delete, **kwargs)
+    return self._expect_requests_call(*args, method=util.session.delete, **kwargs)
 
   def _expect_requests_call(self, url, response='', status_code=200,
-                            content_type='text/html', method=requests.get,
+                            content_type='text/html', method=None,
                             redirected_url=None, response_headers=None,
                             **kwargs):
     """
     Args:
       redirected_url (string): URL or sequence of string URLs for multiple redirects
     """
+    if method is None:
+      method = util.session.get
+
     resp = requests_response(
       response, url=url, status=status_code, content_type=content_type,
       redirected_url=redirected_url, headers=response_headers,
@@ -373,7 +376,7 @@ class TestCase(mox.MoxTestBase, Asserts):
     elif kwargs['stream'] is None:
       del kwargs['stream']
 
-    if method is requests.head:
+    if method is util.session.head:
       kwargs['allow_redirects'] = True
 
     headers = kwargs.get('headers')
