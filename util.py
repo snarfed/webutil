@@ -30,6 +30,8 @@ from domain2idna import domain2idna
 from flask import abort
 import mf2util
 
+from .appengine_info import DEBUG, TESTING, LOCAL_SERVER
+
 try:
   import ujson
   json = ujson
@@ -59,6 +61,7 @@ except ImportError:
 try:
   import requests
   from requests_hardened import Config as RequestsHardenedConfig, HTTPSession
+  from requests_hardened.ip_filter import get_ip_address
 
   class NoCookieJar(requests.cookies.RequestsCookieJar):
     """Cookie jar that discards all cookies, preventing cross-request leakage.
@@ -76,12 +79,23 @@ try:
   # https://github.com/snarfed/webutil/issues/11
   # duplicated in arroba.util
   session = HTTPSession(RequestsHardenedConfig(
-    ip_filter_enable=True,
+    ip_filter_enable=not (DEBUG or TESTING or LOCAL_SERVER),
     ip_filter_allow_loopback_ips=False,
     never_redirect=False,
     default_timeout=None,
   ))
   session.cookies = NoCookieJar()
+
+  def _check_urlopen_ssrf(req, default_port):
+    """Raises InvalidIPAddress if req's host resolves to a private IP.
+
+    Note that this adds an extra DNS lookup to every call! :(
+
+    https://github.com/snarfed/webutil/issues/11
+    """
+    parsed = urlparse(f'//{req.host}')
+    get_ip_address(parsed.hostname, parsed.port or default_port, allow_loopback=False)
+
 except ImportError:
   requests = None
   session = None
@@ -1837,6 +1851,8 @@ def urlopen(url_or_req, *args, **kwargs):
   method = 'GET' if data is None else 'POST'
   logger.info(f'urlopen {method} {url} {_prune(kwargs)}')
   kwargs.setdefault('timeout', HTTP_TIMEOUT)
+  if session and not (DEBUG or TESTING or LOCAL_SERVER):
+    _check_urlopen_ssrf(req, 443 if urlparse(url).scheme == 'https' else 80)
   return urllib.request.urlopen(req, *args, **kwargs)
 
 

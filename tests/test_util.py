@@ -20,6 +20,7 @@ import httplib2
 from oauthlib.oauth2.rfc6749.errors import OAuth2Error, TokenExpiredError
 import prawcore.exceptions
 import requests
+from requests_hardened.ip_filter import InvalidIPAddress
 import tumblpy
 import tweepy
 import urllib3
@@ -1522,6 +1523,16 @@ class UtilTest(testutil.TestCase):
 
     util.set_user_agent('Fooey')
     self.assertEqual(200, util.urlopen('http://xyz').status_code)
+
+  @patch.multiple('oauth_dropins.webutil.util',
+                  DEBUG=False, TESTING=False, LOCAL_SERVER=False)
+  @patch('socket.getaddrinfo', return_value=[
+      (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('192.168.1.1', 80)),
+  ])
+  def test_urlopen_ssrf_blocked(self, _):
+    # https://github.com/snarfed/webutil/issues/11
+    with self.assertRaises(InvalidIPAddress):
+      util.urlopen('http://example.com/')
 
   def test_fetch_mf2(self):
     html = '<html><body class="h-entry"><p class="e-content">asdf</p></body></html>'
