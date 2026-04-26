@@ -1520,7 +1520,7 @@ def interpret_http_exception(exception):
 
   elif InvalidIPAddress and isinstance(e, InvalidIPAddress):
     code = '400'
-    body = str(e)
+    body = ''
 
   elif ((requests and isinstance(e, requests.HTTPError)) or
         (prawcore and isinstance(e, prawcore.exceptions.ResponseException))):
