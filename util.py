@@ -61,7 +61,7 @@ except ImportError:
 try:
   import requests
   from requests_hardened import Config as RequestsHardenedConfig, HTTPSession
-  from requests_hardened.ip_filter import get_ip_address
+  from requests_hardened.ip_filter import get_ip_address, InvalidIPAddress
 
   class NoCookieJar(requests.cookies.RequestsCookieJar):
     """Cookie jar that discards all cookies, preventing cross-request leakage.
@@ -99,6 +99,7 @@ try:
 except ImportError:
   requests = None
   session = None
+  InvalidIPAddress = None
 
 try:
   import urllib3
@@ -1516,6 +1517,10 @@ def interpret_http_exception(exception):
 
   elif isinstance(e, urllib.error.URLError):
     body = str(e.reason)
+
+  elif InvalidIPAddress and isinstance(e, InvalidIPAddress):
+    code = '400'
+    body = str(e)
 
   elif ((requests and isinstance(e, requests.HTTPError)) or
         (prawcore and isinstance(e, prawcore.exceptions.ResponseException))):

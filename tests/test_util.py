@@ -941,6 +941,8 @@ class UtilTest(testutil.TestCase):
     msg = 'message=Sorry, the Flickr API service is not currently available., flickr code=0'
     self.assertEqual(('504', msg), ihc(HTTPError('url', '400', msg, {}, io.StringIO())))
 
+    self.assertEqual(('400', '192.168.1.1'), ihc(InvalidIPAddress('192.168.1.1')))
+
     # https://console.cloud.google.com/errors/13299057966731352169?project=brid-gy
     self.assertEqual(('504', 'Unknown'),
                      ihc(HTTPError('url', '418', 'Unknown', {}, io.StringIO())))
