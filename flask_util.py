@@ -281,7 +281,7 @@ def handle_read_only_permission_denied(e):
     logger.info('Read only, failing and returning 503')
     return 'Currently undergoing planned maintenance, please try again later', 503
 
-  return flask_util.handle_exception(e)
+  return handle_exception(e)
 
 
 def error(msg, status=400, exc_info=False, **kwargs):
