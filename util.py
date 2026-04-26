@@ -59,14 +59,29 @@ except ImportError:
 try:
   import requests
   from requests_hardened import Config as RequestsHardenedConfig, HTTPSession
+
+  class NoCookieJar(requests.cookies.RequestsCookieJar):
+    """Cookie jar that discards all cookies, preventing cross-request leakage.
+
+    Duplicated in arroba.util.
+    """
+    def set(self, *args, **kwargs):
+      pass
+    def set_cookie(self, *args, **kwargs):
+      pass
+    def update(self, *args, **kwargs):
+      pass
+
   # prevents SSRF attacks
   # https://github.com/snarfed/webutil/issues/11
+  # duplicated in arroba.util
   session = HTTPSession(RequestsHardenedConfig(
     ip_filter_enable=True,
     ip_filter_allow_loopback_ips=False,
     never_redirect=False,
     default_timeout=None,
   ))
+  session.cookies = NoCookieJar()
 except ImportError:
   requests = None
   session = None

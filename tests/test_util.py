@@ -8,7 +8,9 @@ import http.client
 import io
 import socket
 import ssl
-from unittest.mock import patch
+from email.message import Message
+from unittest.mock import MagicMock, patch
+from requests.cookies import extract_cookies_to_jar
 from urllib.error import HTTPError, URLError
 import urllib.parse, urllib.request
 
@@ -1927,3 +1929,22 @@ class UtilTest(testutil.TestCase):
     self.assertEqual(' a\tb\nc ', util.remove_invisible_chars(' a\tb\nc '))
     self.assertEqual('@x.bsky.social', util.remove_invisible_chars(
       json_loads(r'"\u202a@x.bs\u202dky.social\u202c"')))
+
+  def test_session_no_cookie_jar(self):
+    self.expect_requests_get('https://example.com/', '')
+    self.mox.ReplayAll()
+
+    util.requests_get('https://example.com/')
+
+    headers = Message()
+    headers['Set-Cookie'] = 'foo=bar'
+    raw = MagicMock()
+    raw._original_response.msg = headers
+    extract_cookies_to_jar(
+      util.session.cookies,
+      util.session.prepare_request(requests.Request('GET', 'https://example.com/')),
+      raw)
+
+    prepared = util.session.prepare_request(
+      requests.Request('GET', 'https://example.com/page2'))
+    self.assertNotIn('Cookie', prepared.headers)
