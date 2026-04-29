@@ -1937,6 +1937,20 @@ class UtilTest(testutil.TestCase):
     # https://github.com/microformats/mf2py/issues/78
     self.assert_equals({}, util.parse_mf2('unused',))
 
+  def test_bool_env_var(self):
+    for val in ('true', 'True', 'TRUE', 'yes', 'YES', 'ok', 'OK', '1',
+                ' true ', '\tyes\n'):
+      with self.subTest(val=val):
+        with patch.dict('os.environ', {'MY_VAR': val}):
+          self.assertTrue(util.bool_env_var('MY_VAR'))
+
+    for val in ('false', 'no', '0', '', 'maybe'):
+      with self.subTest(val=val):
+        with patch.dict('os.environ', {'MY_VAR': val}):
+          self.assertFalse(util.bool_env_var('MY_VAR'))
+
+    self.assertFalse(util.bool_env_var('MY_VAR_UNSET'))
+
   def test_remove_invisible_chars(self):
     self.assertEqual('', util.remove_invisible_chars(''))
     self.assertEqual(' a\tb\nc ', util.remove_invisible_chars(' a\tb\nc '))

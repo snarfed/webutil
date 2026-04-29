@@ -2226,6 +2226,20 @@ class WideUnicode(str):
     return self.__getitem__(slice(i, j))
 
 
+def bool_env_var(name):
+  """Returns True if the given environment variable is set to a truthy value.
+
+  Truthy values are 'true', 'yes', 'ok', '1' (case insensitive, stripped).
+
+  Args:
+    name (str): environment variable name
+
+  Returns:
+    bool
+  """
+  return os.environ.get(name, '').strip().lower() in ('true', 'yes', 'ok', '1')
+
+
 def remove_invisible_chars(val):
   """Removes invisible/non-printable Unicode control characters from a string.
 
