@@ -5,6 +5,7 @@ import collections
 from collections.abc import Iterator
 import contextlib
 from datetime import datetime, timedelta, timezone
+import functools
 from email.message import EmailMessage
 import html
 import http.client
@@ -86,20 +87,23 @@ try:
   ))
   session.cookies = NoCookieJar()
 
-  def _check_urlopen_ssrf(req, default_port):
-    """Raises InvalidIPAddress if req's host resolves to a private IP.
+  @functools.cache
+  def check_ssrf(hostname):
+    """Raises InvalidIPAddress if hostname resolves to a private IP.
 
-    Note that this adds an extra DNS lookup to every call! :(
+    Uses DNS to resolve hostname. Caches results to avoid repeated lookups.
 
     https://github.com/snarfed/webutil/issues/11
+    https://github.com/snarfed/bridgy-fed/issues/2140
     """
-    parsed = urlparse(f'//{req.host}')
-    get_ip_address(parsed.hostname, parsed.port or default_port, allow_loopback=False)
+    if not (DEBUG or TESTING or LOCAL_SERVER):
+      get_ip_address(hostname, None, allow_loopback=False)
 
 except ImportError:
   requests = None
   session = None
   InvalidIPAddress = None
+  check_ssrf = None
 
 try:
   import urllib3
@@ -123,6 +127,7 @@ except ImportError:
 
 try:
   import websockets
+  import websockets.sync.client
   from websockets.exceptions import (
     ConnectionClosedError,
     InvalidHandshake,
@@ -1856,9 +1861,21 @@ def urlopen(url_or_req, *args, **kwargs):
   method = 'GET' if data is None else 'POST'
   logger.info(f'urlopen {method} {url} {_prune(kwargs)}')
   kwargs.setdefault('timeout', HTTP_TIMEOUT)
-  if session and not (DEBUG or TESTING or LOCAL_SERVER):
-    _check_urlopen_ssrf(req, 443 if urlparse(url).scheme == 'https' else 80)
+  check_ssrf(urlparse(url).hostname)
   return urllib.request.urlopen(req, *args, **kwargs)
+
+
+@contextlib.contextmanager
+def websocket_connect(uri, **kwargs):
+  """Wraps :func:`websockets.sync.client.connect` with SSRF protection.
+
+  https://github.com/snarfed/webutil/issues/11
+  https://github.com/snarfed/bridgy-fed/issues/2140
+  """
+  check_ssrf(urlparse(uri).hostname)
+
+  with websockets.sync.client.connect(uri, **kwargs) as ws:
+    yield ws
 
 
 def requests_fn(fn):

@@ -1536,6 +1536,27 @@ class UtilTest(testutil.TestCase):
     with self.assertRaises(InvalidIPAddress):
       util.urlopen('http://example.com/')
 
+  @patch.multiple('oauth_dropins.webutil.util',
+                  DEBUG=False, TESTING=False, LOCAL_SERVER=False)
+  @patch('socket.getaddrinfo', return_value=[
+      (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('10.0.0.1', 443)),
+  ])
+  def test_check_ssrf_blocked(self, _):
+    util.check_ssrf.cache_clear()
+    with self.assertRaises(InvalidIPAddress):
+      util.check_ssrf('private.example.com')
+
+  @patch.multiple('oauth_dropins.webutil.util',
+                  DEBUG=False, TESTING=False, LOCAL_SERVER=False)
+  @patch('socket.getaddrinfo', return_value=[
+      (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('10.0.0.1', 443)),
+  ])
+  def test_websocket_connect_ssrf_blocked(self, _):
+    util.check_ssrf.cache_clear()
+    with self.assertRaises(InvalidIPAddress):
+      with util.websocket_connect('wss://evil.example.com/'):
+        pass
+
   def test_fetch_mf2(self):
     html = '<html><body class="h-entry"><p class="e-content">asdf</p></body></html>'
     self.expect_requests_get('http://xyz', html)
