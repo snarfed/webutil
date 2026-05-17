@@ -2016,8 +2016,8 @@ def requests_post_with_redirects(url, *args, **kwargs):
 def _prune(kwargs):
   return {
     k: v for k, v in list(kwargs.items())
-    if k is not None and k not in ('allow_redirects', 'auth', 'gateway', 'headers',
-                                   'stream', 'timeout')
+    if k is not None and v is not None
+    and k not in ('allow_redirects', 'auth', 'gateway', 'headers', 'stream', 'timeout')
   }
 
 
