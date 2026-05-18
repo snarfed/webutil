@@ -6,6 +6,7 @@ Supports Python 3. Should not depend on App Engine API or SDK packages.
 import datetime
 import http.client
 import io
+import ipaddress
 import socket
 import ssl
 from email.message import Message
@@ -21,6 +22,7 @@ from oauthlib.oauth2.rfc6749.errors import OAuth2Error, TokenExpiredError
 import prawcore.exceptions
 import requests
 from requests_hardened.ip_filter import InvalidIPAddress
+from requests_hardened.ip_filter_adapter import IPFilterAdapter
 import tumblpy
 import tweepy
 import urllib3
@@ -1545,6 +1547,70 @@ class UtilTest(testutil.TestCase):
     util.check_ssrf.cache_clear()
     with self.assertRaises(InvalidIPAddress):
       util.check_ssrf('private.example.com')
+
+  @patch('socket.getaddrinfo', return_value=[
+      (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('93.184.216.34', 443)),
+  ])
+  def test_cached_get_ip_address(self, mock_getaddrinfo):
+    util.ip_address_cache.clear()
+
+    expected = (ipaddress.ip_address('93.184.216.34'), 443)
+    self.assertEqual(expected, util.cached_get_ip_address('example.com', 443, False))
+    # repeated call with the same args is served from the cache
+    self.assertEqual(expected, util.cached_get_ip_address('example.com', 443, False))
+    self.assertEqual(1, mock_getaddrinfo.call_count)
+
+    # a different host re-resolves
+    util.cached_get_ip_address('other.example.com', 443, False)
+    self.assertEqual(2, mock_getaddrinfo.call_count)
+
+  @patch('socket.getaddrinfo', return_value=[
+      (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('10.0.0.1', 443)),
+  ])
+  def test_cached_get_ip_address_doesnt_cache_failures(self, mock_getaddrinfo):
+    util.ip_address_cache.clear()
+
+    for _ in range(2):
+      with self.assertRaises(InvalidIPAddress):
+        util.cached_get_ip_address('private.example.com', 443, False)
+    self.assertEqual(2, mock_getaddrinfo.call_count)
+
+  @patch.multiple('oauth_dropins.webutil.util',
+                  DEBUG=False, TESTING=False, LOCAL_SERVER=False)
+  @patch('urllib3.connectionpool.HTTPConnectionPool.urlopen')
+  @patch('socket.getaddrinfo', return_value=[
+      (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('93.184.216.34', 443)),
+  ])
+  def test_requests_get_hardened_session_integration(self, mock_getaddrinfo,
+                                                     mock_urlopen):
+    """Full prod path: requests_fn => HTTPSession => IPFilterAdapter => DNS cache.
+
+    Mocks below the adapter (socket DNS, urllib3's urlopen) so the adapter, its
+    pool-key resolution, and the connection pool all run for real.
+    """
+    util.ip_address_cache.clear()
+    mock_urlopen.side_effect = lambda *args, **kwargs: urllib3.HTTPResponse(
+        body=io.BytesIO(b''), headers={}, status=200, reason='OK',
+        preload_content=False, decode_content=False)
+
+    session = util.make_session()
+
+    # the prod adapter is mounted, with the bigger connection pool
+    adapter = session.get_adapter('https://example.com/')
+    self.assertIsInstance(adapter, IPFilterAdapter)
+    self.assertEqual(500, adapter._pool_connections)
+    self.assertEqual(20, adapter._pool_maxsize)
+
+    for _ in range(2):
+      resp = util.requests_get('https://example.com/', session=session)
+      self.assertEqual(200, resp.status_code)
+
+    self.assertEqual(2, mock_urlopen.call_count)
+    # DNS was resolved once and cached, so both requests reused a single
+    # connection pool keyed on the resolved IP, instead of a fresh pool (and
+    # TLS handshake) each.
+    self.assertEqual(1, mock_getaddrinfo.call_count)
+    self.assertEqual(1, len(adapter.poolmanager.pools))
 
   @patch.multiple('oauth_dropins.webutil.util',
                   DEBUG=False, TESTING=False, LOCAL_SERVER=False)

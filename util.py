@@ -61,8 +61,9 @@ except ImportError:
 
 try:
   import requests
-  from requests_hardened import Config as RequestsHardenedConfig, HTTPSession
+  from requests_hardened import Config, HTTPSession, ip_filter
   from requests_hardened.ip_filter import get_ip_address, InvalidIPAddress
+  from requests_hardened.ip_filter_adapter import IPFilterAdapter
 
   class NoCookieJar(requests.cookies.RequestsCookieJar):
     """Cookie jar that discards all cookies, preventing cross-request leakage.
@@ -76,16 +77,52 @@ try:
     def update(self, *args, **kwargs):
       pass
 
-  # prevents SSRF attacks
-  # https://github.com/snarfed/webutil/issues/11
-  # duplicated in arroba.util
-  session = HTTPSession(RequestsHardenedConfig(
-    ip_filter_enable=not (DEBUG or TESTING or LOCAL_SERVER),
-    ip_filter_allow_loopback_ips=False,
-    never_redirect=False,
-    default_timeout=None,
-  ))
-  session.cookies = NoCookieJar()
+  def make_session():
+    """Returns a new :class:`requests.Session` for outbound HTTP requests.
+
+    Hardened against SSRF attacks. IP filtering is enabled only in prod, ie not
+    in DEBUG, TESTING, or LOCAL_SERVER, since it does real DNS resolution and
+    blocks private and loopback IPs.
+
+    https://github.com/snarfed/webutil/issues/11
+    Duplicated in arroba.util.
+    """
+    ip_filter_enable = not (DEBUG or TESTING or LOCAL_SERVER)
+    sess = HTTPSession(Config(
+      ip_filter_enable=ip_filter_enable,
+      ip_filter_allow_loopback_ips=False,
+      never_redirect=False,
+      default_timeout=None,
+    ))
+    sess.cookies = NoCookieJar()
+
+    if ip_filter_enable:
+      # this is the only case where HTTPSession mounts IPFilterAdapter. re-mount
+      # it with a bigger connection pool; the default only keeps connections to
+      # 10 hosts, too few for fanning out to many fediverse servers.
+      # https://github.com/snarfed/bridgy-fed/issues/2488
+      for prefix, is_https in ('https://', True), ('http://', False):
+        adapter = IPFilterAdapter(is_https_proto=is_https)
+        adapter.init_poolmanager(500, 20)
+        sess.mount(prefix, adapter)
+
+    return sess
+
+  session = make_session()
+
+  # Cache DNS resolution so requests_hardened's IPFilterAdapter generates a
+  # stable urllib3 connection pool key per host. The adapter keys the pool on
+  # the resolved IP, so without this, a host with round-robin DNS gets a new
+  # pool key - and a new TLS handshake - on every request.
+  # https://github.com/snarfed/bridgy-fed/issues/2488
+  ip_address_cache = TTLCache(10000, 60 * 10)  # 10m
+  ip_address_cache_lock = threading.Lock()
+
+  @cached(ip_address_cache, lock=ip_address_cache_lock)
+  def cached_get_ip_address(hostname, port, allow_loopback):
+    return get_ip_address(hostname, port, allow_loopback=allow_loopback)
+
+  ip_filter.get_ip_address = cached_get_ip_address
 
   @functools.cache
   def check_ssrf(hostname):
@@ -101,6 +138,7 @@ try:
 
 except ImportError:
   requests = None
+  make_session = None
   session = None
   InvalidIPAddress = None
   check_ssrf = None
