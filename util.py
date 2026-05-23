@@ -1023,42 +1023,17 @@ def parse_iso8601(val):
   Time zone designator is optional. If present, the returned datetime will be
   time zone aware.
 
+  Just a minimal wrapper around :meth:`datetime.datetime.fromisoformat` that strips
+  whitespace first.
+
   Args:
     val (str): ISO 8601 or RFC 3339, e.g. ``2012-07-23T05:54:49+00:00``
 
   Returns:
     :class:`datetime.datetime`
   """
-  # grr, this would be way easier if strptime supported %z, but evidently that
-  # was only added in python 3.2.
-  # http://stackoverflow.com/questions/9959778/is-there-a-wildcard-format-directive-for-strptime
   assert val
-
-  val = val.strip().replace('T', ' ')
-  tz = None
-  zone = TIMEZONE_OFFSET_RE.search(val)
-
-  if zone:
-    offset_str = zone.group()
-    val = val[:-len(offset_str)]
-    offset = (datetime.strptime(offset_str[1:].replace(':', ''), '%H%M') -
-              datetime.strptime('', ''))
-    if offset_str[0] == '-':
-      offset = -offset
-    tz = timezone(offset)
-  elif val[-1] == 'Z':
-    val = val[:-1]
-    tz = timezone.utc
-
-  # fractional seconds are optional. add them if they're not already there to
-  # make strptime parsing below easier.
-  if '.' not in val:
-    val += '.0'
-
-  # TODO: this raises ValueError if seconds has more than six decimal digits
-  # since strptime %f only accepts at most six. best fix is probably to switch
-  # to datetime.fromisoformat, which handles this but only in Python 3.11+
-  return datetime.strptime(val, '%Y-%m-%d %H:%M:%S.%f').replace(tzinfo=tz)
+  return datetime.fromisoformat(val.strip())
 
 
 def parse_iso8601_duration(input):
