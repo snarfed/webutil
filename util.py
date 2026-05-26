@@ -29,6 +29,7 @@ from urllib.parse import urljoin, urlparse
 from cachetools import cached, TTLCache
 from domain2idna import domain2idna
 from flask import abort
+import grpc
 import mf2util
 
 from .appengine_info import DEBUG, TESTING, LOCAL_SERVER
@@ -2631,3 +2632,39 @@ def tb():
   """Prints the current stack, for debugging."""
   print('@', end='', file=sys.stderr)
   traceback.print_stack()
+
+
+class GrpcLoggingInterceptor(grpc.UnaryUnaryClientInterceptor,
+                             grpc.UnaryStreamClientInterceptor,
+                             grpc.StreamUnaryClientInterceptor,
+                             grpc.StreamStreamClientInterceptor):
+  """gRPC client interceptor that logs requests and responses.
+
+  Attrs:
+    logger (logging.Logger)
+    level (int)
+  """
+  def __init__(self, logger=logger, level=logging.DEBUG):
+    self.logger = logger
+    self.level = level
+
+  def _intercept(self, continuation, details, req_or_iter, req_stream, resp_stream):
+    requests = list(req_or_iter) if req_stream else [req_or_iter]
+    for r in requests:
+      self.logger.log(self.level, f'gRPC → {details.method}: {r}')
+
+    call = continuation(details, iter(requests) if req_stream else requests[0])
+    if resp_stream:
+      def _logged():
+        for item in call:
+          self.logger.log(self.level, f'gRPC ← {details.method}: {item}')
+          yield item
+      return _logged()
+    else:
+      self.logger.log(self.level, f'gRPC ← {details.method}: {call.result()}')
+      return call
+
+  intercept_unary_unary   = lambda self, *args: self._intercept(*args, False, False)
+  intercept_unary_stream  = lambda self, *args: self._intercept(*args, False, True)
+  intercept_stream_unary  = lambda self, *args: self._intercept(*args, True, False)
+  intercept_stream_stream = lambda self, *args: self._intercept(*args, True, True)
