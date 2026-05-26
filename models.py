@@ -7,6 +7,7 @@ from google.cloud import ndb
 import logging
 from threading import Lock
 
+from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from google.cloud.ndb.model import _BaseValue
@@ -18,11 +19,20 @@ from oauth_dropins.webutil.util import json_dumps, json_loads
 #   len(entity._to_pb().Encode())
 MAX_ENTITY_SIZE = 1 * 1000 * 1000
 
-ENCRYPTED_PROPERTY_KEY = ENCRYPTED_PROPERTY_KEY_BYTES = None
-if key_base64 := util.read('encrypted_property_key'):  # base-64 encoded key bytes
-  ENCRYPTED_PROPERTY_KEY_BYTES = base64.b64decode(key_base64)
-  assert len(ENCRYPTED_PROPERTY_KEY_BYTES) == 32
-  ENCRYPTED_PROPERTY_KEY = AESGCM(ENCRYPTED_PROPERTY_KEY_BYTES)
+_keys_bytes = []
+_keys = []
+if contents := util.read('encrypted_property_key'):
+  for line in contents.splitlines():
+    line = line.strip()
+    if not line:
+      continue
+    key_bytes = base64.b64decode(line)
+    assert len(key_bytes) == 32
+    _keys_bytes.append(key_bytes)
+    _keys.append(AESGCM(key_bytes))
+
+ENCRYPTED_PROPERTY_KEYS_BYTES = tuple(_keys_bytes)  # bytes
+ENCRYPTED_PROPERTY_KEYS = tuple(_keys)              # AESGCMs
 
 logger = logging.getLogger(__name__)
 
@@ -103,8 +113,17 @@ class EncryptedProperty(ndb.BlobProperty):
     Encrypts bytes values using AES-256-GCM before storing in the datastore,
     and decrypts them when reading back.
 
-    The AES-256-GCM key should be in the ``encrypted_property_key`` file, base64
-    encoded. Here's example code to generate an AES-256-GCM key and base64 encode it:
+    The AES-256-GCM key(s) should be in the ``encrypted_property_key`` file,
+    base64 encoded, one per line. Encryption always uses the first key. For
+    decryption, each key is tried in order until one succeeds.
+
+    Multiple keys are used during key rotation: add the new key as the first
+    line and keep the old key as the second line. New writes will use the new
+    key, and existing ciphertexts encrypted with the old key will still decrypt
+    via fallback. Once all stored values have been re-encrypted with the new
+    key, remove the old key.
+
+    Here's example code to generate an AES-256-GCM key and base64 encode it:
 
       import base64
       from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -120,11 +139,11 @@ class EncryptedProperty(ndb.BlobProperty):
         if value is None:
             return None
 
-        if not ENCRYPTED_PROPERTY_KEY:
-            raise RuntimeError('No encryption key found in encrypted_property_key.pem')
+        if not ENCRYPTED_PROPERTY_KEYS:
+            raise RuntimeError('No encryption key found in encrypted_property_key')
 
         nonce = os.urandom(12)  # 96-bit nonce for GCM
-        ciphertext = ENCRYPTED_PROPERTY_KEY.encrypt(nonce, value, None)
+        ciphertext = ENCRYPTED_PROPERTY_KEYS[0].encrypt(nonce, value, None)
 
         # concatenate nonce and ciphertext for storage
         return nonce + ciphertext
@@ -133,12 +152,18 @@ class EncryptedProperty(ndb.BlobProperty):
         if value is None:
             return None
 
-        if not ENCRYPTED_PROPERTY_KEY:
-            raise RuntimeError('No encryption key found in encrypted_property_key.pem')
+        if not ENCRYPTED_PROPERTY_KEYS:
+            raise RuntimeError('No encryption key found in encrypted_property_key')
 
         nonce = value[:12]
         ciphertext = value[12:]
-        return ENCRYPTED_PROPERTY_KEY.decrypt(nonce, ciphertext, None)
+
+        for i, key in enumerate(ENCRYPTED_PROPERTY_KEYS):
+            try:
+                return key.decrypt(nonce, ciphertext, None)
+            except InvalidTag:
+                if i == len(ENCRYPTED_PROPERTY_KEYS) - 1:
+                    raise
 
 
 class Cache(ndb.Model):

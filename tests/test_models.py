@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 import enum
 import warnings
 
+from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from google.cloud import ndb
 
@@ -189,8 +190,8 @@ class EncryptedPropertyTest(testutil.TestCase):
     self.assertIsNone(entity.key.get().secret)
 
   def test_no_key_error(self):
-    self.mox.StubOutWithMock(models, 'ENCRYPTED_PROPERTY_KEY')
-    models.ENCRYPTED_PROPERTY_KEY = None
+    self.mox.StubOutWithMock(models, 'ENCRYPTED_PROPERTY_KEYS')
+    models.ENCRYPTED_PROPERTY_KEYS = ()
     with self.assertRaises(RuntimeError) as cm:
       EncryptedModel(secret=b'test').put()
     self.assertIn('No encryption key found', str(cm.exception))
@@ -206,3 +207,34 @@ class EncryptedPropertyTest(testutil.TestCase):
 
     self.assertEqual(test_secret, prop._from_base_type(encrypted1))
     self.assertEqual(test_secret, prop._from_base_type(encrypted2))
+
+  def test_decrypt_falls_back_to_later_key(self):
+    prop = EncryptedModel.secret
+    old_key = models.ENCRYPTED_PROPERTY_KEYS[0]
+    encrypted_with_old = prop._to_base_type(b'rotated secret')
+
+    new_key = AESGCM(AESGCM.generate_key(bit_length=256))
+    self.mox.StubOutWithMock(models, 'ENCRYPTED_PROPERTY_KEYS')
+    models.ENCRYPTED_PROPERTY_KEYS = [new_key, old_key]
+
+    self.assertEqual(b'rotated secret', prop._from_base_type(encrypted_with_old))
+
+    encrypted_with_new = prop._to_base_type(b'new secret')
+    self.assertEqual(b'new secret', prop._from_base_type(encrypted_with_new))
+
+    # encrypted_with_new should NOT decrypt with old_key alone
+    models.ENCRYPTED_PROPERTY_KEYS = [old_key]
+    with self.assertRaises(InvalidTag):
+      prop._from_base_type(encrypted_with_new)
+
+  def test_decrypt_fails_when_no_key_matches(self):
+    prop = EncryptedModel.secret
+    encrypted = prop._to_base_type(b'secret')
+
+    unrelated = AESGCM(AESGCM.generate_key(bit_length=256))
+    self.mox.StubOutWithMock(models, 'ENCRYPTED_PROPERTY_KEYS')
+    models.ENCRYPTED_PROPERTY_KEYS = [unrelated]
+
+    from cryptography.exceptions import InvalidTag
+    with self.assertRaises(InvalidTag):
+      prop._from_base_type(encrypted)

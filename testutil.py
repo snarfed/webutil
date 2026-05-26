@@ -33,7 +33,9 @@ NOW_SECONDS = int((NOW - datetime(1970, 1, 1, tzinfo=timezone.utc)).total_second
 import unittest.util
 unittest.util._MAX_LENGTH = 999999
 
-models.ENCRYPTED_PROPERTY_KEY = AESGCM(b'test_key_32_bytes_for_aes_256___')
+_TEST_KEY_BYTES = b'test_key_32_bytes_for_aes_256___'
+models.ENCRYPTED_PROPERTY_KEYS_BYTES = (_TEST_KEY_BYTES,)
+models.ENCRYPTED_PROPERTY_KEYS = (AESGCM(_TEST_KEY_BYTES),)
 
 
 def requests_response(body='', url=None, status=200, content_type=None,
