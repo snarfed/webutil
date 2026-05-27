@@ -9,21 +9,22 @@ where = ['.']
 
 [project]
 name = 'webutil'
-version = '0.1'
+version = '1.0'
 authors = [
     { name='Ryan Barrett', email='webutil@ryanb.org' },
 ]
 description = 'Common utilities and handler code for Python web apps'
 readme = 'README.md'
-requires-python = '>=3.7'
+requires-python = '>=3.9'
 keywords = ['App Engine', 'Flask', 'HTTP', 'web', 'utilities']
 dependencies = [
     'cachetools>=3.1',
+    'cryptography',
     'domain2idna>=1.12',
     'Flask>=2.0',
-    'google-cloud-ndb>=2.0',
     'humanize==4.12.0',
-    'mf2util>=0.5.0',
+    'requests>=2.0',
+    'requests-hardened>=1.0',
     'werkzeug',
 ]
 
@@ -44,5 +45,25 @@ classifiers = [
 [project.optional-dependencies]
 tests = [
     'mox3>=0.28,<2.0',
+    'flask-caching',
+    'httplib2',
+    'lxml',
+    'mf2py',
+    'oauthlib',
+    'prawcore',
+    'python-tumblpy',
+    'tweepy',
+    'ujson',
+    'urllib3',
+    'webob',
+    'websockets',
+]
+html = [
     'beautifulsoup4>=4.8',
+    'mf2util>=0.5.0',
+]
+google-cloud = [
+    'google-api-python-client',
+    'google-cloud-logging>=3.0.0',
+    'google-cloud-ndb>=2.0',
 ]

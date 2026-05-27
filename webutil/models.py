@@ -11,8 +11,8 @@ from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from google.cloud.ndb.model import _BaseValue
-from oauth_dropins.webutil import util
-from oauth_dropins.webutil.util import json_dumps, json_loads
+from . import util
+from .util import json_dumps, json_loads
 
 # 1MB limit: https://cloud.google.com/datastore/docs/concepts/limits
 # use this to check an entity's size:

@@ -45,10 +45,10 @@ except ImportError:
 # use dependencies that we may or may not have, so degrade gracefully if they're
 # not available.
 try:
-  import apiclient
-  import apiclient.errors
+  import googleapiclient
+  import googleapiclient.errors
 except ImportError:
-  apiclient = None
+  googleapiclient = None
 
 try:
   from oauth2client.client import AccessTokenRefreshError
@@ -1357,7 +1357,8 @@ def encode_oauth_state(obj):
     raise TypeError(f'Expected dict, got {obj.__class__}')
 
   logger.debug(f'encoding state {obj!r}')
-  return urllib.parse.quote_plus(json_dumps(trim_nulls(obj), sort_keys=True))
+  return urllib.parse.quote_plus(
+    json_dumps(trim_nulls(obj), separators=(',', ':'), sort_keys=True))
 
 
 def decode_oauth_state(state):
@@ -1492,7 +1493,7 @@ def interpret_http_exception(exception):
   Args:
     exception (Exception): an HTTP request exception. Supported types:
 
-      * :class:`apiclient.errors.HttpError`
+      * :class:`googleapiclient.errors.HttpError`
       * :class:`webob.exc.WSGIHTTPException`
       * :class:`gdata.client.RequestError`
       * :class:`oauth2client.client.AccessTokenRefreshError`
@@ -1557,7 +1558,7 @@ def interpret_http_exception(exception):
     code = '429' if isinstance(e, tweepy.TooManyRequests) else '400'
     body = e.response.text
 
-  elif apiclient and isinstance(e, apiclient.errors.HttpError):
+  elif googleapiclient and isinstance(e, googleapiclient.errors.HttpError):
     code = e.resp.status
     body = e.content.decode() or e.resp.reason
 

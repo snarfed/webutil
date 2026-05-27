@@ -1,2 +1,5 @@
-exclude __pycache__/** build/** dist/** docs/** examples/** l/** local/**
-
+# Used by include_package_data=True in setup.py to include static files.
+# Docs: https://docs.python.org/2/distutils/sourcedist.html#manifest-template
+include README.md
+recursive-include webutil *
+recursive-exclude webutil *.pyc .git* TAGS

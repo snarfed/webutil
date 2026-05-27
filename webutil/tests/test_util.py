@@ -15,7 +15,7 @@ from requests.cookies import extract_cookies_to_jar
 from urllib.error import HTTPError, URLError
 import urllib.parse, urllib.request
 
-import apiclient.errors
+import googleapiclient.errors
 from flask import Flask, request
 import httplib2
 from oauthlib.oauth2.rfc6749.errors import OAuth2Error, TokenExpiredError
@@ -914,7 +914,7 @@ class UtilTest(testutil.TestCase):
     ex = RequestError(status=429, body=b'my body')
     self.assertEqual(('429', 'my body'), ihc(ex))
 
-    ex = apiclient.errors.HttpError(httplib2.Response(
+    ex = googleapiclient.errors.HttpError(httplib2.Response(
       {'status': 429, 'reason': 'unused'}), b'my body')
     self.assertEqual(('429', 'my body'), ihc(ex))
 
@@ -1526,8 +1526,7 @@ class UtilTest(testutil.TestCase):
     util.set_user_agent('Fooey')
     self.assertEqual(200, util.urlopen('http://xyz').status_code)
 
-  @patch.multiple('oauth_dropins.webutil.util',
-                  DEBUG=False, TESTING=False, LOCAL_SERVER=False)
+  @patch.multiple('webutil.util', DEBUG=False, TESTING=False, LOCAL_SERVER=False)
   @patch('socket.getaddrinfo', return_value=[
       (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('192.168.1.1', 80)),
   ])
@@ -1536,8 +1535,7 @@ class UtilTest(testutil.TestCase):
     with self.assertRaises(InvalidIPAddress):
       util.urlopen('http://example.com/')
 
-  @patch.multiple('oauth_dropins.webutil.util',
-                  DEBUG=False, TESTING=False, LOCAL_SERVER=False)
+  @patch.multiple('webutil.util', DEBUG=False, TESTING=False, LOCAL_SERVER=False)
   @patch('socket.getaddrinfo', return_value=[
       (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('10.0.0.1', 443)),
   ])
@@ -1573,8 +1571,7 @@ class UtilTest(testutil.TestCase):
         util.cached_get_ip_address('private.example.com', 443, False)
     self.assertEqual(2, mock_getaddrinfo.call_count)
 
-  @patch.multiple('oauth_dropins.webutil.util',
-                  DEBUG=False, TESTING=False, LOCAL_SERVER=False)
+  @patch.multiple('webutil.util', DEBUG=False, TESTING=False, LOCAL_SERVER=False)
   @patch('urllib3.connectionpool.HTTPConnectionPool.urlopen')
   @patch('socket.getaddrinfo', return_value=[
       (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('93.184.216.34', 443)),
@@ -1610,8 +1607,7 @@ class UtilTest(testutil.TestCase):
     self.assertEqual(1, mock_getaddrinfo.call_count)
     self.assertEqual(1, len(adapter.poolmanager.pools))
 
-  @patch.multiple('oauth_dropins.webutil.util',
-                  DEBUG=False, TESTING=False, LOCAL_SERVER=False)
+  @patch.multiple('webutil.util', DEBUG=False, TESTING=False, LOCAL_SERVER=False)
   @patch('socket.getaddrinfo', return_value=[
       (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('10.0.0.1', 443)),
   ])

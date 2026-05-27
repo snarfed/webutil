@@ -14,11 +14,11 @@ from flask import request
 from google.api_core.exceptions import InvalidArgument
 from google.cloud import ndb
 from google.cloud.logging import Client
-from oauth_dropins.webutil.util import json_dumps, json_loads
 
 from .appengine_info import APP_ID
 from . import flask_util, util
 from .flask_util import error
+from .util import json_dumps, json_loads
 
 logger = logging.getLogger(__name__)
 
