@@ -69,7 +69,7 @@ try:
   logging_client = thread_local.logging_client = None
 
   if not DEBUG and not LOCAL_SERVER:
-    logging_client = thread_local.logging_client = Nonegoogle.cloud.logging.Client()
+    logging_client = thread_local.logging_client = google.cloud.logging.Client()
     logging_client.setup_logging(log_level=logging.DEBUG)
     # this currently occasionally hits the 256KB batch limit and
     # crashes in the background service. i've tried batch_size=1 and
