@@ -44,7 +44,7 @@ classifiers = [
 
 [project.optional-dependencies]
 tests = [
-    'mox3>=0.28,<2.0',
+    'mox3 @ git+https://github.com/snarfed/mox3.git',
     'flask-caching',
     'httplib2',
     'lxml',
