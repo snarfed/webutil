@@ -1,6 +1,6 @@
 {
   "comment": "This is a fake Google Cloud credentials file used in unit tests and local servers via the GOOGLE_APPLICATION_CREDENTIALS environment variable set in appengine_config.py.",
-  "client_id": "fake.brid.gy",
+  "client_id": "fa.ke",
   "client_secret": "abc",
   "refresh_token": "123",
   "type": "authorized_user"
