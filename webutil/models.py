@@ -21,7 +21,9 @@ MAX_ENTITY_SIZE = 1 * 1000 * 1000
 
 _keys_bytes = []
 _keys = []
-if contents := util.read('encrypted_property_key'):
+if contents := (os.getenv('ENCRYPTED_PROPERTY_KEY')
+                or util.read('encrypted_property_key')):
+  print(contents)
   for line in contents.splitlines():
     line = line.strip()
     if not line:
@@ -137,7 +139,7 @@ class EncryptedProperty(ndb.BlobProperty):
             return None
 
         if not ENCRYPTED_PROPERTY_KEYS:
-            raise RuntimeError('No encryption key found in encrypted_property_key')
+            raise RuntimeError('No encryption key found in $ENCRYPTED_PROPERTY_KEY or encrypted_property_key')
 
         nonce = os.urandom(12)  # 96-bit nonce for GCM
         ciphertext = ENCRYPTED_PROPERTY_KEYS[0].encrypt(nonce, value, None)
@@ -150,7 +152,7 @@ class EncryptedProperty(ndb.BlobProperty):
             return None
 
         if not ENCRYPTED_PROPERTY_KEYS:
-            raise RuntimeError('No encryption key found in encrypted_property_key')
+            raise RuntimeError('No encryption key found in $ENCRYPTED_PROPERTY_KEY or encrypted_property_key')
 
         nonce = value[:12]
         ciphertext = value[12:]
