@@ -30,6 +30,10 @@ from cachetools import cached, TTLCache
 from domain2idna import domain2idna
 from flask import abort
 import grpc
+import requests
+from requests_hardened import Config, HTTPSession, ip_filter
+from requests_hardened.ip_filter import get_ip_address, InvalidIPAddress
+from requests_hardened.ip_filter_adapter import IPFilterAdapter
 
 from .appengine_info import DEBUG, TESTING, LOCAL_SERVER
 
@@ -63,90 +67,6 @@ try:
   from oauthlib.oauth2.rfc6749.errors import OAuth2Error
 except ImportError:
   OAuth2Error = None
-
-try:
-  import requests
-  from requests_hardened import Config, HTTPSession, ip_filter
-  from requests_hardened.ip_filter import get_ip_address, InvalidIPAddress
-  from requests_hardened.ip_filter_adapter import IPFilterAdapter
-
-  class NoCookieJar(requests.cookies.RequestsCookieJar):
-    """Cookie jar that discards all cookies, preventing cross-request leakage.
-
-    Duplicated in arroba.util.
-    """
-    def set(self, *args, **kwargs):
-      pass
-    def set_cookie(self, *args, **kwargs):
-      pass
-    def update(self, *args, **kwargs):
-      pass
-
-  def make_session():
-    """Returns a new :class:`requests.Session` for outbound HTTP requests.
-
-    Hardened against SSRF attacks. IP filtering is enabled only in prod, ie not
-    in DEBUG, TESTING, or LOCAL_SERVER, since it does real DNS resolution and
-    blocks private and loopback IPs.
-
-    https://github.com/snarfed/webutil/issues/11
-    Duplicated in arroba.util.
-    """
-    ip_filter_enable = not (DEBUG or TESTING or LOCAL_SERVER)
-    sess = HTTPSession(Config(
-      ip_filter_enable=ip_filter_enable,
-      ip_filter_allow_loopback_ips=False,
-      never_redirect=False,
-      default_timeout=None,
-    ))
-    sess.cookies = NoCookieJar()
-
-    if ip_filter_enable:
-      # this is the only case where HTTPSession mounts IPFilterAdapter. re-mount
-      # it with a bigger connection pool; the default only keeps connections to
-      # 10 hosts, too few for fanning out to many fediverse servers.
-      # https://github.com/snarfed/bridgy-fed/issues/2488
-      for prefix, is_https in ('https://', True), ('http://', False):
-        adapter = IPFilterAdapter(is_https_proto=is_https)
-        adapter.init_poolmanager(500, 20)
-        sess.mount(prefix, adapter)
-
-    return sess
-
-  session = make_session()
-
-  # Cache DNS resolution so requests_hardened's IPFilterAdapter generates a
-  # stable urllib3 connection pool key per host. The adapter keys the pool on
-  # the resolved IP, so without this, a host with round-robin DNS gets a new
-  # pool key - and a new TLS handshake - on every request.
-  # https://github.com/snarfed/bridgy-fed/issues/2488
-  ip_address_cache = TTLCache(10000, 60 * 10)  # 10m
-  ip_address_cache_lock = threading.Lock()
-
-  @cached(ip_address_cache, lock=ip_address_cache_lock)
-  def cached_get_ip_address(hostname, port, allow_loopback):
-    return get_ip_address(hostname, port, allow_loopback=allow_loopback)
-
-  ip_filter.get_ip_address = cached_get_ip_address
-
-  @functools.cache
-  def check_ssrf(hostname):
-    """Raises InvalidIPAddress if hostname resolves to a private IP.
-
-    Uses DNS to resolve hostname. Caches results to avoid repeated lookups.
-
-    https://github.com/snarfed/webutil/issues/11
-    https://github.com/snarfed/bridgy-fed/issues/2140
-    """
-    if not (DEBUG or TESTING or LOCAL_SERVER):
-      get_ip_address(hostname, None, allow_loopback=False)
-
-except ImportError:
-  requests = None
-  make_session = None
-  session = None
-  InvalidIPAddress = None
-  check_ssrf = None
 
 try:
   import urllib3
@@ -1897,6 +1817,50 @@ def websocket_connect(uri, **kwargs):
     yield ws
 
 
+class NoCookieJar(requests.cookies.RequestsCookieJar):
+  """Cookie jar that discards all cookies, preventing cross-request leakage."""
+  def set(self, *args, **kwargs):
+    pass
+  def set_cookie(self, *args, **kwargs):
+    pass
+  def update(self, *args, **kwargs):
+    pass
+
+
+def make_session():
+  """Returns a new :class:`requests.Session` for outbound HTTP requests.
+
+  Hardened against SSRF attacks. IP filtering is enabled only in prod, ie not
+  in DEBUG, TESTING, or LOCAL_SERVER, since it does real DNS resolution and
+  blocks private and loopback IPs.
+
+  https://github.com/snarfed/webutil/issues/11
+  """
+  ip_filter_enable = not (DEBUG or TESTING or LOCAL_SERVER)
+  sess = HTTPSession(Config(
+    ip_filter_enable=ip_filter_enable,
+    ip_filter_allow_loopback_ips=False,
+    never_redirect=False,
+    default_timeout=None,
+  ))
+  sess.cookies = NoCookieJar()
+
+  if ip_filter_enable:
+    # this is the only case where HTTPSession mounts IPFilterAdapter. re-mount
+    # it with a bigger connection pool; the default only keeps connections to
+    # 10 hosts, too few for fanning out to many fediverse servers.
+    # https://github.com/snarfed/bridgy-fed/issues/2488
+    for prefix, is_https in ('https://', True), ('http://', False):
+      adapter = IPFilterAdapter(is_https_proto=is_https)
+      adapter.init_poolmanager(500, 20)
+      sess.mount(prefix, adapter)
+
+  return sess
+
+# global
+session = make_session()
+
+
 def requests_fn(fn):
   """Wraps ``requests.*`` and logs the HTTP method and URL.
 
@@ -2030,6 +1994,33 @@ def requests_post_with_redirects(url, *args, **kwargs):
     return resp
 
   raise requests.TooManyRedirects(response=resp)
+
+
+# Cache DNS resolution so requests_hardened's IPFilterAdapter generates a
+# stable urllib3 connection pool key per host. The adapter keys the pool on
+# the resolved IP, so without this, a host with round-robin DNS gets a new
+# pool key - and a new TLS handshake - on every request.
+# https://github.com/snarfed/bridgy-fed/issues/2488
+ip_address_cache = TTLCache(10000, 60 * 10)  # 10m
+ip_address_cache_lock = threading.Lock()
+
+@cached(ip_address_cache, lock=ip_address_cache_lock)
+def cached_get_ip_address(hostname, port, allow_loopback):
+  return get_ip_address(hostname, port, allow_loopback=allow_loopback)
+
+ip_filter.get_ip_address = cached_get_ip_address
+
+@functools.cache
+def check_ssrf(hostname):
+  """Raises InvalidIPAddress if hostname resolves to a private IP.
+
+  Uses DNS to resolve hostname. Caches results to avoid repeated lookups.
+
+  https://github.com/snarfed/webutil/issues/11
+  https://github.com/snarfed/bridgy-fed/issues/2140
+  """
+  if not (DEBUG or TESTING or LOCAL_SERVER):
+    get_ip_address(hostname, None, allow_loopback=False)
 
 
 def _prune(kwargs):
