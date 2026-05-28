@@ -10,7 +10,13 @@ from google.cloud import ndb
 
 import unittest.mock as mock
 
-from ..models import EncryptedProperty, EnumProperty, Reloader, StringIdModel
+from ..models import (
+  EncryptedProperty,
+  EnumProperty,
+  Reloader,
+  StringIdModel,
+  WriteOnceBlobProperty,
+)
 from .. import appengine_config, models, testutil, util
 
 
@@ -238,3 +244,23 @@ class EncryptedPropertyTest(testutil.TestCase):
     from cryptography.exceptions import InvalidTag
     with self.assertRaises(InvalidTag):
       prop._from_base_type(encrypted)
+
+  def test_write_once(self):
+    class Foo(ndb.Model):
+      prop = WriteOnceBlobProperty()
+
+    foo = Foo(prop=b'x')
+    with self.assertRaises(ndb.ReadonlyPropertyError):
+      foo.prop = b'y'
+    with self.assertRaises(ndb.ReadonlyPropertyError):
+      foo.prop = None
+
+    foo = Foo()
+    foo.prop = b'x'
+    with self.assertRaises(ndb.ReadonlyPropertyError):
+      foo.prop = b'y'
+
+    foo.put()
+    foo = foo.key.get()
+    with self.assertRaises(ndb.ReadonlyPropertyError):
+      foo.prop = b'y'

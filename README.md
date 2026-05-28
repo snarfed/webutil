@@ -23,6 +23,11 @@ Contents
 Changelog
 ---
 
+### 1.1 - unreleased
+
+* `models`:
+  * Add new `WriteOnce`, `WriteOnceBlobProperty` ndb property classes. (Moved here from [arroba](https://github.com/snarfed/arroba/).)
+
 ### 1.0 - 2026-05-27
 
 Initial PyPI release. Moved out of oauth-dropins, where it's been maintained for the last 10+ years, into its own dedicated package, `pywebutil`.

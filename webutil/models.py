@@ -51,9 +51,6 @@ class JsonProperty(ndb.TextProperty):
     This makes values show up as normal, human-readable, serialized JSON in the
     web console.
     https://github.com/googleapis/python-ndb/issues/874#issuecomment-1442753255
-
-    Duplicated in arroba:
-    https://github.com/snarfed/arroba/blob/main/arroba/ndb_storage.py
     """
     def _validate(self, value):
         if not isinstance(value, (dict, list)):
@@ -195,6 +192,20 @@ class Cache(ndb.Model):
         cached = cls(id=key, value=value.encode(),
                      expire=datetime.now(timezone.utc) + expire)
         super(cls, cached).put()
+
+
+class WriteOnce:
+    """:class:`ndb.Property` mix-in, prevents changing it once it's set."""
+    def _set_value(self, entity, value):
+        existing = self._get_value(entity)
+        if existing is not None and value != existing:
+            raise ndb.ReadonlyPropertyError(f"{self._name} can't be changed")
+
+        return super()._set_value(entity, value)
+
+
+class WriteOnceBlobProperty(WriteOnce, ndb.BlobProperty):
+    pass
 
 
 def stored_value(entity, prop):

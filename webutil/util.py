@@ -30,9 +30,13 @@ from cachetools import cached, TTLCache
 from domain2idna import domain2idna
 from flask import abort
 import grpc
-import mf2util
 
 from .appengine_info import DEBUG, TESTING, LOCAL_SERVER
+
+try:
+  import mf2util
+except ImportError:
+  mf2util = None
 
 try:
   import ujson
