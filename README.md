@@ -1,4 +1,4 @@
-webutil [![Circle CI](https://circleci.com/gh/snarfed/webutil.svg?style=svg)](https://circleci.com/gh/snarfed/webutil) [![Coverage Status](https://coveralls.io/repos/github/snarfed/webutil/badge.svg?branch=master)](https://coveralls.io/github/snarfed/webutil?branch=master)
+webutil [![Circle CI](https://circleci.com/gh/snarfed/webutil.svg?style=svg)](https://circleci.com/gh/snarfed/webutil) [![Coverage Status](https://coveralls.io/repos/github/snarfed/webutil/badge.svg?branch=main)](https://coveralls.io/github/snarfed/webutil?branch=main)
 ===
 
 Common utilities and handler code for Python web apps.
