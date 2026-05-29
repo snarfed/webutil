@@ -23,7 +23,6 @@ _keys_bytes = []
 _keys = []
 if contents := (os.getenv('ENCRYPTED_PROPERTY_KEY')
                 or util.read('encrypted_property_key')):
-  print(contents)
   for line in contents.splitlines():
     line = line.strip()
     if not line:
