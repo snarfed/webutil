@@ -13,20 +13,27 @@ env GOOGLE_APPLICATION_CREDENTIALS=service_account_creds.json FLASK_ENV=developm
 """
 import os, sys
 
-PROJECT = os.getenv('GOOGLE_CLOUD_PROJECT') or os.getenv('GAE_APPLICATION') or ''
+PROJECT = (os.getenv('GOOGLE_CLOUD_PROJECT')
+           or os.getenv('GAE_APPLICATION')
+           or os.getenv('K_SERVICE')
+           or '')
 APP_ID = PROJECT.split('~')[-1]
 
 creds = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-gae_env = os.environ.get('GAE_ENV')  # App Engine Standard
+gae_env = os.environ.get('GAE_ENV')          # App Engine Standard
 gae_instance = 'GAE_INSTANCE' in os.environ  # App Engine Flex
+cloud_run_service = os.getenv('K_SERVICE')   # Cloud Run
+
+PROD = gae_env == 'standard' or gae_instance or cloud_run_service
 
 READ_ONLY = bool(os.environ.get('READ_ONLY'))
 
 args = ' '.join(sys.argv)
 TESTING = 'unittest' in args or 'pytest' in args
+
+LOCAL_SERVER = not PROD and not TESTING
+
 if creds and not creds.endswith('fake_user_account.json'):
   DEBUG = False
-  LOCAL_SERVER = True
 else:
-  DEBUG = gae_env in (None, 'localdev') and not gae_instance
-  LOCAL_SERVER = gae_env != 'standard' and not gae_instance and not TESTING
+  DEBUG = gae_env in (None, 'localdev') and not PROD
