@@ -3,9 +3,9 @@ webutil [![Circle CI](https://circleci.com/gh/snarfed/webutil.svg?style=svg)](ht
 
 Common utilities and handler code for Python web apps.
 
-* Install with `pip install webutil`.
-* Supports Python 3.9+.
-* [Reference documentation.](https://oauth-dropins.readthedocs.io/en/stable/source/oauth_dropins.webutil.html)
+* Install with `pip install webutil`
+* Supports Python 3.9+
+* [Documentation](https://oauth-dropins.readthedocs.io/)
 
 webutil is dedicated to the public domain. You may also use it under the [CC0 public domain dedication](https://creativecommons.org/share-your-work/public-domain/cc0/).
 
