@@ -1,0 +1,33 @@
+{% extends "!layout.html" %}
+
+{%- block navigation %}
+
+
+<div style="width: 300px; text-align: center; font-size: larger">
+
+<p>Common utilities and handler code for Python web apps.</p>
+
+<p>
+<a href="https://circleci.com/gh/snarfed/webutil">
+  <img alt="Tests on Circle CI" src="https://circleci.com/gh/snarfed/webutil.svg?style=svg" />
+</a>
+
+<a href="https://coveralls.io/github/snarfed/webutil?branch=master">
+  <img alt="Coverage on Coveralls" src="https://coveralls.io/repos/github/snarfed/webutil/badge.svg?branch=master" />
+</a>
+</p>
+</div>
+
+<div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="{{ _('Navigation menu') }}">
+<div class="local-toc">
+  <ul>
+    <li><a href="{{ pathto('index') }}">Getting started</a></li>
+    <li><a href="{{ pathto('source/webutil') }}">Reference</a></li>
+  </ul>
+  <hr style="margin: 1em">
+  {{ toc }}
+</div>
+</div>
+
+
+{%- endblock %}

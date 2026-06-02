@@ -267,7 +267,7 @@ def handle_exception(e):
 
 
 def handle_read_only_permission_denied(e):
-  """Flask error handler that converts ``PermissionDenied` to HTTP 503 when read only.
+  """Flask error handler that converts ``PermissionDenied`` to HTTP 503 when read only.
 
   If datastore writes are disabled, they raise
   :class:`google.api_core.exceptions.PermissionDenied`. Convert that to a
@@ -607,8 +607,7 @@ class FlashErrors(View):
     TODO: unify with :func:`handle_exception`?
 
     Attributes:
-    * ON_ERROR_REDIRECT_TO (str): class level, path to redirect to on error.
-      Defaults to `` / login``.
+      * ON_ERROR_REDIRECT_TO (str): class level, path to redirect to on error. Defaults to `` / login``.
     """
     ON_ERROR_REDIRECT_TO = '/login'
 

@@ -84,6 +84,8 @@ class EnumProperty(ndb.IntegerProperty):
 
     Stores the enum's integer value in the datastore.
     """
+    _enum_class = None
+
     def __init__(self, enum_class, **kwargs):
         if not issubclass(enum_class, enum.Enum):
             raise TypeError('enum_class must be a subclass of enum.Enum')
