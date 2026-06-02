@@ -10,7 +10,11 @@ build:
 
 python:
    install:
-      - requirements: requirements.txt
+      - method: pip
+        path: .
+        extra_requirements:
+          - google-cloud
+          - html
       - requirements: docs/requirements.txt
 
 sphinx:
