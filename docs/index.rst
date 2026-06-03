@@ -3,10 +3,9 @@ webutil
 
 Common utilities and handler code for Python web apps.
 
-- Install with ``pip install webutil``.
-- Supports Python 3.9+.
-- `Reference
-  documentation. <https://oauth-dropins.readthedocs.io/en/stable/source/oauth_dropins.webutil.html>`__
+- Install with ``pip install webutil``
+- Supports Python 3.9+
+- `Documentation <https://oauth-dropins.readthedocs.io/>`__
 
 webutil is dedicated to the public domain. You may also use it under the
 `CC0 public domain

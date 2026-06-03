@@ -1861,114 +1861,115 @@ def make_session():
 session = make_session()
 
 
-def requests_fn(fn):
-  """Wraps ``requests.*`` and logs the HTTP method and URL.
+def requests_fn(url, fn=None, *args, **kwargs):
+  """Wraps ``requests.*``, uses our hardened session, logs the HTTP method and URL.
 
   Use :func:`set_user_agent` to change the ``User-Agent`` header to be sent.
 
   Args:
-    fn (str): 'head', 'get', or 'post'
+    url (str)
+    fn (callable): a request method, eg :meth:`requests.Sesssion.get`
+    gateway (bool): whether this is in a HTTP gateway request handler context. If
+      True, errors will be raised as appropriate Flask HTTP exceptions. Malformed
+      URLs result in :class:`werkzeug.exceptions.BadRequest` (HTTP 400), connection
+      failures and HTTP 4xx and 5xx result in :class:`werkzeug.exceptions.BadGateway`
+      (HTTP 502).
 
   Returns:
-    callable, ``(str url, gateway=None, **kwargs)`` => :class:`requests.Response`:
-      drop-in replacement for :func:`requests.get` etc
-
-      The ``gateway`` kwarg is a bool for whether this is in a HTTP gateway
-      request handler context. If True, errors will be raised as appropriate
-      Flask HTTP exceptions. Malformed URLs result in
-      :class:`werkzeug.exceptions.BadRequest` (HTTP 400), connection failures
-      and HTTP 4xx and 5xx result in :class:`werkzeug.exceptions.BadGateway`
-      (HTTP 502).
+    requests.Response:
   """
-  hardened_session = session
+  logger.info(f'{getattr(fn, "__name__", "request")} {url} {_prune(kwargs)}')
 
-  def call(url, session=None, *args, **kwargs):
-    logger.info(f'{"requests_cache" if session else "requests"}.{fn} {url} {_prune(kwargs)}')
+  gateway = kwargs.pop('gateway', None)
+  kwargs.setdefault('timeout', HTTP_TIMEOUT)
+  # stream to short circuit on too-long response bodies (below)
+  kwargs.setdefault('stream', True)
 
-    gateway = kwargs.pop('gateway', None)
-    kwargs.setdefault('timeout', HTTP_TIMEOUT)
-    # stream to short circuit on too-long response bodies (below)
-    kwargs.setdefault('stream', True)
+  if kwargs.get('headers') is None:
+    kwargs['headers'] =  {}
+  kwargs['headers'].setdefault('User-Agent', user_agent)
 
-    if kwargs.get('headers') is None:
-      kwargs['headers'] =  {}
-    kwargs['headers'].setdefault('User-Agent', user_agent)
+  try:
+    # use getattr so that stubbing out with mox still works
+    resp = fn(url, *args, **kwargs)
+    msg = f'Received {resp.status_code} '
+    if resp.status_code // 100 == 3:
+      msg += f'{resp.headers.get("Location") or "no Location header"}'
+    elif not resp.ok:
+      msg += resp.text[:200]
+    logger.info(msg)
+    if gateway:
+      resp.raise_for_status()
 
-    try:
-      # use getattr so that stubbing out with mox still works
-      resp = getattr((session or hardened_session), fn)(url, *args, **kwargs)
-      msg = f'Received {resp.status_code} '
-      if resp.status_code // 100 == 3:
-        msg += f'{resp.headers.get("Location") or "no Location header"}'
-      elif not resp.ok:
-        msg += resp.text[:200]
-      logger.info(msg)
+  except (ValueError, requests.URLRequired) as e:
+    if isinstance(e, requests.exceptions.InvalidURL):
+      punycode = domain2idna(url)  # surprisingly, this handles full URLs fine
+      if punycode != url:
+        # the domain is valid idn2003 but not idn2008. encode and try again.
+        # https://unicode.org/faq/idn.html#6
+        # https://github.com/psf/requests/issues/3687
+        # https://github.com/kjd/idna/issues/18
+        # https://github.com/kjd/idna/issues/40
+        punycode_domain = urlparse(punycode).netloc
+        domain = urlparse(url).netloc
+        kwargs['headers']['Host'] = punycode_domain
+        resp = requests_fn(punycode, fn=fn, *args, **kwargs)
+        resp.url = resp.url.replace(punycode_domain, domain)
+        return resp
+
+    if gateway:
+      msg = f'Bad URL {url} : {e}'
+      logger.warning(msg)
+      # this format_exc with tb None below, instead of passing exc_info=True
+      # above, prevents the 'Traceback (most recent call last):' prefix that
+      # triggers Stackdriver Error Reporting
+      logger.warning('\n'.join(traceback.format_tb(sys.exc_info()[2])))
+      abort(400, msg)
+    raise
+
+  except requests.RequestException as e:
+    if gateway:
+      msg = str(e)
+      if e.response is not None:
+        msg += f' ; {e.response.text[:500]}'
+      logger.warning(msg)
+      logger.debug('\n'.join(traceback.format_tb(sys.exc_info()[2])))
+      abort(502, msg)
+    raise
+
+  if url != resp.url:
+    logger.info(f'Redirected to {resp.url}')
+
+  # check response size for text/ and application/ Content-Types
+  type = resp.headers.get('Content-Type', '')
+  if type and (type.startswith('text/') or type.startswith('application/')):
+    length = resp.headers.get('Content-Length')
+    if is_int(length):
+      length = int(length)
+    else:
+      length = len(resp.text)
+    if length > MAX_HTTP_RESPONSE_SIZE:
+      resp.close()
+      resp.status_code = HTTP_RESPONSE_TOO_BIG_STATUS_CODE
+      resp._text = f'Content-Length {length} is larger than our limit {MAX_HTTP_RESPONSE_SIZE}.'
+      resp._content = resp._text.encode('utf-8')
       if gateway:
         resp.raise_for_status()
 
-    except (ValueError, requests.URLRequired) as e:
-      if isinstance(e, requests.exceptions.InvalidURL):
-        punycode = domain2idna(url)  # surprisingly, this handles full URLs fine
-        if punycode != url:
-          # the domain is valid idn2003 but not idn2008. encode and try again.
-          # https://unicode.org/faq/idn.html#6
-          # https://github.com/psf/requests/issues/3687
-          # https://github.com/kjd/idna/issues/18
-          # https://github.com/kjd/idna/issues/40
-          punycode_domain = urlparse(punycode).netloc
-          domain = urlparse(url).netloc
-          kwargs['headers']['Host'] = punycode_domain
-          resp = call(punycode, session=session, *args, **kwargs)
-          resp.url = resp.url.replace(punycode_domain, domain)
-          return resp
+  return resp
 
-      if gateway:
-        msg = f'Bad URL {url} : {e}'
-        logger.warning(msg)
-        # this format_exc with tb None below, instead of passing exc_info=True
-        # above, prevents the 'Traceback (most recent call last):' prefix that
-        # triggers Stackdriver Error Reporting
-        logger.warning('\n'.join(traceback.format_tb(sys.exc_info()[2])))
-        abort(400, msg)
-      raise
 
-    except requests.RequestException as e:
-      if gateway:
-        msg = str(e)
-        if e.response is not None:
-          msg += f' ; {e.response.text[:500]}'
-        logger.warning(msg)
-        logger.debug('\n'.join(traceback.format_tb(sys.exc_info()[2])))
-        abort(502, msg)
-      raise
+def requests_get(*args, **kwargs):
+  return requests_fn(*args, fn=(kwargs.pop('session', session)).get, **kwargs)
 
-    if url != resp.url:
-      logger.info(f'Redirected to {resp.url}')
+def requests_head(*args, **kwargs):
+  return requests_fn(*args, fn=(kwargs.pop('session', session)).head, **kwargs)
 
-    # check response size for text/ and application/ Content-Types
-    type = resp.headers.get('Content-Type', '')
-    if type and (type.startswith('text/') or type.startswith('application/')):
-      length = resp.headers.get('Content-Length')
-      if is_int(length):
-        length = int(length)
-      else:
-        length = len(resp.text)
-      if length > MAX_HTTP_RESPONSE_SIZE:
-        resp.close()
-        resp.status_code = HTTP_RESPONSE_TOO_BIG_STATUS_CODE
-        resp._text = f'Content-Length {length} is larger than our limit {MAX_HTTP_RESPONSE_SIZE}.'
-        resp._content = resp._text.encode('utf-8')
-        if gateway:
-          resp.raise_for_status()
+def requests_post(*args, **kwargs):
+  return requests_fn(*args, fn=(kwargs.pop('session', session)).post, **kwargs)
 
-    return resp
-
-  return call
-
-requests_get = requests_fn('get')
-requests_head = requests_fn('head')
-requests_post = requests_fn('post')
-requests_delete = requests_fn('delete')
+def requests_delete(*args, **kwargs):
+  return requests_fn(*args, fn=(kwargs.pop('session', session)).delete, **kwargs)
 
 
 def requests_post_with_redirects(url, *args, **kwargs):
