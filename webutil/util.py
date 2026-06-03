@@ -1901,7 +1901,7 @@ def requests_fn(url, fn=None, *args, **kwargs):
     if gateway:
       resp.raise_for_status()
 
-  except (ValueError, requests.URLRequired) as e:
+  except (ValueError, requests.URLRequired, InvalidIPAddress) as e:
     if isinstance(e, requests.exceptions.InvalidURL):
       punycode = domain2idna(url)  # surprisingly, this handles full URLs fine
       if punycode != url:

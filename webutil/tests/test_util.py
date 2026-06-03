@@ -1544,6 +1544,16 @@ class UtilTest(testutil.TestCase):
     with self.assertRaises(InvalidIPAddress):
       util.check_ssrf('private.example.com')
 
+  @patch('urllib3.connectionpool.HTTPConnectionPool.urlopen')
+  @patch.multiple('webutil.util', DEBUG=False, TESTING=False, LOCAL_SERVER=False)
+  def test_check_ssrf_blocked_ip(self, _):
+    with patch('webutil.util.session', util.make_session()):
+      with self.assertRaises(InvalidIPAddress):
+        util.requests_get('http://169.254.169.254/foo')
+
+      with self.assertRaises(BadRequest):
+        resp = util.requests_get('http://169.254.169.254/foo', gateway=True)
+
   @patch('socket.getaddrinfo', return_value=[
       (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('93.184.216.34', 443)),
   ])
