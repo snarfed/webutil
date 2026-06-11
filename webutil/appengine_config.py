@@ -1,9 +1,10 @@
 """App Engine config. local vs prod, logging, Google API clients, etc."""
 import logging
 import os
+import sys
 import threading
 
-from .appengine_info import DEBUG, LOCAL_SERVER
+from .appengine_info import DEBUG, LOCAL_SERVER, GAE, CLOUD_RUN
 
 # Use lxml for BeautifulSoup explicitly.
 from . import util
@@ -58,25 +59,32 @@ try:
 except ImportError:
   pass
 
-# needed to make logging visible locally under flask run, etc
-logging.basicConfig()
-logging.getLogger().setLevel(logging.DEBUG)
-
 # Logging
 # https://docs.cloud.google.com/python/docs/reference/logging/latest/google.cloud.logging_v2.client.Client
 try:
   import google.cloud.logging
+  from google.cloud.logging_v2.handlers.structured_log import StructuredLogHandler
   logging_client = thread_local.logging_client = None
 
-  if not DEBUG and not LOCAL_SERVER:
+  if CLOUD_RUN:
+    # Cloud Run captures stdout and parses JSON structured logs automatically.
+    # https://docs.cloud.google.com/run/docs/logging#container-logs
+    logging.basicConfig(handlers=[StructuredLogHandler(stream=sys.stdout)],
+                        level=logging.DEBUG)
+  elif GAE:
     logging_client = thread_local.logging_client = google.cloud.logging.Client()
     logging_client.setup_logging(log_level=logging.DEBUG)
     # this currently occasionally hits the 256KB batch limit and
     # crashes in the background service. i've tried batch_size=1 and
     # SyncTransport, but no luck, same thing.
     # https://stackoverflow.com/questions/59398479
+  else:
+    # plain text for local dev
+    logging.basicConfig()
+    logging.getLogger().setLevel(logging.DEBUG)
 except ImportError:
-  pass
+  logging.basicConfig()
+  logging.getLogger().setLevel(logging.DEBUG)
 
 for logger in ('charset_normalizer', 'google.cloud', 'oauthlib', 'requests',
                'requests_cache', 'requests_oauthlib', 'urllib3'):

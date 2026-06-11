@@ -24,7 +24,9 @@ gae_env = os.environ.get('GAE_ENV')          # App Engine Standard
 gae_instance = 'GAE_INSTANCE' in os.environ  # App Engine Flex
 cloud_run_service = os.getenv('K_SERVICE')   # Cloud Run
 
-PROD = gae_env == 'standard' or gae_instance or cloud_run_service
+GAE = bool(gae_env == 'standard' or gae_instance)
+CLOUD_RUN = bool(cloud_run_service)
+PROD = GAE or CLOUD_RUN
 
 READ_ONLY = bool(os.environ.get('READ_ONLY'))
 
