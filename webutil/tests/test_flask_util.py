@@ -2,7 +2,6 @@
 import datetime
 import os
 import unittest
-from unittest.mock import patch
 
 from flask import (
   abort,
@@ -373,19 +372,6 @@ class FlaskUtilTest(unittest.TestCase):
 
     got = self.client.post('/')
     self.assertEqual(401, got.status_code)
-
-  def test_request_host_url(self):
-    self.assertTrue(flask_util.TESTING)
-    with self.app.test_request_context('/foo', base_url='https://x.y'):
-      self.assertEqual('https://x.y', flask_util.request_host_url())
-    with self.app.test_request_context('/foo', base_url='http://x.y'):
-      self.assertEqual('http://x.y', flask_util.request_host_url())
-
-    with patch.multiple(flask_util, DEBUG=False, TESTING=False):
-      for base_url in ('http://x.y', 'https://x.y'):
-        with self.subTest(base_url=base_url), \
-             self.app.test_request_context('/foo', base_url):
-          self.assertEqual('https://x.y', flask_util.request_host_url())
 
 
 class XrdOrJrdTest(unittest.TestCase):

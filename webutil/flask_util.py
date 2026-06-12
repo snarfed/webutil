@@ -24,7 +24,7 @@ from werkzeug.exceptions import BadRequestKeyError, HTTPException
 from werkzeug.routing import BaseConverter
 
 from . import appengine_info
-from .appengine_info import DEBUG, LOCAL_SERVER, TESTING
+from .appengine_info import LOCAL_SERVER
 from . import util
 
 logger = logging.getLogger(__name__)
@@ -508,20 +508,6 @@ def canonicalize_request_domain(from_domains, to_domain):
     return decorated
 
   return decorator
-
-
-def request_host_url():
-  """Wrapper around :meth:`flask.Request.host_url` that uses https in production.
-
-  Handles when we're not terminating SSL and WSGI thinks we're serving HTTP,
-  eg on Cloud Run.
-  """
-  scheme = request.scheme
-
-  if not (DEBUG or TESTING or LOCAL_SERVER):
-    scheme = 'https'
-
-  return f'{scheme}://{request.host}'
 
 
 def disable_if_read_only(render_fn=render_template):
