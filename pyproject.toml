@@ -19,14 +19,14 @@ requires-python = '>=3.9'
 keywords = ['App Engine', 'Flask', 'HTTP', 'web', 'utilities']
 dependencies = [
     'cachetools>=3.1',
-    'cryptography',
+    'cryptography>=35.0.0',
     'domain2idna>=1.12',
     'Flask>=2.0',
     'grpcio>=1.0',
     'humanize>=4.0',
     'requests>=2.0',
     'requests-hardened>=1.0',
-    'werkzeug',
+    'werkzeug>=2.0',
 ]
 
 # https://pypi.org/classifiers/
@@ -45,11 +45,13 @@ classifiers = [
 
 [project.optional-dependencies]
 tests = [
-    'mox3 @ git+https://github.com/snarfed/mox3.git',
     'flask-caching',
     'httplib2',
     'lxml',
     'mf2py',
+    'mf2util',
+    'mox3 @ git+https://github.com/snarfed/mox3.git',
+    'oauth2client',
     'oauthlib',
     'prawcore',
     'python-tumblpy',
@@ -64,7 +66,21 @@ html = [
     'mf2util>=0.5.0',
 ]
 google-cloud = [
-    'google-api-python-client',
+    'google-api-python-client>=2.0',
     'google-cloud-logging>=3.0.0',
     'google-cloud-ndb>=2.0',
 ]
+
+# wish I could centralize these into ~/.config/uv/uv.toml, but uv.sources
+# is project-specific and can't be global. :(
+[tool.uv.sources]
+mf2util = { path = "../mf2util", editable = true }
+mox3 = { path = "../mox3", editable = true }
+
+[tool.deptry]
+exclude = ['.venv', 'dist', 'docs']
+
+[tool.deptry.per_rule_ignores]
+# required for tests, but loaded implicitly, via util.beautifulsoup_parser = 'lxml'
+# in appengine_config.py
+DEP002 = ['lxml']

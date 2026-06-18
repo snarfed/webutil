@@ -19,10 +19,15 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            pip install -U pip flake8
-            pip -V
-            pip install -U .[google-cloud,html,tests]
-            pip install coverage coveralls
+            pip install uv
+
+            # pip install instead of sync because sync uses venv
+            #
+            # can't use --all-extras because uv pip install doesn't support it well
+            #
+            # install the lowest versions of direct deps to make sure we don't
+            # use a feature added in a higher version of a dep than we specify
+            uv pip install --system --no-sources '.[google-cloud,html,tests]' coverage coveralls flake8
 
             # google-cloud-sdk: https://cloud.google.com/sdk/docs/install#deb
             echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
@@ -35,14 +40,14 @@ jobs:
           command: |
             gcloud emulators firestore start --host-port=:8089 --database-mode=datastore-mode < /dev/null >& /tmp/firestore-emulator.log &
             sleep 5s
-            python3 -m coverage run --omit=appengine_config.py -m unittest discover -v
-            coverage html -d /tmp/coverage_html
-            if [ "$COVERALLS_REPO_TOKEN" != "" ]; then coveralls || true; fi
+            python -m coverage run --omit=appengine_config.py -m unittest discover -v
+            python -m coverage html -d /tmp/coverage_html
+            if [ "$COVERALLS_REPO_TOKEN" != "" ]; then python -m coveralls || true; fi
 
             # check for unintentionally overridden test methods
             # https://flake8.pycqa.org/en/latest/user/error-codes.html#error-codes
             # https://flake8.pycqa.org/en/latest/user/options.html#cmdoption-flake8-select
-            python3 -m flake8 --select=F811 oauth_dropins/webutil/tests/test_*.py
+            python -m flake8 --select=F811 webutil/tests/test_*.py
 
       - save_cache:
           key: venv-1-{{ .Branch }}
