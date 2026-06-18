@@ -22,6 +22,7 @@ dependencies = [
     'cryptography',
     'domain2idna>=1.12',
     'Flask>=2.0',
+    'grpcio>=1.0',
     'humanize>=4.0',
     'requests>=2.0',
     'requests-hardened>=1.0',
