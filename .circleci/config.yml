@@ -21,7 +21,7 @@ jobs:
           command: |
             pip install uv
 
-            # pip install instead of sync because sync uses venv
+            # uv pip install instead of sync because sync uses venv
             #
             # can't use --all-extras because uv pip install doesn't support it well
             #

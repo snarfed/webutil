@@ -3,3 +3,4 @@
 include README.md
 recursive-include webutil *
 recursive-exclude webutil *.pyc .git* TAGS
+recursive-exclude webutil/tests *

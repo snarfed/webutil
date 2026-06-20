@@ -5,7 +5,8 @@ requires = ['setuptools>=77.0']
 build-backend = 'setuptools.build_meta'
 
 [tool.setuptools.packages.find]
-where = ['.']
+include = ['webutil*']
+exclude = ['webutil.tests*']
 
 [project]
 name = 'pywebutil'
@@ -49,7 +50,6 @@ tests = [
     'flask-caching',
     'httplib2',
     'lxml',
-    'mf2py',
     'mox3 @ git+https://github.com/snarfed/mox3.git',
     'oauth2client',
     'oauthlib',
@@ -63,7 +63,8 @@ tests = [
 ]
 html = [
     'beautifulsoup4>=4.8',
-    'mf2util>=0.5.0',
+    'mf2py',
+    'mf2util>=0.5.2',
 ]
 google-cloud = [
     'google-api-python-client>=2.0',
@@ -74,8 +75,10 @@ google-cloud = [
 # wish I could centralize these into ~/.config/uv/uv.toml, but uv.sources
 # is project-specific and can't be global. :(
 [tool.uv.sources]
-mf2util = { path = "../mf2util", editable = true }
-mox3 = { path = "../mox3", editable = true }
+mox3 =    { editable = true, path = "../mox3" }
+
+# we currently use these from PyPI
+# mf2util =           { editable = true, path = "../mf2util" }
 
 [tool.deptry]
 exclude = ['.venv', 'dist', 'docs']
