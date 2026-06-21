@@ -33,12 +33,12 @@ dependencies = [
     'cachetools>=3.1',
     'cryptography>=35.0.0',
     'domain2idna>=1.12',
-    'Flask>=2.0',
-    'grpcio>=1.0',
+    'Flask>=2.3',
+    'grpcio>=1.59.0',
     'humanize>=4.0',
     'requests>=2.0',
     'requests-hardened>=1.0',
-    'werkzeug>=2.0',
+    'werkzeug>=2.3',
 ]
 
 [project.urls]
@@ -47,29 +47,29 @@ dependencies = [
 
 [project.optional-dependencies]
 tests = [
-    'flask-caching',
-    'httplib2',
-    'lxml',
+    'flask-caching>=2.1.0',
+    'httplib2>=0.18',
+    'lxml>=4.6',
     'mox3 @ git+https://github.com/snarfed/mox3.git',
-    'oauth2client',
-    'oauthlib',
-    'prawcore',
-    'python-tumblpy',
-    'tweepy',
-    'ujson',
-    'urllib3',
-    'webob',
-    'websockets',
+    'oauth2client>=4.1.3',
+    'oauthlib>=3.1',
+    'prawcore>=2.0',
+    'python-tumblpy>=1.1',
+    'tweepy>=4.0',
+    'ujson>=5.7.0',
+    'urllib3>=1.26',
+    'webob>=1.8',
+    'websockets>=11.0',
 ]
 html = [
-    'beautifulsoup4>=4.8',
-    'mf2py',
+    'beautifulsoup4>=4.11.0',
+    'mf2py>=1.1.3',
     'mf2util>=0.5.2',
 ]
 google-cloud = [
     'google-api-python-client>=2.0',
-    'google-cloud-logging>=3.0.0',
-    'google-cloud-ndb>=2.0',
+    'google-cloud-logging>=3.4.0',
+    'google-cloud-ndb>=2.3.0',
 ]
 
 # wish I could centralize these into ~/.config/uv/uv.toml, but uv.sources
