@@ -958,7 +958,14 @@ def parse_iso8601(val):
     :class:`datetime.datetime`
   """
   assert val
-  return datetime.fromisoformat(val.strip())
+  val = val.strip()
+  # Python <3.11's datetime.fromisoformat is stricter than 3.11+: it rejects a
+  # trailing Z, timezone offsets without a colon, and fractional seconds that
+  # aren't exactly 3 or 6 digits. Normalize all three first.
+  val = re.sub(r'Z$', '+00:00', val)
+  val = re.sub(r'([+-]\d{2})(\d{2})$', r'\1:\2', val)
+  val = re.sub(r'\.(\d+)', lambda m: '.' + m.group(1)[:6].ljust(6, '0'), val)
+  return datetime.fromisoformat(val)
 
 
 def parse_iso8601_duration(input):

@@ -6,15 +6,27 @@ version: 2.1
 
 jobs:
   build:
+    parameters:
+      # which Python version and dependency resolution strategy to test:
+      # * 3.12 + highest: newest deps
+      # * 3.9 + lowest-direct: oldest direct deps at or above our version
+      #   specifiers, to make sure we don't use a feature added in a higher
+      #   version of a dep than we declare
+      python:
+        type: string
+      resolution:
+        type: enum
+        enum: [lowest-direct, highest]
+
     docker:
-      - image: cimg/python:3.12
+      - image: cimg/python:<< parameters.python >>
 
     steps:
       - checkout
 
       - restore_cache:
           keys:
-            - venv-1-{{ .Branch }}
+            - venv-2-{{ .Branch }}-<< parameters.python >>-<< parameters.resolution >>
 
       - run:
           name: Install dependencies
@@ -24,10 +36,10 @@ jobs:
             # pip install instead of sync because sync uses venv
             #
             # can't use --all-extras because uv pip install doesn't support it well
-            #
-            # install the lowest versions of direct deps to make sure we don't
-            # use a feature added in a higher version of a dep than we specify
-            uv pip install --system --no-sources '.[google-cloud,html,tests]' coverage coveralls flake8
+            uv pip install --system --no-sources --resolution=<< parameters.resolution >> '.[google-cloud,html,tests]'
+
+            # install CI tools separately so lowest-direct doesn't downgrade them
+            uv pip install --system coverage coveralls flake8
 
             # google-cloud-sdk: https://cloud.google.com/sdk/docs/install#deb
             echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
@@ -50,7 +62,7 @@ jobs:
             python -m flake8 --select=F811 webutil/tests/test_*.py
 
       - save_cache:
-          key: venv-1-{{ .Branch }}
+          key: venv-2-{{ .Branch }}-<< parameters.python >>-<< parameters.resolution >>
           paths:
             - /home/circleci/.pyenv
             # Ideally we'd cache these, but they need root, and the cimg/python
@@ -62,3 +74,16 @@ jobs:
 
       - store_artifacts:
           path: /tmp/coverage_html
+
+workflows:
+  build:
+    jobs:
+      # two coupled combos; both must pass
+      - build:
+          name: python-3.12-highest
+          python: '3.12'
+          resolution: highest
+      - build:
+          name: python-3.9-lowest-direct
+          python: '3.9'
+          resolution: lowest-direct
