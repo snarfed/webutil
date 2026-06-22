@@ -80,8 +80,11 @@ mox3 =    { editable = true, path = "../mox3" }
 # we currently use these from PyPI
 # mf2util =           { editable = true, path = "../mf2util" }
 
+[tool.uv.pip]
+# this is in ~/.config/uv/uv.toml
+
 [tool.deptry]
-exclude = ['.venv', 'dist', 'docs']
+extend_exclude = ['build', 'dist', 'docs']
 
 [tool.deptry.per_rule_ignores]
 # required for tests, but loaded implicitly, via util.beautifulsoup_parser = 'lxml'
