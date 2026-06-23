@@ -6,7 +6,10 @@ build-backend = 'setuptools.build_meta'
 
 [tool.setuptools.packages.find]
 include = ['webutil*']
-exclude = ['webutil.tests*']
+
+[project.urls]
+Homepage = 'https://github.com/snarfed/webutil'
+Documentation = 'https://webutil.readthedocs.io/'
 
 [project]
 name = 'pywebutil'
@@ -40,10 +43,6 @@ dependencies = [
     'requests-hardened>=1.0',
     'werkzeug>=2.3',
 ]
-
-[project.urls]
-'Homepage' = 'https://github.com/snarfed/webutil'
-'Documentation' = 'https://oauth-dropins.readthedocs.io/en/latest/source/oauth_dropins.webutil.html'
 
 [project.optional-dependencies]
 tests = [
