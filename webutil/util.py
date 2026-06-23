@@ -1868,7 +1868,7 @@ def make_session():
 session = make_session()
 
 
-def requests_fn(url, fn=None, *args, **kwargs):
+def requests_fn(url, fn=None, *args, log_data=True, **kwargs):
   """Wraps ``requests.*``, uses our hardened session, logs the HTTP method and URL.
 
   Use :func:`set_user_agent` to change the ``User-Agent`` header to be sent.
@@ -1881,11 +1881,12 @@ def requests_fn(url, fn=None, *args, **kwargs):
       URLs result in :class:`werkzeug.exceptions.BadRequest` (HTTP 400), connection
       failures and HTTP 4xx and 5xx result in :class:`werkzeug.exceptions.BadGateway`
       (HTTP 502).
+    log_data (bool): whether to log ``data`` or ``json``
 
   Returns:
     requests.Response:
   """
-  logger.info(f'{getattr(fn, "__name__", "request")} {url} {_prune(kwargs)}')
+  logger.info(f'{getattr(fn, "__name__", "request")} {url} {_prune(kwargs, log_data=log_data)}')
 
   gateway = kwargs.pop('gateway', None)
   kwargs.setdefault('timeout', HTTP_TIMEOUT)
@@ -2031,11 +2032,13 @@ def check_ssrf(hostname):
     get_ip_address(hostname, None, allow_loopback=False)
 
 
-def _prune(kwargs):
+def _prune(kwargs, log_data=True):
   return {
     k: v for k, v in list(kwargs.items())
     if k is not None and v is not None
-    and k not in ('allow_redirects', 'auth', 'gateway', 'headers', 'stream', 'timeout')
+    and k not in ('allow_redirects', 'auth', 'gateway', 'headers', 'stream',
+                  'timeout')
+    and (log_data or k not in ('data', 'json'))
   }
 
 

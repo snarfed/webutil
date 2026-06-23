@@ -30,6 +30,9 @@ Changelog
 * `models`:
   * Add new `WriteOnce`, `WriteOnceBlobProperty` ndb property classes. (Moved here from [arroba](https://github.com/snarfed/arroba/).)
   * Add support for `$ENCRYPTED_PROPERTY_KEY` environment variable.
+* `util`:
+  * `requests_*`: add new `log_data` boolean kwarg.
+
 
 ### 1.0 - 2026-05-27
 
