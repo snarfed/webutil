@@ -70,6 +70,10 @@ google-cloud = [
     'google-cloud-logging>=3.4.0',
     'google-cloud-ndb>=2.3.0',
 ]
+docs = [
+    'sphinx>=7.0.0',
+    'sphinx-rtd-theme>=3.0.0',
+]
 
 # wish I could centralize these into ~/.config/uv/uv.toml, but uv.sources
 # is project-specific and can't be global. :(
@@ -88,4 +92,4 @@ extend_exclude = ['build', 'dist', 'docs']
 [tool.deptry.per_rule_ignores]
 # required for tests, but loaded implicitly, via util.beautifulsoup_parser = 'lxml'
 # in appengine_config.py
-DEP002 = ['lxml']
+DEP002 = ['lxml', 'sphinx', 'sphinx-rtd-theme']
