@@ -55,6 +55,42 @@ class FlaskUtilTest(unittest.TestCase):
         with self.assertRaises(BadRequest):
             get_required_param('a')
 
+  def test_block(self):
+    self.app.before_request(flask_util.block(
+      cidrs=['2a03:2880::/32', '57.141.0.0/16'],
+      user_agents=['meta-externalagent', 'Bytespider'],
+    ))
+
+    @self.app.route('/')
+    def fn():
+      return 'ok'
+
+    for environ, headers, expected in (
+        ({}, {}, 200),
+        ({'REMOTE_ADDR': '1.2.3.4'}, {}, 200),
+        ({'REMOTE_ADDR': '1.2.3.4'}, {'User-Agent': 'Mozilla/5.0'}, 200),
+        # blocked IPs
+        ({'REMOTE_ADDR': '57.141.4.73'}, {}, 403),
+        ({'REMOTE_ADDR': '2a03:2880:f804:28::'}, {}, 403),
+        # blocked user agents, case insensitive
+        ({}, {'User-Agent': 'meta-externalagent/1.1 (+https://...)'}, 403),
+        ({}, {'User-Agent': 'compatible; bytespider; foo'}, 403),
+    ):
+      with self.subTest(environ=environ, headers=headers):
+        resp = self.client.get('/', environ_base=environ, headers=headers)
+        self.assertEqual(expected, resp.status_code)
+
+  def test_block_no_args(self):
+    self.app.before_request(flask_util.block())
+
+    @self.app.route('/')
+    def fn():
+      return 'ok'
+
+    resp = self.client.get('/', environ_base={'REMOTE_ADDR': '57.141.4.73'},
+                           headers={'User-Agent': 'meta-externalagent'})
+    self.assertEqual(200, resp.status_code)
+
   def test_cached(self):
     cache = Cache(self.app)
     calls = 0

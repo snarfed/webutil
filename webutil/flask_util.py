@@ -1,6 +1,7 @@
 """Utilities for Flask. View classes, decorators, URL route converters, etc."""
 import functools
 import html
+from ipaddress import ip_address, ip_network
 import logging
 import os
 import re
@@ -324,6 +325,46 @@ def default_modern_headers(resp):
     resp.headers.setdefault(name, value)
 
   return resp
+
+
+def block(cidrs=(), user_agents=()):
+  """Returns a Flask ``before_request`` handler that blocks abusive clients.
+
+  Blocked requests are aborted with HTTP 403. Install with::
+
+      app.before_request(block(cidrs=[...], user_agents=[...]))
+
+  Blocking by IP relies on ``request.remote_addr`` being the real client IP, so
+  if you're behind a proxy or load balancer, wrap the app with
+  :class:`werkzeug.middleware.proxy_fix.ProxyFix` (or similar) first.
+
+  Ideally, use a WAF or corresponding load balancer feature instead. Only use this if
+  you can't use one of those.
+
+  Args:
+    cidrs (sequence of str): IPv4/IPv6 networks in CIDR notation to block by
+      client IP, eg ``2a03:2880::/32``
+    user_agents (sequence of str): regular expressions to match case
+      insensitively against the ``User-Agent`` request header
+  """
+  networks = [ip_network(c) for c in cidrs]
+  user_agent_re = (re.compile('|'.join(user_agents), re.IGNORECASE)
+                   if user_agents else None)
+
+  def handler():
+    if networks and request.remote_addr:
+      try:
+        addr = ip_address(request.remote_addr)
+        if addr and any(addr in net for net in networks):
+          abort(403)
+      except ValueError:
+        pass
+
+    ua = request.headers.get('User-Agent')
+    if user_agent_re and ua and user_agent_re.search(ua):
+      abort(403)
+
+  return handler
 
 
 def cached(cache, timeout, headers=(), http_5xx=False):

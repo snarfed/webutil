@@ -27,6 +27,8 @@ Changelog
 
 * `appengine_info`:
   * Add [Cloud Run](https://docs.cloud.google.com/run/docs/) support.
+* `flask_util`:
+  * Add `block`, a `before_request` handler that blocks requests by client IP CIDR and/or `User-Agent`.
 * `models`:
   * Add new `WriteOnce`, `WriteOnceBlobProperty` ndb property classes. (Moved here from [arroba](https://github.com/snarfed/arroba/).)
   * Add support for `$ENCRYPTED_PROPERTY_KEY` environment variable.
