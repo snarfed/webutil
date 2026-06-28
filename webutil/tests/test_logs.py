@@ -1,10 +1,11 @@
 """Unit tests for logs.py. Woefully incomplete."""
 from datetime import datetime, timedelta, timezone
 import time
+import unittest
+from unittest import mock
 
 from flask import Flask
 from google.cloud import ndb
-from mox3 import mox
 
 from .. import appengine_config, logs
 from ..testutil import NOW
@@ -14,7 +15,7 @@ with appengine_config.ndb_client.context():
   KEY_STR = KEY.urlsafe().decode()
 
 
-class LogsTest(mox.MoxTestBase):
+class LogsTest(unittest.TestCase):
   def setUp(self):
     super().setUp()
     self.app = Flask('test_logs')
@@ -32,16 +33,13 @@ class LogsTest(mox.MoxTestBase):
     actual = logs.maybe_link(when, KEY, time_class='foo')
     self.assertRegex(actual, expected)
 
-    self.mox.StubOutWithMock(logs, 'MAX_LOG_AGE')
-    logs.MAX_LOG_AGE = timedelta(days=99999)
+    with mock.patch.object(logs, 'MAX_LOG_AGE', timedelta(days=99999)):
+      self.assertEqual(
+        f'<a class="bar" href="/log?start_time=172800&key={KEY_STR}">{actual}</a>',
+        logs.maybe_link(when, KEY, time_class='foo', link_class='bar'))
 
-    self.assertEqual(
-      f'<a class="bar" href="/log?start_time=172800&key={KEY_STR}">{actual}</a>',
-      logs.maybe_link(when, KEY, time_class='foo', link_class='bar'))
-
+  @mock.patch.object(logs, 'MAX_LOG_AGE', timedelta(days=99999))
   def test_maybe_link_path(self):
-    self.mox.StubOutWithMock(logs, 'MAX_LOG_AGE')
-    logs.MAX_LOG_AGE = timedelta(days=99999)
     self.assertIn('path=foo%2Cbar%2Fbaz',
                   logs.maybe_link(NOW, KEY, path=['foo', 'bar/baz']))
 

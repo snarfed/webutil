@@ -1,20 +1,26 @@
 # -*- coding: utf-8 -*-
 """Unit tests for webmention.py."""
+from unittest.mock import patch
+
 import requests
 
-from .. import testutil
+from .. import testutil, util
+from ..testutil import requests_response
 from ..webmention import discover, send
 
 
-class DiscoverTest(testutil.TestCase):
+class DiscoverTest(testutil.BaseTestCase):
 
-  def _test(self, expected, html, **kwargs):
-    call = self.expect_requests_get('http://foo', f'<html>{html}</html>', **kwargs)
-    self.mox.ReplayAll()
+  def _test(self, expected, html, status_code=200, response_headers=None):
+    resp = requests_response(
+        f'<html>{html}</html>', url='http://foo', status=status_code,
+        headers=response_headers)
 
-    got = discover('http://foo')
+    with patch.object(util.session, 'get', return_value=resp):
+      got = discover('http://foo')
+
     self.assertEqual(expected, got.endpoint)
-    self.assertEqual(call._return_value, got.response)
+    self.assertEqual(resp, got.response)
 
   def test_bad_url(self):
     for bad in (None, 123, '', 'asdf'):
@@ -31,13 +37,18 @@ class DiscoverTest(testutil.TestCase):
     self._test('http://endpoint', '<a rel="webmention" href="http://endpoint">')
 
   def test_html_refresh(self):
-    call = self.expect_requests_get('http://will/redirect', f'<html><meta http-equiv="refresh" content="0;URL=\'http://foo\'"></html>')
-    redirect_call = self.expect_requests_get('http://foo', f'<html><link rel="webmention" href="http://endpoint"></html>')
-    self.mox.ReplayAll()
+    resp2 = requests_response(
+      '<html><link rel="webmention" href="http://endpoint"></html>', url='http://foo')
+    with patch.object(util.session, 'get', side_effect=[
+      requests_response(
+        """<html><meta http-equiv="refresh" content="0;URL='http://foo'"></html>""",
+        url='http://will/redirect'),
+      resp2,
+    ]):
+      got = discover('http://will/redirect', follow_meta_refresh=True)
 
-    got = discover('http://will/redirect', follow_meta_refresh=True)
     self.assertEqual('http://endpoint', got.endpoint)
-    self.assertEqual(redirect_call._return_value, got.response)
+    self.assertEqual(resp2, got.response)
 
   def test_html_relative(self):
     self._test('http://foo/bar', '<link rel="webmention" href="/bar">')
@@ -147,27 +158,20 @@ class DiscoverTest(testutil.TestCase):
       'Link': '<http://endpoint>; rel=webmention',
     })
 
-  def test_connection_error(self):
-    self.expect_requests_get('http://foo').AndRaise(
-      requests.ConnectionError('foo'))
-    self.mox.ReplayAll()
-
+  @patch.object(util.session, 'get', side_effect=requests.ConnectionError('foo'))
+  def test_connection_error(self, _):
     with self.assertRaises(requests.ConnectionError):
       discover('http://foo')
 
 
-class SendTest(testutil.TestCase):
+class SendTest(testutil.BaseTestCase):
 
   def _test(self, endpoint='http://endpoint', source='http://source',
-            target='http://target', **kwargs):
-    call = self.expect_requests_post(endpoint, data={
-      'source': source,
-      'target': target,
-    }, allow_redirects=False, headers={'Accept': '*/*'}, **kwargs)
-    self.mox.ReplayAll()
-
-    got = send(endpoint, source, target)
-    self.assertEqual(call._return_value, got)
+            target='http://target', status_code=200):
+    resp = requests_response('', url=endpoint, status=status_code)
+    with patch.object(util.session, 'post', return_value=resp):
+      got = send(endpoint, source, target)
+    self.assertEqual(resp, got)
 
   def test_bad_url(self):
     for bad in (None, 123, '', 'asdf'):

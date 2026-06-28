@@ -38,11 +38,12 @@ from websockets.exceptions import (
 from werkzeug.exceptions import BadGateway, BadRequest
 
 from .. import testutil, util
+from ..testutil import requests_response, UrlopenResult
 from ..util import json_dumps, json_loads
 
 ORIG_USER_AGENT = util.user_agent
 
-class UtilTest(testutil.TestCase):
+class UtilTest(testutil.BaseTestCase):
 
   def setUp(self):
     super(UtilTest, self).setUp()
@@ -1233,12 +1234,9 @@ class UtilTest(testutil.TestCase):
       with self.subTest(val=val, ranges=ranges):
         self.assertFalse(util.overlaps(range(*val), [range(*r) for r in ranges]))
 
-  def test_follow_redirects(self):
-    for _ in range(2):
-      self.expect_requests_head('http://will/redirect',
-                                redirected_url='http://final/url')
-    self.mox.ReplayAll()
-
+  @patch.object(util.session, 'head',
+               return_value=requests_response('', redirected_url='http://final/url'))
+  def test_follow_redirects(self, mock_head):
     self.assert_equals(
       'http://final/url',
       util.follow_redirects('http://will/redirect').url)
@@ -1253,24 +1251,26 @@ class UtilTest(testutil.TestCase):
       'http://final/url',
       util.follow_redirects('http://will/redirect').url)
 
-  def test_follow_redirects_with_refresh_header(self):
-    headers = {'x': 'y'}
-    self.expect_requests_head('http://will/redirect', headers=headers,
-                              response_headers={'refresh': '0; url=http://refresh'})
-    self.expect_requests_head('http://refresh', headers=headers,
-                              redirected_url='http://final')
+    self.assertEqual(2, mock_head.call_count)
 
-    self.mox.ReplayAll()
+  @patch.object(util.session, 'head', side_effect=[
+    requests_response('', url='http://will/redirect',
+                      headers={'refresh': '0; url=http://refresh'}),
+    requests_response('', redirected_url='http://final'),
+  ])
+  def test_follow_redirects_with_refresh_header(self, _):
     self.assert_equals('http://final',
                        util.follow_redirects('http://will/redirect',
-                                             headers=headers).url)
+                                             headers={'x': 'y'}).url)
 
-  def test_follow_redirects_defaults_scheme_to_http(self):
-    self.expect_requests_head('http://foo/bar', redirected_url='http://final')
-    self.mox.ReplayAll()
+  @patch.object(util.session, 'head',
+               return_value=requests_response('', redirected_url='http://final'))
+  def test_follow_redirects_defaults_scheme_to_http(self, _):
     self.assert_equals('http://final', util.follow_redirects('foo/bar').url)
 
-  def test_url_canonicalizer(self):
+  @patch.object(util.session, 'head',
+               side_effect=lambda url, **kw: requests_response('', url=url))
+  def test_url_canonicalizer(self, _):
     def check(expected, input, **kwargs):
       self.assertEqual(expected, util.UrlCanonicalizer(**kwargs)(input))
 
@@ -1297,21 +1297,29 @@ class UtilTest(testutil.TestCase):
     check('https://fa.ke/123', 'http://fa.ke/123/?x=y#abc',
           query=False, fragment=False, trailing_slash=False)
 
-    self.unstub_requests_head()
-    self.expect_requests_head('https://a.b/post', redirected_url='https://x.yz/post')
-    self.expect_requests_head('https://c.d/post', headers={'Foo': 'bar'},
-                              redirected_url='https://x.yz/post')
-    self.expect_requests_head('https://e.f/post', status_code=404)
-    self.mox.ReplayAll()
-
-    check('https://x.yz/post', 'http://a.b/post')
-    check('https://x.yz/post', 'http://c.d/post', headers={'Foo': 'bar'})
-    check(None, 'http://e.f/post')
-
-    # do these after unstub_requests_head to check that they don't HEAD
+    # approve/reject/no-domain don't make HEAD requests
     check('http://fa.ke/good', 'http://fa.ke/good', approve='.*/good')
     check(None, 'http://fa.ke/bad', reject='.*/bad')
     check(None, 'mailto:xyz@fa.ke')
+
+  def test_url_canonicalizer_redirects(self):
+    with patch.object(
+        util.session, 'head',
+        return_value=requests_response('', redirected_url='https://x.yz/post')):
+      self.assertEqual('https://x.yz/post',
+                       util.UrlCanonicalizer()('http://a.b/post'))
+
+    with patch.object(
+        util.session, 'head',
+        return_value=requests_response('', redirected_url='https://x.yz/post')):
+      self.assertEqual(
+        'https://x.yz/post',
+        util.UrlCanonicalizer(headers={'Foo': 'bar'})('http://c.d/post'))
+
+    with patch.object(
+        util.session, 'head',
+        return_value=requests_response('', url='https://e.f/post', status=404)):
+      self.assertEqual(None, util.UrlCanonicalizer()('http://e.f/post'))
 
   def test_load_file_lines(self):
     for expected, contents in (
@@ -1404,57 +1412,44 @@ class UtilTest(testutil.TestCase):
     ):
       self.assert_equals(expected, util.sniff_json_or_form_encoded(input), input)
 
-  def test_requests_post_with_redirects_no_redirect(self):
-    self.expect_requests_post('http://xyz', 'abc', allow_redirects=False)
-    self.mox.ReplayAll()
+  @patch.object(util.session, 'post', return_value=requests_response('abc'))
+  def test_requests_post_with_redirects_no_redirect(self, _):
     resp = util.requests_post_with_redirects('http://xyz')
     self.assert_equals('abc', resp.text)
 
-  def test_requests_post_with_redirects_two_redirects(self):
-    self.expect_requests_post(
-      'http://first', allow_redirects=False, status_code=302,
-      response_headers={'Location': 'https://second'})
-    self.expect_requests_post(
-      'https://second', allow_redirects=False, status_code=301,
-      response_headers={'Location': 'https://third'})
-    self.expect_requests_post('https://third', 'abc', allow_redirects=False)
-    self.mox.ReplayAll()
-
+  @patch.object(util.session, 'post', side_effect=[
+    requests_response('', status=302, headers={'Location': 'https://second'}),
+    requests_response('', status=301, headers={'Location': 'https://third'}),
+    requests_response('abc', url='https://third'),
+  ])
+  def test_requests_post_with_redirects_two_redirects(self, _):
     resp = util.requests_post_with_redirects('http://first')
     self.assert_equals('abc', resp.text)
     self.assert_equals('https://third', resp.url)
 
-  def test_requests_post_with_redirects_error(self):
-    self.expect_requests_post('http://first', 'abc', allow_redirects=False,
-                              status_code=400)
-    self.mox.ReplayAll()
-
+  @patch.object(util.session, 'post', return_value=requests_response('abc', status=400))
+  def test_requests_post_with_redirects_error(self, _):
     with self.assertRaises(requests.HTTPError) as e:
       util.requests_post_with_redirects('http://first')
 
     self.assert_equals('abc', e.exception.response.text)
     self.assert_equals(400, e.exception.response.status_code)
 
-  def test_requests_post_with_redirects_redirect_then_error(self):
-    self.expect_requests_post('http://ok', allow_redirects=False, status_code=302,
-                              response_headers={'Location': 'https://bad'})
-    self.expect_requests_post('https://bad', 'abc', allow_redirects=False,
-                              status_code=400)
-    self.mox.ReplayAll()
-
+  @patch.object(util.session, 'post', side_effect=[
+    requests_response('', status=302, headers={'Location': 'https://bad'}),
+    requests_response('abc', status=400),
+  ])
+  def test_requests_post_with_redirects_redirect_then_error(self, _):
     with self.assertRaises(requests.HTTPError) as e:
       util.requests_post_with_redirects('http://ok')
 
     self.assert_equals('abc', e.exception.response.text)
     self.assert_equals(400, e.exception.response.status_code)
 
-  def test_requests_post_with_redirects_too_many_redirects(self):
-    for _ in range(requests.models.DEFAULT_REDIRECT_LIMIT):
-      self.expect_requests_post(
-        'http://xyz', 'abc', allow_redirects=False, status_code=302,
-        response_headers={'Location': 'http://xyz'})
-    self.mox.ReplayAll()
-
+  @patch.object(util.session, 'post',
+               return_value=requests_response('abc', status=302,
+                                             headers={'Location': 'http://xyz'}))
+  def test_requests_post_with_redirects_too_many_redirects(self, _):
     with self.assertRaises(requests.TooManyRedirects) as e:
       util.requests_post_with_redirects('http://xyz')
 
@@ -1463,66 +1458,57 @@ class UtilTest(testutil.TestCase):
     self.assert_equals('http://xyz', e.exception.response.headers['Location'])
 
   def test_requests_get_too_big(self):
-    for type in 'text/html', 'application/json', '', 'image/jpeg':
-      self.expect_requests_get('http://xyz', 'abc', response_headers={
-        'Content-Type': type,
-        'Content-Length': util.MAX_HTTP_RESPONSE_SIZE + 1,
-      })
-    self.mox.ReplayAll()
+    too_big = util.MAX_HTTP_RESPONSE_SIZE + 1
 
-    for i in range(2):
-      self.assertEqual(422, util.requests_get('http://xyz').status_code, i)
+    for content_type in 'text/html', 'application/json':
+      with patch.object(util.session, 'get', return_value=requests_response(
+          'abc', headers={'Content-Type': content_type, 'Content-Length': too_big})):
+        self.assertEqual(422, util.requests_get('http://xyz').status_code, content_type)
 
-    for _ in range(2):
-      self.assertEqual(200, util.requests_get('http://xyz').status_code)
+    for content_type in '', 'image/jpeg':
+      with patch.object(util.session, 'get', return_value=requests_response(
+          'abc', headers={'Content-Type': content_type, 'Content-Length': too_big})):
+        self.assertEqual(200, util.requests_get('http://xyz').status_code, content_type)
 
-  def test_requests_get_unicode_url_ValueError(self):
+  @patch.object(util.session, 'get', side_effect=ValueError())
+  def test_requests_get_unicode_url_ValueError(self, _):
     """https://console.cloud.google.com/errors/CPzNwYaL3tjb9gE"""
-    url = 'http://acct:abc⊙de/'
-    self.expect_requests_get(url).AndRaise(ValueError())
-    self.mox.ReplayAll()
-    self.assertRaises(BadRequest, util.requests_get, url, gateway=True)
+    self.assertRaises(BadRequest, util.requests_get, 'http://acct:abc⊙de/', gateway=True)
 
-  def test_requests_get_unicode_url_ConnectionError(self):
+  @patch.object(util.session, 'get', side_effect=requests.ConnectionError())
+  def test_requests_get_unicode_url_ConnectionError(self, _):
     """https://console.cloud.google.com/errors/CPzNwYaL3tjb9gE"""
-    url = 'http://acct:abc⊙de/'
-    self.expect_requests_get(url).AndRaise(requests.ConnectionError())
-    self.mox.ReplayAll()
-    self.assertRaises(BadGateway, util.requests_get, url, gateway=True)
+    self.assertRaises(BadGateway, util.requests_get, 'http://acct:abc⊙de/', gateway=True)
 
-  def test_requests_get_invalid_emoji_domain_fallback_to_domain2idnaError(self):
+  @patch.object(util.session, 'get', side_effect=[
+    requests.exceptions.InvalidURL(),
+    requests_response('ok', url='http://xn--abc-yr2a.de/'),
+  ])
+  def test_requests_get_invalid_emoji_domain_fallback_to_domain2idnaError(self, _):
     url = 'http://abc⊙.de/'
-    self.expect_requests_get(url).AndRaise(requests.exceptions.InvalidURL())
-    self.expect_requests_get('http://xn--abc-yr2a.de/', 'ok')
-    self.mox.ReplayAll()
-
     resp = util.requests_get(url)
     self.assertEqual(200, resp.status_code)
     self.assertEqual(url, resp.url)
 
-  def test_requests_get_invalid_emoji_domain_Host_header(self):
+  @patch.object(util.session, 'get', side_effect=[
+    requests.exceptions.InvalidURL(),
+    requests_response('okayie', url='http://xn--abc-yr2a.de/foo?bar'),
+  ])
+  def test_requests_get_invalid_emoji_domain_Host_header(self, _):
     url = 'http://abc⊙.de/foo?bar'
-    self.expect_requests_get(url).AndRaise(requests.exceptions.InvalidURL())
-    self.expect_requests_get('http://xn--abc-yr2a.de/foo?bar', 'okayie',
-                             headers={'Host': 'xn--abc-yr2a.de'})
-    self.mox.ReplayAll()
-
     resp = util.requests_get(url)
     self.assertEqual(200, resp.status_code)
     self.assertEqual(url, resp.url)
     self.assertEqual('okayie', resp.text)
 
-  def test_set_user_agent_requests(self):
-    self.expect_requests_get('http://xyz', 'abc', headers={'User-Agent': 'Fooey'})
-    self.mox.ReplayAll()
-
+  @patch.object(util.session, 'get', return_value=requests_response('abc'))
+  def test_set_user_agent_requests(self, _):
     util.set_user_agent('Fooey')
     self.assertEqual(200, util.requests_get('http://xyz').status_code)
 
-  def test_set_user_agent_urlopen(self):
-    self.expect_urlopen('http://xyz', 'abc', headers={'User-agent': 'Fooey'})
-    self.mox.ReplayAll()
-
+  @patch.object(util.urllib.request, 'urlopen',
+               return_value=UrlopenResult(200, 'abc'))
+  def test_set_user_agent_urlopen(self, _):
     util.set_user_agent('Fooey')
     self.assertEqual(200, util.urlopen('http://xyz').status_code)
 
@@ -1627,11 +1613,11 @@ class UtilTest(testutil.TestCase):
       with util.websocket_connect('wss://evil.example.com/'):
         pass
 
-  def test_fetch_mf2(self):
-    html = '<html><body class="h-entry"><p class="e-content">asdf</p></body></html>'
-    self.expect_requests_get('http://xyz', html)
-    self.mox.ReplayAll()
-
+  @patch.object(util.session, 'get',
+               return_value=requests_response(
+                 '<html><body class="h-entry"><p class="e-content">asdf</p></body></html>',
+                 url='http://xyz'))
+  def test_fetch_mf2(self, _):
     self.assert_equals({
       'items': [{
         'type': ['h-entry'],
@@ -1642,17 +1628,15 @@ class UtilTest(testutil.TestCase):
       'url': 'http://xyz',
     }, util.fetch_mf2('http://xyz'), ignore=['debug', 'rels', 'rel-urls'])
 
-  def test_fetch_mf2_fragment(self):
-    html = """\
+  @patch.object(util.session, 'get',
+               return_value=requests_response("""\
 <html>
 <body>
 <div id="a" class="h-entry"><p class="e-content">asdf</p></div>
 <div id="b" class="h-entry"><p class="e-content">qwer</p></div>
 </body>
-</html>"""
-    self.expect_requests_get('http://xyz', html)
-    self.mox.ReplayAll()
-
+</html>""", url='http://xyz'))
+  def test_fetch_mf2_fragment(self, _):
     self.assert_equals({
       'items': [{
         'type': ['h-entry'],
@@ -1664,31 +1648,28 @@ class UtilTest(testutil.TestCase):
       'url': 'http://xyz#b',
     }, util.fetch_mf2('http://xyz#b'), ignore=['debug', 'rels', 'rel-urls'])
 
-  def test_fetch_mf2_require_backlink_missing(self):
-    html = '<html><body class="h-entry"><p class="e-content">asdf</p></body></html>'
-    self.expect_requests_get('http://xyz', html).MultipleTimes()
-    self.mox.ReplayAll()
-
+  @patch.object(util.session, 'get',
+               return_value=requests_response(
+                 '<html><body class="h-entry"><p class="e-content">asdf</p></body></html>'))
+  def test_fetch_mf2_require_backlink_missing(self, _):
     with self.assertRaises(ValueError):
       util.fetch_mf2('http://xyz', require_backlink='http://back')
-
     with self.assertRaises(ValueError):
       util.fetch_mf2('http://xyz', require_backlink=['http://back', 'http://link'])
 
-  def test_fetch_mf2_require_backlink_found(self):
-    html = '<html><body class="h-entry"><p class="e-content"><a href="http://back"></a></p></body></html>'
-    self.expect_requests_get('http://xyz', html).MultipleTimes()
-    self.mox.ReplayAll()
-
+  @patch.object(util.session, 'get',
+               return_value=requests_response(
+                 '<html><body class="h-entry"><p class="e-content"><a href="http://back"></a></p></body></html>'))
+  def test_fetch_mf2_require_backlink_found(self, _):
     self.assertIsNotNone(util.fetch_mf2('http://xyz', require_backlink='http://back'))
     self.assertIsNotNone(util.fetch_mf2(
-      'http://xyz',require_backlink=['http://link', 'http://back']))
+      'http://xyz', require_backlink=['http://link', 'http://back']))
 
-  def test_fetch_mf2_metaformats(self):
-    self.expect_requests_get('http://xyz/post',
-                             '<html><head><title>A ☕ post</title></head></html>')
-    self.mox.ReplayAll()
-
+  @patch.object(util.session, 'get',
+               return_value=requests_response(
+                 '<html><head><title>A ☕ post</title></head></html>',
+                 url='http://xyz/post'))
+  def test_fetch_mf2_metaformats(self, _):
     self.assert_equals({
       'items': [{
         'type': ['h-entry'],
@@ -1701,11 +1682,11 @@ class UtilTest(testutil.TestCase):
     }, util.fetch_mf2('http://xyz/post', metaformats=True),
        ignore=['debug', 'rels', 'rel-urls'])
 
-  def test_fetch_mf2_metaformats_hcard(self):
-    self.expect_requests_get('http://xyz',
-                             '<html><head><title>Ms. ☕ Baz</title></head></html>')
-    self.mox.ReplayAll()
-
+  @patch.object(util.session, 'get',
+               return_value=requests_response(
+                 '<html><head><title>Ms. ☕ Baz</title></head></html>',
+                 url='http://xyz'))
+  def test_fetch_mf2_metaformats_hcard(self, _):
     self.assert_equals({
       'items': [{
         'type': ['h-card'],
@@ -1718,10 +1699,9 @@ class UtilTest(testutil.TestCase):
     }, util.fetch_mf2('http://xyz', metaformats=True),
        ignore=['debug', 'rels', 'rel-urls'])
 
-  def test_fetch_mf2_wrong_content_type(self):
-    self.expect_requests_get('http://xyz', '',
-                             response_headers={'Content-Type': 'not/html'})
-    self.mox.ReplayAll()
+  @patch.object(util.session, 'get',
+               return_value=requests_response('', headers={'Content-Type': 'not/html'}))
+  def test_fetch_mf2_wrong_content_type(self, _):
     self.assertIsNone(util.fetch_mf2('http://xyz'))
 
   def test_parse_mf2_metaformats_nothing(self):
@@ -2048,10 +2028,8 @@ class UtilTest(testutil.TestCase):
     self.assertEqual('@x.bsky.social', util.remove_invisible_chars(
       json_loads(r'"\u202a@x.bs\u202dky.social\u202c"')))
 
-  def test_session_no_cookie_jar(self):
-    self.expect_requests_get('https://example.com/', '')
-    self.mox.ReplayAll()
-
+  @patch.object(util.session, 'get', return_value=requests_response(''))
+  def test_session_no_cookie_jar(self, _):
     util.requests_get('https://example.com/')
 
     headers = Message()

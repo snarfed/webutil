@@ -20,7 +20,7 @@ from ..models import (
 from .. import appengine_config, models, testutil, util
 
 
-class ReloaderTest(testutil.TestCase):
+class ReloaderTest(testutil.BaseTestCase):
 
   def setUp(self):
     super().setUp()
@@ -35,10 +35,11 @@ class ReloaderTest(testutil.TestCase):
     self.t0 = datetime(2024, 1, 1, tzinfo=timezone.utc)
     self.reloader = Reloader(Foo, 'x', timedelta(minutes=5))
 
-  def test_loads_on_first_access(self):
+  @mock.patch.object(util, 'now')
+  def test_loads_on_first_access(self, mock_now):
+    mock_now.return_value = self.t0
     with appengine_config.ndb_client.context():
-      with mock.patch.object(util, 'now', return_value=self.t0):
-        got = self.reloader.obj
+      got = self.reloader.obj
 
     self.assertEqual(self.entity.key, got.key)
     self.assertEqual(self.t0, self.reloader.loaded_at)
@@ -48,22 +49,24 @@ class ReloaderTest(testutil.TestCase):
     with appengine_config.ndb_client.context():
       self.assertIsNone(reloader.obj)
 
-  def test_caches_within_interval(self):
+  @mock.patch.object(util, 'now')
+  def test_caches_within_interval(self, mock_now):
     with appengine_config.ndb_client.context():
-      with mock.patch.object(util, 'now', return_value=self.t0):
-        first = self.reloader.obj
+      mock_now.return_value = self.t0
+      first = self.reloader.obj
 
       self.entity.key.delete()
 
-      with mock.patch.object(util, 'now', return_value=self.t0 + timedelta(minutes=4)):
-        second = self.reloader.obj
+      mock_now.return_value = self.t0 + timedelta(minutes=4)
+      second = self.reloader.obj
 
     self.assertIs(first, second)
 
-  def test_reloads_after_interval(self):
+  @mock.patch.object(util, 'now')
+  def test_reloads_after_interval(self, mock_now):
     with appengine_config.ndb_client.context():
-      with mock.patch.object(util, 'now', return_value=self.t0):
-        self.reloader.obj
+      mock_now.return_value = self.t0
+      self.reloader.obj
 
       self.entity.key.delete()
 
@@ -71,29 +74,30 @@ class ReloaderTest(testutil.TestCase):
       self.entity.num = 9
       self.entity.put()
 
-      with mock.patch.object(util, 'now', return_value=t1):
-        got = self.reloader.obj
+      mock_now.return_value = t1
+      got = self.reloader.obj
 
     self.assertEqual(9, got.num)
 
-  def test_reload(self):
+  @mock.patch.object(util, 'now')
+  def test_reload(self, mock_now):
     with appengine_config.ndb_client.context():
-      with mock.patch.object(util, 'now', return_value=self.t0):
-        self.reloader.obj
+      mock_now.return_value = self.t0
+      self.reloader.obj
 
       self.entity.key.delete()
       self.entity.num = 9
       self.entity.put()
 
       t1 = self.t0 + timedelta(minutes=2)
-      with mock.patch.object(util, 'now', return_value=t1):
-        self.reloader.reload()
+      mock_now.return_value = t1
+      self.reloader.reload()
 
     self.assertEqual(9, self.reloader.obj.num)
     self.assertEqual(t1, self.reloader.loaded_at)
 
 
-class StringIdModelTest(testutil.TestCase):
+class StringIdModelTest(testutil.BaseTestCase):
 
   def setUp(self):
     warnings.filterwarnings('ignore', module='google.auth',
@@ -116,7 +120,7 @@ class EnumModel(ndb.Model):
   field = EnumProperty(TestEnum)
 
 
-class EnumPropertyTest(testutil.TestCase):
+class EnumPropertyTest(testutil.BaseTestCase):
 
   def test_init_non_enum(self):
     with self.assertRaises(TypeError):
@@ -149,7 +153,7 @@ class EncryptedModel(ndb.Model):
   secret = EncryptedProperty()
 
 
-class EncryptedPropertyTest(testutil.TestCase):
+class EncryptedPropertyTest(testutil.BaseTestCase):
   def setUp(self):
     super().setUp()
 
@@ -195,9 +199,8 @@ class EncryptedPropertyTest(testutil.TestCase):
     entity.put()
     self.assertIsNone(entity.key.get().secret)
 
+  @mock.patch.object(models, 'ENCRYPTED_PROPERTY_KEYS', ())
   def test_no_key_error(self):
-    self.mox.StubOutWithMock(models, 'ENCRYPTED_PROPERTY_KEYS')
-    models.ENCRYPTED_PROPERTY_KEYS = ()
     with self.assertRaises(RuntimeError) as cm:
       EncryptedModel(secret=b'test').put()
     self.assertIn('No encryption key found', str(cm.exception))
@@ -220,30 +223,25 @@ class EncryptedPropertyTest(testutil.TestCase):
     encrypted_with_old = prop._to_base_type(b'rotated secret')
 
     new_key = AESGCM(AESGCM.generate_key(bit_length=256))
-    self.mox.StubOutWithMock(models, 'ENCRYPTED_PROPERTY_KEYS')
-    models.ENCRYPTED_PROPERTY_KEYS = [new_key, old_key]
+    with mock.patch.object(models, 'ENCRYPTED_PROPERTY_KEYS', [new_key, old_key]):
+      self.assertEqual(b'rotated secret', prop._from_base_type(encrypted_with_old))
 
-    self.assertEqual(b'rotated secret', prop._from_base_type(encrypted_with_old))
-
-    encrypted_with_new = prop._to_base_type(b'new secret')
-    self.assertEqual(b'new secret', prop._from_base_type(encrypted_with_new))
+      encrypted_with_new = prop._to_base_type(b'new secret')
+      self.assertEqual(b'new secret', prop._from_base_type(encrypted_with_new))
 
     # encrypted_with_new should NOT decrypt with old_key alone
-    models.ENCRYPTED_PROPERTY_KEYS = [old_key]
-    with self.assertRaises(InvalidTag):
-      prop._from_base_type(encrypted_with_new)
+    with mock.patch.object(models, 'ENCRYPTED_PROPERTY_KEYS', [old_key]):
+      with self.assertRaises(InvalidTag):
+        prop._from_base_type(encrypted_with_new)
 
   def test_decrypt_fails_when_no_key_matches(self):
     prop = EncryptedModel.secret
     encrypted = prop._to_base_type(b'secret')
 
     unrelated = AESGCM(AESGCM.generate_key(bit_length=256))
-    self.mox.StubOutWithMock(models, 'ENCRYPTED_PROPERTY_KEYS')
-    models.ENCRYPTED_PROPERTY_KEYS = [unrelated]
-
-    from cryptography.exceptions import InvalidTag
-    with self.assertRaises(InvalidTag):
-      prop._from_base_type(encrypted)
+    with mock.patch.object(models, 'ENCRYPTED_PROPERTY_KEYS', [unrelated]):
+      with self.assertRaises(InvalidTag):
+        prop._from_base_type(encrypted)
 
   def test_write_once(self):
     class Foo(ndb.Model):

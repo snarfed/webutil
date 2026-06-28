@@ -293,8 +293,51 @@ not found in:
                (i <= 1 or not (lines[i - 1] == l == '\n'))]
 
 
+def _fake_head(url, **kwargs):
+  """Returns a fake 200 (or 404) response to an outgoing HEAD request."""
+  resp = requests.Response()
+  resp.url = url
+  if '.' in url or url.startswith('http'):
+    resp.headers['content-type'] = 'text/html; charset=UTF-8'
+    resp.status_code = 200
+  else:
+    resp.status_code = 404
+  return resp
+
+
+class BaseTestCase(Asserts, unittest.TestCase):
+  """Test case with assert helpers and common setUp, but no mox.
+
+  Mock HTTP requests per test with :mod:`unittest.mock`, eg
+  ``@patch.object(util.session, 'get', return_value=requests_response(...))``.
+  Use this for new tests; :class:`TestCase` adds the legacy mox-based
+  ``expect_requests_*`` helpers on top, for granary and bridgy.
+  """
+  maxDiff = None
+
+  def setUp(self):
+    suppress_warnings()
+    super().setUp()
+
+    appengine_info.APP_ID = 'my-app'
+    appengine_info.LOCAL_SERVER = False
+
+    # set time zone to UTC so that tests don't depend on local time zone
+    os.environ['TZ'] = 'UTC'
+
+    util.follow_redirects_cache.clear()
+
+    orig_now = util.now
+    util.now = lambda tz=timezone.utc: NOW.replace(tzinfo=tz)
+    self.addCleanup(setattr, util, 'now', orig_now)
+
+
 class TestCase(mox.MoxTestBase, Asserts):
-  """Test case class with lots of extra helpers."""
+  """Test case class with lots of extra helpers, including mox.
+
+  Used by granary and bridgy, which still mock HTTP requests with the
+  ``expect_requests_*`` and ``expect_urlopen`` helpers below.
+  """
   maxDiff = None
 
   def setUp(self):
@@ -315,21 +358,13 @@ class TestCase(mox.MoxTestBase, Asserts):
 
     util.follow_redirects_cache.clear()
 
+    orig_now = util.now
     util.now = lambda tz=timezone.utc: NOW.replace(tzinfo=tz)
+    self.addCleanup(setattr, util, 'now', orig_now)
 
   def stub_requests_head(self):
     """Automatically return 200 to outgoing HEAD requests."""
-    def fake_head(url, **kwargs):
-      resp = requests.Response()
-      resp.url = url
-      if '.' in url or url.startswith('http'):
-        resp.headers['content-type'] = 'text/html; charset=UTF-8'
-        resp.status_code = 200
-      else:
-        resp.status_code = 404
-      return resp
-    self.mox.stubs.Set(util.session, 'head', fake_head)
-
+    self.mox.stubs.Set(util.session, 'head', _fake_head)
     self._is_head_mocked = False  # expect_requests_head() sets this to True
 
   def unstub_requests_head(self):
