@@ -2,6 +2,7 @@
 from datetime import datetime, timezone
 import difflib
 import email
+import functools
 import io
 import os
 import pprint
@@ -80,6 +81,23 @@ def requests_response(body='', url=None, status=200, content_type=None,
       resp.headers.update(headers)
 
     return resp
+
+
+def head_returns_200(fn):
+  """Test method decorator that stubs :func:`util.requests_head` to a no-op 200.
+
+  Returns each requested URL unchanged (no redirect), so code that follows
+  redirects via ``HEAD`` doesn't make real requests. Unlike a bare
+  ``@patch.object``, doesn't inject a mock argument into the decorated method.
+  """
+  @functools.wraps(fn)
+  def wrapper(*args, **kwargs):
+    with unittest.mock.patch.object(
+        util, 'requests_head',
+        side_effect=lambda url, **kw: requests_response('', url=url)):
+      return fn(*args, **kwargs)
+
+  return wrapper
 
 
 def enable_flask_caching(app, cache):

@@ -1268,9 +1268,8 @@ class UtilTest(testutil.BaseTestCase):
   def test_follow_redirects_defaults_scheme_to_http(self, _):
     self.assert_equals('http://final', util.follow_redirects('foo/bar').url)
 
-  @patch.object(util.session, 'head',
-               side_effect=lambda url, **kw: requests_response('', url=url))
-  def test_url_canonicalizer(self, _):
+  @testutil.head_returns_200
+  def test_url_canonicalizer(self):
     def check(expected, input, **kwargs):
       self.assertEqual(expected, util.UrlCanonicalizer(**kwargs)(input))
 
