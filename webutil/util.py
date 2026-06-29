@@ -1898,7 +1898,6 @@ def requests_fn(url, fn=None, *args, log_data=True, **kwargs):
   kwargs['headers'].setdefault('User-Agent', user_agent)
 
   try:
-    # use getattr so that stubbing out with mox still works
     resp = fn(url, *args, **kwargs)
     msg = f'Received {resp.status_code} '
     if resp.status_code // 100 == 3:

@@ -18,7 +18,6 @@ from bs4 import (
     XMLParsedAsHTMLWarning,
 )
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from mox3 import mox
 import requests
 
 from . import appengine_info, models, util
@@ -137,7 +136,8 @@ class UrlopenResult(object):
   """
   def __init__(self, status_code, content, url=None, headers={}):
     self.status_code = status_code
-    self.content = io.StringIO(str(content))
+    self.content = io.StringIO(content if isinstance(content, str)
+                               else json_dumps(content))
     self.url = url
     self.headers = headers
 
@@ -311,26 +311,8 @@ not found in:
                (i <= 1 or not (lines[i - 1] == l == '\n'))]
 
 
-def _fake_head(url, **kwargs):
-  """Returns a fake 200 (or 404) response to an outgoing HEAD request."""
-  resp = requests.Response()
-  resp.url = url
-  if '.' in url or url.startswith('http'):
-    resp.headers['content-type'] = 'text/html; charset=UTF-8'
-    resp.status_code = 200
-  else:
-    resp.status_code = 404
-  return resp
-
-
-class BaseTestCase(Asserts, unittest.TestCase):
-  """Test case with assert helpers and common setUp, but no mox.
-
-  Mock HTTP requests per test with :mod:`unittest.mock`, eg
-  ``@patch.object(util.session, 'get', return_value=requests_response(...))``.
-  Use this for new tests; :class:`TestCase` adds the legacy mox-based
-  ``expect_requests_*`` helpers on top, for granary and bridgy.
-  """
+class TestCase(Asserts, unittest.TestCase):
+  """Base test case with assert helpers, common setUp, and mock utilities."""
   maxDiff = None
 
   def setUp(self):
@@ -349,179 +331,44 @@ class BaseTestCase(Asserts, unittest.TestCase):
     util.now = lambda tz=timezone.utc: NOW.replace(tzinfo=tz)
     self.addCleanup(setattr, util, 'now', orig_now)
 
+  def start_patch(self, obj, attr):
+    # TODO: replace with self.enterContext(patch.object(...)) once our Python floor is >= 3.11.
+    patcher = unittest.mock.patch.object(obj, attr)
+    mock = patcher.start()
+    self.addCleanup(patcher.stop)
+    return mock
 
-class TestCase(mox.MoxTestBase, Asserts):
-  """Test case class with lots of extra helpers, including mox.
+  def assert_urlopen(self, url, data=None):
+    """Asserts self.mock_urlopen was called with this exact URL."""
+    for c in self.mock_urlopen.call_args_list:
+      if c.args[0].full_url == url:
+        if data:
+          actual = c.args[0].data
+          if isinstance(actual, bytes):
+            actual = actual.decode()
+          self.assertEqual(data, actual)
+        return
 
-  Used by granary and bridgy, which still mock HTTP requests with the
-  ``expect_requests_*`` and ``expect_urlopen`` helpers below.
-  """
-  maxDiff = None
+    self.fail(f'No urlopen call to {url}; got {[c.args[0].full_url for c in self.mock_urlopen.call_args_list]}')
 
-  def setUp(self):
-    suppress_warnings()
-    super(TestCase, self).setUp()
+  def assert_requests_get(self, url, cookie=None):
+    self._assert_request(self.mock_get, url, cookie=cookie)
 
-    appengine_info.APP_ID = 'my-app'
-    appengine_info.LOCAL_SERVER = False
+  def assert_requests_post(self, url, **kwargs):
+    self._assert_request(self.mock_post, url, **kwargs)
 
-    for method in 'get', 'post', 'delete':
-      self.mox.StubOutWithMock(util.session, method, use_mock_anything=True)
-    self.stub_requests_head()
+  def _assert_request(self, mock, url, cookie=None, **kwargs):
+    """Asserts a mock was called with this URL and optional kwargs."""
+    for c in mock.call_args_list:
+      if c.args[0] == url:
+        if cookie is not None:
+          self.assertEqual(cookie, c.kwargs.get('headers', {}).get('Cookie'))
+        for key, val in kwargs.items():
+          self.assertEqual(val, c.kwargs[key])
+        return
 
-    self.mox.StubOutWithMock(util.urllib.request, 'urlopen')
+    self.fail(f'No session.get call to {url}; got {[c.args[0] for c in self.mock_get.call_args_list]}')
 
-    # set time zone to UTC so that tests don't depend on local time zone
-    os.environ['TZ'] = 'UTC'
-
-    util.follow_redirects_cache.clear()
-
-    orig_now = util.now
-    util.now = lambda tz=timezone.utc: NOW.replace(tzinfo=tz)
-    self.addCleanup(setattr, util, 'now', orig_now)
-
-  def stub_requests_head(self):
-    """Automatically return 200 to outgoing HEAD requests."""
-    self.mox.stubs.Set(util.session, 'head', _fake_head)
-    self._is_head_mocked = False  # expect_requests_head() sets this to True
-
-  def unstub_requests_head(self):
-    """Mock outgoing ``HEAD`` requests so they must be expected individually."""
-    if not self._is_head_mocked:
-      self.mox.StubOutWithMock(util.session, 'head', use_mock_anything=True)
-      self._is_head_mocked = True
-
-  def expect_requests_head(self, *args, **kwargs):
-    self.unstub_requests_head()
-    return self._expect_requests_call(*args, method=util.session.head, **kwargs)
-
-  def expect_requests_get(self, *args, **kwargs):
-    return self._expect_requests_call(*args, method=util.session.get, **kwargs)
-
-  def expect_requests_post(self, *args, **kwargs):
-    return self._expect_requests_call(*args, method=util.session.post, **kwargs)
-
-  def expect_requests_delete(self, *args, **kwargs):
-    return self._expect_requests_call(*args, method=util.session.delete, **kwargs)
-
-  def _expect_requests_call(self, url, response='', status_code=200,
-                            content_type='text/html', method=None,
-                            redirected_url=None, response_headers=None,
-                            **kwargs):
-    """
-    Args:
-      redirected_url (string): URL or sequence of string URLs for multiple redirects
-    """
-    if method is None:
-      method = util.session.get
-
-    resp = requests_response(
-      response, url=url, status=status_code, content_type=content_type,
-      redirected_url=redirected_url, headers=response_headers,
-      allow_redirects=kwargs.get('allow_redirects'),
-      encoding=kwargs.pop('encoding', None))
-
-    if 'timeout' not in kwargs:
-      kwargs['timeout'] = HTTP_TIMEOUT
-    elif kwargs['timeout'] is None:
-      del kwargs['timeout']
-
-    if 'stream' not in kwargs:
-      kwargs['stream'] = True
-    elif kwargs['stream'] is None:
-      del kwargs['stream']
-
-    if method is util.session.head:
-      kwargs['allow_redirects'] = True
-
-    headers = kwargs.get('headers')
-    if not headers:
-      headers = kwargs['headers'] = {}
-
-    if not isinstance(headers, mox.Comparator):
-      headers.setdefault('User-Agent', util.user_agent)
-
-      def check_headers(actual):
-        missing = set(headers.items()) - set(actual.items())
-        assert not missing, f'Missing request headers: {missing}\n(Got {set(actual.items())}, expected {set(headers.items())})'
-        return True
-      kwargs['headers'] = mox.Func(check_headers)
-
-    files = kwargs.get('files')
-    if files:
-      def check_files(actual):
-        self.assertEqual(list(actual.keys()), list(files.keys()))
-        for name, expected in files.items():
-          self.assertEqual(expected, actual[name].read())
-        return True
-      kwargs['files'] = mox.Func(check_files)
-
-    call = method(url, **kwargs)
-    call.AndReturn(resp)
-    return call
-
-  def expect_urlopen(self, url, response=None, status=200, data=None,
-                     headers=None, response_headers={}, **kwargs):
-    """Stubs out :func:`urllib.request.urlopen` and sets up an expected call.
-
-    If status isn't 2xx, makes the expected call raise a
-    :class:`urllib.error.HTTPError` instead of returning the response.
-
-    If data is set, url *must* be a :class:`urllib.request.Request`.
-
-    If response is unset, returns the expected call.
-
-    Args:
-      url (str, :class:`re.RegexObject`, :class:`urllib.request.Request`, or :class:`webob.request.Request`)
-      response (str):
-      status (int): HTTP response code
-      data (str): optional ``POST`` body
-      headers (dict): optional expected request headers
-      response_headers (dict): optional response headers
-      kwargs: other keyword args, e.g. timeout
-    """
-    def check_request(req):
-      assert isinstance(req, urllib.request.Request), repr(req)
-      try:
-        if isinstance(url, RE_TYPE):
-          self.assertRegexpMatches(req.get_full_url(), url)
-        else:
-          self.assertEqual(url, req.get_full_url())
-
-        self.assertEqual(
-            data.decode() if isinstance(data, bytes) else data,
-            req.data.decode() if isinstance(req.data, bytes) else req.data)
-
-        nonlocal headers
-        if isinstance(headers, mox.Comparator):
-          self.assertTrue(headers.equals(req.header_items()))
-        else:
-          if not headers:
-            headers = {}
-          missing = set(headers.items()) - set(req.header_items())
-          assert not missing, f'Missing request headers: {missing}; got {req.header_items()}'
-
-      except AssertionError:
-        traceback.print_exc()
-        return False
-
-      return True
-
-    if 'timeout' not in kwargs:
-      kwargs['timeout'] = HTTP_TIMEOUT
-
-    call = util.urllib.request.urlopen(mox.Func(check_request), **kwargs)
-    if status // 100 != 2:
-      if response:
-        response = urllib.request.addinfourl(io.StringIO(str(response)),
-                                             response_headers, url, status)
-      call.AndRaise(urllib.error.HTTPError('url', status, 'message',
-                                           response_headers, response))
-    elif response is not None:
-      call.AndReturn(UrlopenResult(status, response, url=url,
-                                   headers=response_headers))
-
-    return call
 
 
 def suppress_warnings():
@@ -538,8 +385,6 @@ def suppress_warnings():
     # logging.warn(f'Failed to parse datetime {date_str}')
     warnings.filterwarnings('ignore', module='mf2util',
                             message="The 'warn' function is deprecated")
-    # local/lib/python3.6/site-packages/mox3/mox.py:909: DeprecationWarning: inspect.getargspec() is deprecated, use inspect.signature() or inspect.getfullargspec()
-    warnings.filterwarnings('ignore', module='mox', message=r'inspect\.getargspec')
     # local/lib/python3.8/site-packages/webmentiontools/send.py:65: GuessedAtParserWarning: No parser was explicitly specified, so I'm using the best available HTML parser for this system ("lxml"). This usually isn't a problem, but if you run this code on another system, or in a different virtual environment, it may use a different parser and behave differently.
     warnings.filterwarnings('ignore', category=GuessedAtParserWarning)
     # local/lib/python3.9/site-packages/bs4/__init__.py:435: MarkupResemblesLocatorWarning: The input looks more like a filename than markup. You may want to open this file and pass the filehandle into Beautiful Soup.

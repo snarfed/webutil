@@ -9,7 +9,7 @@ from ..testutil import requests_response
 from ..webmention import discover, send
 
 
-class DiscoverTest(testutil.BaseTestCase):
+class DiscoverTest(testutil.TestCase):
 
   def _test(self, expected, html, status_code=200, response_headers=None):
     resp = requests_response(
@@ -164,7 +164,7 @@ class DiscoverTest(testutil.BaseTestCase):
       discover('http://foo')
 
 
-class SendTest(testutil.BaseTestCase):
+class SendTest(testutil.TestCase):
 
   def _test(self, endpoint='http://endpoint', source='http://source',
             target='http://target', status_code=200):

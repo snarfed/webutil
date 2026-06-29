@@ -43,7 +43,7 @@ from ..util import json_dumps, json_loads
 
 ORIG_USER_AGENT = util.user_agent
 
-class UtilTest(testutil.BaseTestCase):
+class UtilTest(testutil.TestCase):
 
   def setUp(self):
     super(UtilTest, self).setUp()

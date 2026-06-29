@@ -20,7 +20,7 @@ from ..models import (
 from .. import appengine_config, models, testutil, util
 
 
-class ReloaderTest(testutil.BaseTestCase):
+class ReloaderTest(testutil.TestCase):
 
   def setUp(self):
     super().setUp()
@@ -97,7 +97,7 @@ class ReloaderTest(testutil.BaseTestCase):
     self.assertEqual(t1, self.reloader.loaded_at)
 
 
-class StringIdModelTest(testutil.BaseTestCase):
+class StringIdModelTest(testutil.TestCase):
 
   def setUp(self):
     warnings.filterwarnings('ignore', module='google.auth',
@@ -120,7 +120,7 @@ class EnumModel(ndb.Model):
   field = EnumProperty(TestEnum)
 
 
-class EnumPropertyTest(testutil.BaseTestCase):
+class EnumPropertyTest(testutil.TestCase):
 
   def test_init_non_enum(self):
     with self.assertRaises(TypeError):
@@ -153,7 +153,7 @@ class EncryptedModel(ndb.Model):
   secret = EncryptedProperty()
 
 
-class EncryptedPropertyTest(testutil.BaseTestCase):
+class EncryptedPropertyTest(testutil.TestCase):
   def setUp(self):
     super().setUp()
 
