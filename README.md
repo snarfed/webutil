@@ -56,7 +56,7 @@ Here's how to package, test, and ship a new release.
     ```
 1. Run the unit tests.
     ```sh
-    source local/bin/activate.csh
+    source .venv/bin/activate.csh
     gcloud emulators firestore start --host-port=:8089 --database-mode=datastore-mode < /dev/null >& /dev/null &
     python -m unittest discover
     ```
@@ -69,15 +69,14 @@ Here's how to package, test, and ship a new release.
 1. Upload to [test.pypi.org](https://test.pypi.org/) for testing.
     ```sh
     uv build
-    twine upload -r pypitest dist/pywebutil-$ver.tar.gz
+    twine upload -r pypitest dist/pywebutil-$ver.tar.gz dist/pywebutil-$ver-py3-none-any.whl
     ```
 1. Install from test.pypi.org.
     ```sh
     cd /tmp
-    python -m venv local
-    source local/bin/activate.csh
-    pip install --upgrade pip
-    pip install -i https://test.pypi.org/simple --extra-index-url https://pypi.org/simple pywebutil
+    python3.0 -m venv .venv
+    source .venv/bin/activate.csh
+    pip3.9 install -i https://test.pypi.org/simple --extra-index-url https://pypi.org/simple pywebutil
     ```
 1. Smoke test that the code trivially loads and runs.
     ```sh
@@ -101,5 +100,5 @@ Here's how to package, test, and ship a new release.
 1. [Click here to draft a new release on GitHub.](https://github.com/snarfed/webutil/releases/new) Enter `vX.Y` in the _Tag version_ box. Leave _Release title_ empty. Copy `### Notable changes` and the changelog contents into the description text box.
 1. Upload to [pypi.org](https://pypi.org/)!
     ```sh
-    twine upload dist/pywebutil-$ver.tar.gz
+    twine upload dist/pywebutil-$ver-* dist/pywebutil-$ver.*
     ```
