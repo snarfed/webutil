@@ -13,7 +13,7 @@ Documentation = 'https://webutil.readthedocs.io/'
 
 [project]
 name = 'pywebutil'
-version = '1.0'
+version = '2.0'
 authors = [
     { name='Ryan Barrett', email='webutil@ryanb.org' },
 ]
@@ -49,7 +49,6 @@ tests = [
     'flask-caching>=2.1.0',
     'httplib2>=0.18',
     'lxml>=4.6',
-    'mox3 @ git+https://github.com/snarfed/mox3.git',
     'oauth2client>=4.1.3',
     'oauthlib>=3.1',
     'prawcore>=2.0',
@@ -74,14 +73,6 @@ docs = [
     'sphinx>=7.0.0',
     'sphinx-rtd-theme>=3.0.0',
 ]
-
-# wish I could centralize these into ~/.config/uv/uv.toml, but uv.sources
-# is project-specific and can't be global. :(
-[tool.uv.sources]
-mox3 =    { editable = true, path = "../mox3" }
-
-# we currently use these from PyPI
-# mf2util =           { editable = true, path = "../mf2util" }
 
 [tool.uv.pip]
 # this is in ~/.config/uv/uv.toml
