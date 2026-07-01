@@ -331,9 +331,10 @@ class TestCase(Asserts, unittest.TestCase):
     util.now = lambda tz=timezone.utc: NOW.replace(tzinfo=tz)
     self.addCleanup(setattr, util, 'now', orig_now)
 
-  def start_patch(self, obj, attr):
-    # TODO: replace with self.enterContext(patch.object(...)) once our Python floor is >= 3.11.
-    patcher = unittest.mock.patch.object(obj, attr)
+  def start_patch(self, obj, attr, **kwargs):
+    # TODO: replace with self.enterContext(patch.object(...)) once we require
+    # Python >= 3.11.
+    patcher = unittest.mock.patch.object(obj, attr, **kwargs)
     mock = patcher.start()
     self.addCleanup(patcher.stop)
     return mock
