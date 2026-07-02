@@ -12,11 +12,6 @@ import unittest.mock
 import urllib.error, urllib.parse, urllib.request
 import warnings
 
-from bs4 import (
-    GuessedAtParserWarning,
-    MarkupResemblesLocatorWarning,
-    XMLParsedAsHTMLWarning,
-)
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 import requests
 
@@ -386,12 +381,17 @@ def suppress_warnings():
     # logging.warn(f'Failed to parse datetime {date_str}')
     warnings.filterwarnings('ignore', module='mf2util',
                             message="The 'warn' function is deprecated")
-    # local/lib/python3.8/site-packages/webmentiontools/send.py:65: GuessedAtParserWarning: No parser was explicitly specified, so I'm using the best available HTML parser for this system ("lxml"). This usually isn't a problem, but if you run this code on another system, or in a different virtual environment, it may use a different parser and behave differently.
-    warnings.filterwarnings('ignore', category=GuessedAtParserWarning)
-    # local/lib/python3.9/site-packages/bs4/__init__.py:435: MarkupResemblesLocatorWarning: The input looks more like a filename than markup. You may want to open this file and pass the filehandle into Beautiful Soup.
-    warnings.filterwarnings('ignore', category=MarkupResemblesLocatorWarning)
-    # local/lib/python3.9/site-packages/bs4/builder/__init__.py:545: XMLParsedAsHTMLWarning: It looks like you're parsing an XML document using an HTML parser. If this really is an HTML document (maybe it's XHTML?)...
-    warnings.filterwarnings('ignore', category=XMLParsedAsHTMLWarning)
+
+    try:
+      import bs4
+      # local/lib/python3.8/site-packages/webmentiontools/send.py:65: GuessedAtParserWarning: No parser was explicitly specified, so I'm using the best available HTML parser for this system ("lxml"). This usually isn't a problem, but if you run this code on another system, or in a different virtual environment, it may use a different parser and behave differently.
+      warnings.filterwarnings('ignore', category=bs4.GuessedAtParserWarning)
+      # local/lib/python3.9/site-packages/bs4/__init__.py:435: MarkupResemblesLocatorWarning: The input looks more like a filename than markup. You may want to open this file and pass the filehandle into Beautiful Soup.
+      warnings.filterwarnings('ignore', category=bs4.MarkupResemblesLocatorWarning)
+      # local/lib/python3.9/site-packages/bs4/builder/__init__.py:545: XMLParsedAsHTMLWarning: It looks like you're parsing an XML document using an HTML parser. If this really is an HTML document (maybe it's XHTML?)...
+      warnings.filterwarnings('ignore', category=bs4.XMLParsedAsHTMLWarning)
+    except ImportError:
+      pass
 
     # https://stackoverflow.com/a/78803598/186123
     os.environ['GRPC_VERBOSITY'] = 'ERROR'
