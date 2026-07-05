@@ -3,10 +3,12 @@
 
 Supports Python 3. Should not depend on App Engine API or SDK packages.
 """
+from concurrent import futures
 import datetime
 import http.client
 import io
 import ipaddress
+import logging
 import socket
 import ssl
 from email.message import Message
@@ -17,6 +19,7 @@ import urllib.parse, urllib.request
 
 import googleapiclient.errors
 from flask import Flask, request
+import grpc
 import httplib2
 from oauthlib.oauth2.rfc6749.errors import OAuth2Error, TokenExpiredError
 import prawcore.exceptions
@@ -2043,3 +2046,100 @@ class UtilTest(testutil.TestCase):
     prepared = util.session.prepare_request(
       requests.Request('GET', 'https://example.com/page2'))
     self.assertNotIn('Cookie', prepared.headers)
+
+
+class GrpcLoggingInterceptorTest(testutil.TestCase):
+  """Uses a real in-process gRPC server since webutil has no generated stubs."""
+
+  def setUp(self):
+    super().setUp()
+
+    def echo_unary(request, context):
+      return request
+
+    def echo_stream(request, context):
+      mid = len(request) // 2
+      yield request[:mid]
+      yield request[mid:]
+
+    str_serializer = lambda s: s.encode()
+    str_deserializer = lambda b: b.decode()
+
+    handlers = {
+      'EchoUnary': grpc.unary_unary_rpc_method_handler(
+        echo_unary, request_deserializer=str_deserializer,
+        response_serializer=str_serializer),
+      'EchoStream': grpc.unary_stream_rpc_method_handler(
+        echo_stream, request_deserializer=str_deserializer,
+        response_serializer=str_serializer),
+    }
+
+    self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
+    self.server.add_generic_rpc_handlers(
+      (grpc.method_handlers_generic_handler('test.Echo', handlers),))
+    port = self.server.add_insecure_port('localhost:0')
+    self.server.start()
+    self.target = f'localhost:{port}'
+
+    self.channel = grpc.intercept_channel(
+      grpc.insecure_channel(self.target), util.GrpcLoggingInterceptor())
+    self.unary_call = self.channel.unary_unary(
+      '/test.Echo/EchoUnary', request_serializer=str_serializer,
+      response_deserializer=str_deserializer)
+    self.stream_call = self.channel.unary_stream(
+      '/test.Echo/EchoStream', request_serializer=str_serializer,
+      response_deserializer=str_deserializer)
+
+  def tearDown(self):
+    self.channel.close()
+    self.server.stop(grace=None)
+    super().tearDown()
+
+  def test_unary_unary(self):
+    with self.assertLogs(util.grpc_logger.name, level='DEBUG') as logs:
+      resp = self.unary_call('hello')
+
+    self.assertEqual('hello', resp)
+    output = ' '.join(logs.output)
+    self.assertIn('/test.Echo/EchoUnary: hello', output)
+
+  def test_unary_stream(self):
+    with self.assertLogs(util.grpc_logger.name, level='DEBUG') as logs:
+      chunks = list(self.stream_call('hello world'))
+
+    self.assertEqual(['hello', ' world'], chunks)
+    output = ' '.join(logs.output)
+    self.assertIn('/test.Echo/EchoStream: hello', output)
+    self.assertIn('/test.Echo/EchoStream:  world', output)
+
+  def test_unary_unary_custom_logger_and_level(self):
+    logger = logging.getLogger('GrpcLoggingInterceptorTest')
+    channel = grpc.intercept_channel(
+      grpc.insecure_channel(self.target),
+      util.GrpcLoggingInterceptor(logger=logger, level=logging.INFO))
+    call = channel.unary_unary(
+      '/test.Echo/EchoUnary',
+      request_serializer=lambda s: s.encode(),
+      response_deserializer=lambda b: b.decode())
+
+    with self.assertLogs(logger.name, level='INFO') as logs:
+      resp = call('hi')
+
+    self.assertEqual('hi', resp)
+    self.assertIn('/test.Echo/EchoUnary: hi', ' '.join(logs.output))
+
+  def test_unary_unary_target(self):
+    channel = grpc.intercept_channel(
+      grpc.insecure_channel(self.target), util.GrpcLoggingInterceptor(self.target))
+    call = channel.unary_unary(
+      '/test.Echo/EchoUnary',
+      request_serializer=lambda s: s.encode(),
+      response_deserializer=lambda b: b.decode())
+
+    with self.assertLogs(util.grpc_logger.name, level='DEBUG') as logs:
+      resp = call('hi')
+
+    self.assertEqual('hi', resp)
+    output = ' '.join(logs.output)
+    self.assertIn(f'{self.target}', output)
+    self.assertIn('/test.Echo/EchoUnary: hi', output)

@@ -134,6 +134,7 @@ except ImportError:
   tweepy = None
 
 logger = logging.getLogger(__name__)
+grpc_logger = logging.getLogger('webutil.grpc')
 
 user_agent = 'webutil (https://github.com/snarfed/webutil)'
 """Set with :func:`set_user_agent`."""
@@ -2646,28 +2647,39 @@ class GrpcLoggingInterceptor(grpc.UnaryUnaryClientInterceptor,
                              grpc.StreamStreamClientInterceptor):
   """gRPC client interceptor that logs requests and responses.
 
+  Install with eg:
+
+    channel = grpc.intercept_channel(
+      grpc.secure_channel(grpc.ssl_channel_credentials()),
+      GrpcLoggingInterceptor())
+    hub = [myservice]_pb2_grpc.MyServiceStub(channel)
+
   Attrs:
+    target (str): optional, eg host:port, included in log messages since
+      details.method only has the RPC path, not the channel's target
     logger (logging.Logger)
     level (int)
   """
-  def __init__(self, logger=logger, level=logging.DEBUG):
+  def __init__(self, target=None, logger=grpc_logger, level=logging.DEBUG):
+    self.target = target
     self.logger = logger
     self.level = level
 
   def _intercept(self, continuation, details, req_or_iter, req_stream, resp_stream):
+    prefix = f'{self.target} ' if self.target else ''
     requests = list(req_or_iter) if req_stream else [req_or_iter]
     for r in requests:
-      self.logger.log(self.level, f'gRPC → {details.method}: {r}')
+      self.logger.log(self.level, f'gRPC → {prefix}{details.method}: {r}')
 
     call = continuation(details, iter(requests) if req_stream else requests[0])
     if resp_stream:
       def _logged():
         for item in call:
-          self.logger.log(self.level, f'gRPC ← {details.method}: {item}')
+          self.logger.log(self.level, f'gRPC ← {prefix}{details.method}: {item}')
           yield item
       return _logged()
     else:
-      self.logger.log(self.level, f'gRPC ← {details.method}: {call.result()}')
+      self.logger.log(self.level, f'gRPC ← {prefix}{details.method}: {call.result()}')
       return call
 
   intercept_unary_unary   = lambda self, *args: self._intercept(*args, False, False)
