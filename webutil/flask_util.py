@@ -295,6 +295,10 @@ def error(msg, status=400, exc_info=False, **kwargs):
     kwargs: passed through to :func:`flask.abort`
   """
   logger.info(f'Returning {status}: {msg} {kwargs}', exc_info=exc_info)
+  # TODO: use Content-Type: text/plain to avoid XSSes when msg includes
+  # unsanitized strings? tried with werkzeug.Response(..., content_type='text/plain')
+  # passed to abort, but that ends up raising HTTPException for all status codes,
+  # which tests disagreed with. maybe still ok?
   try:
     abort(int(status), msg, **kwargs)
   except LookupError:  # probably an unknown status code
