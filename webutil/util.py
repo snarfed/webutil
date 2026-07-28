@@ -1647,13 +1647,17 @@ def is_connection_failure(exception):
       http.client.ImproperConnectionState,
       http.client.IncompleteRead,
       http.client.NotConnected,
-      prawcore.exceptions.RequestException,
       socket.gaierror,
       socket.herror,
       socket.timeout,
       TimeoutError,
       ssl.SSLError,
   ]
+  if prawcore:
+    types += [
+      prawcore.exceptions.RequestException,
+    ]
+
   if requests:
     types += [
       requests.exceptions.ChunkedEncodingError,
