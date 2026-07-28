@@ -23,6 +23,14 @@ Contents
 Changelog
 ---
 
+### 2.1 - unreleased
+
+* `models`:
+  * Fix missing import in `Cache.get`/`Cache.put`.
+* `util`:
+  * `is_connection_failure`: make `prawcore` import optional.
+
+
 ### 2.0 - 2026-06-29
 
 * `appengine_info`:

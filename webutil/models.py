@@ -1,6 +1,6 @@
 """App Engine datastore model base classes, properties, and utilites."""
 import base64
-from datetime import timezone
+from datetime import datetime, timezone
 import enum
 import os
 from google.cloud import ndb

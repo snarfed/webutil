@@ -11,6 +11,7 @@ from google.cloud import ndb
 import unittest.mock as mock
 
 from ..models import (
+  Cache,
   EncryptedProperty,
   EnumProperty,
   Reloader,
@@ -95,6 +96,23 @@ class ReloaderTest(testutil.TestCase):
 
     self.assertEqual(9, self.reloader.obj.num)
     self.assertEqual(t1, self.reloader.loaded_at)
+
+
+class CacheTest(testutil.TestCase):
+
+  def test_get_missing(self):
+    with appengine_config.ndb_client.context():
+      self.assertIsNone(Cache.get('nope'))
+
+  def test_put_and_get(self):
+    with appengine_config.ndb_client.context():
+      Cache.put('foo', 'bar', expire=timedelta(minutes=5))
+      self.assertEqual('bar', Cache.get('foo'))
+
+  def test_get_expired(self):
+    with appengine_config.ndb_client.context():
+      Cache.put('foo', 'bar', expire=timedelta(minutes=-5))
+      self.assertIsNone(Cache.get('foo'))
 
 
 class StringIdModelTest(testutil.TestCase):
