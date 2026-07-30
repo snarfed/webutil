@@ -16,7 +16,7 @@ from flask_caching import Cache
 from werkzeug.exceptions import BadRequest, HTTPException, NotFound
 
 from .. import flask_util
-from ..flask_util import get_required_param
+from ..flask_util import bool_param, get_required_param
 
 
 class FlaskUtilTest(unittest.TestCase):
@@ -54,6 +54,18 @@ class FlaskUtilTest(unittest.TestCase):
             get_required_param('z')
         with self.assertRaises(BadRequest):
             get_required_param('a')
+
+  def test_bool_param(self):
+    for ctx in (
+        self.app.test_request_context('/?x=true&y=false&z='),
+        self.app.test_request_context(
+          method='POST', data={'x': 'true', 'y': 'false', 'z': ''}),
+    ):
+      with ctx:
+        self.assertTrue(bool_param('x'))
+        self.assertFalse(bool_param('y'))
+        self.assertFalse(bool_param('z'))
+        self.assertFalse(bool_param('a'))
 
   def test_block(self):
     self.app.before_request(flask_util.block(

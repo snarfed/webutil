@@ -25,6 +25,8 @@ Changelog
 
 ### 2.1 - unreleased
 
+* `flask_util`:
+  * Add `bool_param` for getting boolean query params/form arguments.
 * `models`:
   * Fix missing import in `Cache.get`/`Cache.put`.
 * `util`:

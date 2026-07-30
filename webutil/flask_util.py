@@ -203,6 +203,20 @@ def get_required_param(name):
   return val
 
 
+def bool_param(name):
+  """Returns True if the given request parameter is set to a truthy value.
+
+  Truthy values are 'true', 'yes', 'ok', '1' (case insensitive, stripped).
+
+  Args:
+    name (str): request parameter name
+
+  Returns:
+    bool
+  """
+  return request.values.get(name, '').strip().lower() in ('true', 'yes', 'ok', '1')
+
+
 def ndb_context_middleware(app, client=None, **kwargs):
   """WSGI middleware to add an NDB context per request.
 
