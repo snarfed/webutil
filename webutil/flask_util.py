@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 # Modern HTTP headers for CORS, CSP, other security, etc.
 CSP_HOSTS = 'localhost:8080 127.0.0.1:8080 my.dev.com:8080' if LOCAL_SERVER else ''
 MODERN_HEADERS = {
-  'Access-Control-Allow-Headers': '*',
+  'Access-Control-Allow-Headers': '*, Authorization',
   'Access-Control-Allow-Methods': '*',
   'Access-Control-Allow-Origin': '*',
   # https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cross-Origin-Opener-Policy
