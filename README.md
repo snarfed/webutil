@@ -28,8 +28,7 @@ Changelog
 * `flask_util`:
   * Add `bool_param` for getting boolean query params/form arguments.
 * `models`:
-  * Add `get_multi`, a wrapper for `ndb.get_multi` that skips the global cache on
-    big fetches.
+  * Fix missing import in `Cache.get`/`Cache.put`.
 * `util`:
   * `is_connection_failure`: make `prawcore` import optional.
 

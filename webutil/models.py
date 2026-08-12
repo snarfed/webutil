@@ -19,9 +19,6 @@ from .util import json_dumps, json_loads
 #   len(entity._to_pb().Encode())
 MAX_ENTITY_SIZE = 1 * 1000 * 1000
 
-# most keys we'll fetch from the global cache (memcache) in a single get_multi
-MAX_GLOBAL_CACHE_KEYS = 100
-
 _keys_bytes = []
 _keys = []
 if contents := (os.getenv('ENCRYPTED_PROPERTY_KEY')
@@ -212,26 +209,6 @@ class WriteOnce:
 
 class WriteOnceBlobProperty(WriteOnce, ndb.BlobProperty):
     pass
-
-
-def get_multi(keys, **kwargs):
-  """Wrapper for :func:`ndb.get_multi` that skips the global cache on big fetches.
-
-  ndb writes each entity that misses the global cache back to memcache with its
-  own blocking CAS call, and locks it with another, so fetching tens of thousands
-  of keys spends minutes in serial memcache round trips alone.
-  https://github.com/snarfed/bridgy-fed/issues/2154
-
-  Args:
-    keys (sequence of google.cloud.ndb.Key)
-    kwargs: passed through to :func:`ndb.get_multi`
-
-  Returns:
-    list of google.cloud.ndb.Model or None
-  """
-  keys = list(keys)
-  kwargs.setdefault('use_global_cache', len(keys) <= MAX_GLOBAL_CACHE_KEYS)
-  return ndb.get_multi(keys, **kwargs)
 
 
 def stored_value(entity, prop):
