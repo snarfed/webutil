@@ -705,6 +705,10 @@ class UtilTest(testutil.TestCase):
       ('2012-07-23 05:54:49Z', '2012-07-23T05:54:49+00:00'),
       ('2012-07-23T05:54:49', '2012-07-23T05:54:49'),
       ('2012-07-23 05:54:49.321', '2012-07-23T05:54:49.321000'),
+      # non-strings are returned unchanged
+      (3, 3),
+      ([], []),
+      ({'x': 'y'}, {'x': 'y'}),
     ):
       self.assertEqual(expected, util.maybe_iso8601_to_rfc3339(input))
 
