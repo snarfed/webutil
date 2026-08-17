@@ -439,13 +439,13 @@ def encode(obj, encoding='utf-8'):
   if isinstance(obj, str):
     return obj.encode(encoding)
   elif isinstance(obj, tuple):
-    return tuple(encode(v) for v in obj)
+    return tuple(encode(v, encoding) for v in obj)
   elif isinstance(obj, list):
-    return [encode(v) for v in obj]
+    return [encode(v, encoding) for v in obj]
   elif isinstance(obj, set):
-    return {encode(v) for v in obj}
+    return {encode(v, encoding) for v in obj}
   elif isinstance(obj, dict):
-    return {encode(k): encode(v) for k, v in obj.items()}
+    return {encode(k, encoding): encode(v, encoding) for k, v in obj.items()}
   else:
     return obj
 

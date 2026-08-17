@@ -171,6 +171,20 @@ class UtilTest(testutil.TestCase):
     ):
       self.assertEqual(expected, util.encode(input))
 
+  def test_encode_encoding(self):
+    coffee = u'☕'
+    coffee_utf16 = coffee.encode('utf-16')
+    x_utf16 = 'x'.encode('utf-16')
+
+    for expected, input in (
+        (coffee_utf16, coffee),
+        ([coffee_utf16], [coffee]),
+        ((coffee_utf16,), (coffee,)),
+        ({coffee_utf16}, {coffee}),
+        ({coffee_utf16: [{x_utf16: coffee_utf16}]}, {coffee: [{'x': coffee}]}),
+    ):
+      self.assertEqual(expected, util.encode(input, 'utf-16'))
+
   def test_get_first(self):
     for dict, expected in (
         ({}, None),

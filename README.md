@@ -30,6 +30,7 @@ Changelog
 * `models`:
   * Fix missing import in `Cache.get`/`Cache.put`.
 * `util`:
+  * `encode`: fix `encoding` kwarg, it was ignored for nested values and always used UTF-8.
   * `is_connection_failure`: make `prawcore` import optional.
 
 
