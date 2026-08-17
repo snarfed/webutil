@@ -698,8 +698,7 @@ def clean_url(url):
   except (AttributeError, TypeError, ValueError):
     return None
 
-  query = urllib.parse.unquote_plus(parts[4])
-  params = [(name, value) for name, value in urllib.parse.parse_qsl(query)
+  params = [(name, value) for name, value in urllib.parse.parse_qsl(parts[4])
             if name not in utm_params
             and not (name == 'source' and value.startswith('rss-'))]
   parts[4] = urllib.parse.urlencode(params)

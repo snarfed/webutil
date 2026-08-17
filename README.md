@@ -33,6 +33,7 @@ Changelog
   * `encode`: fix `encoding` kwarg, it was ignored for nested values and always used UTF-8.
   * `is_connection_failure`: make `prawcore` import optional.
   * `linkify`, `tokenize_links`: fix duplicated trailing punctuation after a link, eg `http://foo.com/a).. ` became `http://foo.com/a)..... `.
+  * `clean_url`: fix query params with escaped delimiters, eg `?a=b%26c` lost the `%26c`. The query string was unescaped before it was parsed.
   * `maybe_iso8601_to_rfc3339`: return non-string inputs unchanged instead of raising `AttributeError`.
   * `to_utc_timestamp`: fix timezone aware datetimes, they were read as wall clock time and their UTC offset was ignored.
 

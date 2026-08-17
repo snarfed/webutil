@@ -351,6 +351,11 @@ class UtilTest(testutil.TestCase):
     self.assertEqual('http://foo?source=not-rss',
                      util.clean_url('http://foo?&source=not-rss'))
 
+    # escaped delimiters in param names and values are preserved
+    for unchanged in ('http://foo?a=b%26c', 'http://foo?a%3Db=c',
+                      'http://foo?a=b%3Dc'):
+      self.assertEqual(unchanged, util.clean_url(unchanged))
+
   def test_quote_path(self):
     for unchanged in '', 'foo', 'http://foo', 'http://foo#bar', 'http://foo?x=y&z=w':
       self.assertEqual(unchanged, util.quote_path(unchanged))
