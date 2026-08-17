@@ -14,6 +14,7 @@ from ..models import (
   Cache,
   EncryptedProperty,
   EnumProperty,
+  JsonProperty,
   Reloader,
   StringIdModel,
   WriteOnceBlobProperty,
@@ -127,6 +128,49 @@ class StringIdModelTest(testutil.TestCase):
                        StringIdModel(id='x').put())
       self.assertRaises(AssertionError, StringIdModel().put)
       self.assertRaises(AssertionError, StringIdModel(id=1).put)
+
+
+class JsonModel(ndb.Model):
+  field = JsonProperty()
+
+
+class JsonPropertyTest(testutil.TestCase):
+  def setUp(self):
+    super().setUp()
+
+    self.ndb_context = appengine_config.ndb_client.context()
+    self.ndb_context.__enter__()
+
+  def tearDown(self):
+    self.ndb_context.__exit__(None, None, None)
+    super().tearDown()
+
+  def test_validate(self):
+    for bad in 'str', 3, 3.14, True, b'bytes', (1, 2):
+      with self.assertRaises(TypeError):
+        JsonModel(field=bad).put()
+
+  def test_round_trip(self):
+    entity = JsonModel()
+    entity.put()
+    self.assertIsNone(entity.key.get(use_cache=False).field)
+
+    for val in ({}, [], {'a': 1}, [1, 'x', None, True], {'a': '☕'},
+                {'a': {'b': [1, {'c': None}]}}):
+      entity.field = val
+      entity.put()
+      self.assertEqual(val, entity.key.get(use_cache=False).field)
+
+  def test_stored_as_compact_ascii_json(self):
+    self.assertEqual(b'{"a":1,"b":[2,3]}',
+                     JsonModel.field._to_base_type({'a': 1, 'b': [2, 3]}))
+    # non-ascii is escaped, so that it's readable in the web console
+    self.assertEqual(b'{"a":"\\u2615"}',
+                     JsonModel.field._to_base_type({'a': '☕'}))
+
+  def test_from_base_type_accepts_str_and_bytes(self):
+    for stored in '{"a":"\\u2615"}', b'{"a":"\\u2615"}':
+      self.assertEqual({'a': '☕'}, JsonModel.field._from_base_type(stored))
 
 
 class TestEnum(enum.Enum):
