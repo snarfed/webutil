@@ -1066,6 +1066,9 @@ def to_utc_timestamp(input):
   if not input:
     return None
 
+  if input.tzinfo:
+    input = input.astimezone(timezone.utc)
+
   timetuple = list(input.timetuple())
   # timetuple() usually strips microsecond
   timetuple[5] += input.microsecond / 1000000

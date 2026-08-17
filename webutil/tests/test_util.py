@@ -738,6 +738,15 @@ class UtilTest(testutil.TestCase):
     self.assertEqual(1446103883.456789, util.to_utc_timestamp(
       datetime.datetime(2015, 10, 29, 7, 31, 23, 456789)))
 
+    # timezone aware datetimes are converted to UTC first
+    for tz, expected in ((datetime.timezone.utc, 1446103883.456789),
+                         (datetime.timezone(datetime.timedelta(hours=5, minutes=30)),
+                          1446084083.456789),
+                         (datetime.timezone(datetime.timedelta(hours=-8)),
+                          1446132683.456789)):
+      self.assertEqual(expected, util.to_utc_timestamp(
+        datetime.datetime(2015, 10, 29, 7, 31, 23, 456789, tzinfo=tz)))
+
   def test_as_utc(self):
     dt = datetime.datetime(2000, 1, 1)  # naive
     self.assertEqual(dt, util.as_utc(dt))
