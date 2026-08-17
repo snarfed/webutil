@@ -525,6 +525,10 @@ class UtilTest(testutil.TestCase):
         ('links separated by punctuation <a href="http://foo.com">http://foo.com</a>, <a href="http://bar.com/">http://bar.com/</a>; <a href="http://baz.com/?s=query">http://baz.com/?s=query</a>; did it work?',
          'links separated by punctuation http://foo.com, http://bar.com/; http://baz.com/?s=query; did it work?'),
         ('"<a href="http://foo.com">http://foo.com</a>",', '"http://foo.com",'),
+        # multiple trailing punctuation chars
+        ('<a href="http://foo.com">http://foo.com</a>... x', 'http://foo.com... x'),
+        ('x <a href="http://example.com/a">http://example.com/a</a>).. y',
+         'x http://example.com/a).. y'),
         ('\'<a href="http://foo.com">http://foo.com</a>\',', "'http://foo.com',"),
         ('<a href="http://aÇb.com">http://aÇb.com</a>', 'http://aÇb.com'),
         ('<a href="http://a☕⊙b.com">http://a☕⊙b.com</a>', 'http://a☕⊙b.com'),

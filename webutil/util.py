@@ -799,8 +799,9 @@ def tokenize_links(text, skip_bare_cc_tlds=False, skip_html_links=True,
            # allow 1 () pair
            and (link[jj] != ')' or '(' not in link)):
       jj -= 1
-      links[ii] = link[:jj + 1]
-      splits[ii + 1] = link[jj + 1:] + splits[ii + 1]
+
+    links[ii] = link[:jj + 1]
+    splits[ii + 1] = link[jj + 1:] + splits[ii + 1]
 
     link = links[ii]
 
