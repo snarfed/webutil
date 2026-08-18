@@ -74,6 +74,7 @@ Here's how to package, test, and ship a new release.
     source .venv/bin/activate.csh
     gcloud emulators firestore start --host-port=:8089 --database-mode=datastore-mode < /dev/null >& /dev/null &
     python -m unittest discover
+    python -m unittest webutil/tests/hypothesis/*.py
     ```
 1. Bump the version number in `pyproject.toml` and `docs/conf.py`. `git grep` the old version number to make sure it only appears in the changelog. Change the current changelog entry in `README.md` for this new version from _unreleased_ to the current date.
 1. Build the docs. If you added any new modules, add them to the appropriate file(s) in `docs/source/`. Then run `./docs/build.sh`.
