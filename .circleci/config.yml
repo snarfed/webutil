@@ -81,8 +81,8 @@ workflows:
     jobs:
       # two coupled combos; both must pass
       - build:
-          name: python-3.12-highest
-          python: '3.12'
+          name: python-3.14-highest
+          python: '3.14'
           resolution: highest
       - build:
           name: python-3.9-lowest-direct

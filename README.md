@@ -90,9 +90,9 @@ Here's how to package, test, and ship a new release.
 1. Install from test.pypi.org.
     ```sh
     cd /tmp
-    python3.0 -m venv .venv
+    python3 -m venv .venv
     source .venv/bin/activate.csh
-    pip3.9 install -i https://test.pypi.org/simple --extra-index-url https://pypi.org/simple pywebutil
+    pip3 install -i https://test.pypi.org/simple --extra-index-url https://pypi.org/simple pywebutil
     ```
 1. Smoke test that the code trivially loads and runs.
     ```sh
