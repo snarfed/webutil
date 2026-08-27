@@ -30,6 +30,7 @@ Changelog
 * `models`:
   * Fix missing import in `Cache.get`/`Cache.put`.
 * `util`:
+  * `requests_*`: add `cache` kwarg, an opt-in Flask-request-local cache of GET/HEAD responses and exceptions, keyed on method, URL, and `Accept` header.
   * `encode`: fix `encoding` kwarg, it was ignored for nested values and always used UTF-8.
   * `is_connection_failure`: make `prawcore` import optional.
   * `linkify`, `tokenize_links`: fix duplicated trailing punctuation after a link, eg `http://foo.com/a).. ` became `http://foo.com/a)..... `.

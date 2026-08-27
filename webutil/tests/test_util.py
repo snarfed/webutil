@@ -1539,6 +1539,138 @@ class UtilTest(testutil.TestCase):
     self.assertEqual(url, resp.url)
     self.assertEqual('okayie', resp.text)
 
+  @patch.object(util.session, 'get', side_effect=[
+    requests_response('first'),
+    requests_response('second'),
+  ])
+  def test_requests_get_cache_hit(self, mock_get):
+    with Flask(__name__).test_request_context('/'):
+      for _ in range(2):
+        self.assertEqual('first', util.requests_get('http://xyz', cache=True).text)
+
+    self.assertEqual(1, mock_get.call_count)
+
+  @patch.object(util.session, 'get', side_effect=[
+    requests_response('first'),
+    requests_response('second'),
+  ])
+  def test_requests_get_cache_off_by_default(self, _):
+    with Flask(__name__).test_request_context('/'):
+      self.assertEqual('first', util.requests_get('http://xyz').text)
+      self.assertEqual('second', util.requests_get('http://xyz').text)
+
+  @patch.object(util.session, 'get', side_effect=[
+    requests_response('first'),
+    requests_response('second'),
+  ])
+  def test_requests_get_cache_different_url(self, _):
+    with Flask(__name__).test_request_context('/'):
+      self.assertEqual('first', util.requests_get('http://xyz', cache=True).text)
+      self.assertEqual('second', util.requests_get('http://abc', cache=True).text)
+
+  @patch.object(util.session, 'get', side_effect=[
+    requests_response('first'),
+    requests_response('second'),
+  ])
+  def test_requests_get_cache_different_accept(self, _):
+    with Flask(__name__).test_request_context('/'):
+      self.assertEqual('first', util.requests_get(
+        'http://xyz', cache=True, headers={'Accept': 'text/html'}).text)
+      self.assertEqual('second', util.requests_get(
+        'http://xyz', cache=True, headers={'Accept': 'application/activity+json'}).text)
+
+  @patch.object(util.session, 'get', side_effect=[
+    requests_response('first'),
+    requests_response('second'),
+  ])
+  def test_requests_get_cache_not_shared_across_requests(self, _):
+    """The cache is on the request, not flask.g, which is scoped to the app context.
+
+    Tests often push one app context around multiple requests, so g would leak.
+    """
+    app = Flask(__name__)
+
+    @app.route('/')
+    def index():
+      return util.requests_get('http://xyz', cache=True).text
+
+    with app.app_context():
+      client = app.test_client()
+      self.assertEqual('first', client.get('/').text)
+      self.assertEqual('second', client.get('/').text)
+
+  @patch.object(util.session, 'get', side_effect=[
+    requests_response('first'),
+    requests_response('second'),
+  ])
+  def test_requests_get_cache_no_request_context(self, _):
+    self.assertEqual('first', util.requests_get('http://xyz', cache=True).text)
+    self.assertEqual('second', util.requests_get('http://xyz', cache=True).text)
+
+  @patch.object(util.session, 'get', side_effect=[
+    requests_response('first'),
+    requests_response('second'),
+  ])
+  def test_requests_get_cache_ignores_auth(self, mock_get):
+    """Credentials aren't part of the key; callers pass a principal if it matters."""
+    with Flask(__name__).test_request_context('/'):
+      for auth in ('alice', 'alice'), ('bob', 'bob'):
+        self.assertEqual('first', util.requests_get(
+          'http://xyz', cache=True, auth=auth).text)
+
+    self.assertEqual(1, mock_get.call_count)
+
+  def test_requests_get_cache_unbuffered_response_not_cached(self):
+    # can't be built inline in a decorator: needs an unread body, ie _content False
+    unbuffered = requests.Response()
+    unbuffered.status_code = 200
+    unbuffered.headers['Content-Type'] = 'image/jpeg'
+
+    with patch.object(util.session, 'get', side_effect=[
+        unbuffered, requests_response('second')]):
+      with Flask(__name__).test_request_context('/'):
+        self.assertEqual(200, util.requests_get('http://xyz', cache=True).status_code)
+        self.assertEqual('second', util.requests_get('http://xyz', cache=True).text)
+
+  @patch.object(util.session, 'get', side_effect=[
+    requests.ConnectionError('nope'),
+    requests_response('second'),
+  ])
+  def test_requests_get_cache_exception(self, mock_get):
+    with Flask(__name__).test_request_context('/'):
+      for _ in range(2):
+        with self.assertRaises(requests.ConnectionError):
+          util.requests_get('http://xyz', cache=True)
+
+    self.assertEqual(1, mock_get.call_count)
+
+  @patch.object(util.session, 'get', side_effect=[
+    requests.exceptions.InvalidURL(),
+    requests_response('ok', url='http://xn--abc-yr2a.de/'),
+    requests_response('ok', url='http://xn--abc-yr2a.de/'),
+  ])
+  def test_requests_get_cache_invalid_url_punycode_retry(self, mock_get):
+    """A cached exception is re-raised inside the try, so the retry below still runs.
+
+    The second call skips the doomed request and goes straight to the punycode retry.
+    """
+    with Flask(__name__).test_request_context('/'):
+      for _ in range(2):
+        self.assertEqual(200, util.requests_get('http://abc⊙.de/', cache=True).status_code)
+
+    self.assertEqual(3, mock_get.call_count)
+
+  @patch.object(util.session, 'get',
+                return_value=requests_response('nope', status=404))
+  def test_requests_get_cache_gateway_still_applies(self, mock_get):
+    """gateway isn't part of the key, so it has to be re-applied on cache hits."""
+    with Flask(__name__).test_request_context('/'):
+      self.assertEqual(404, util.requests_get('http://xyz', cache=True).status_code)
+      with self.assertRaises(BadGateway):
+        util.requests_get('http://xyz', cache=True, gateway=True)
+
+    self.assertEqual(1, mock_get.call_count)
+
   @patch.object(util.session, 'get', return_value=requests_response('abc'))
   def test_set_user_agent_requests(self, _):
     util.set_user_agent('Fooey')

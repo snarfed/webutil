@@ -28,7 +28,7 @@ from urllib.parse import urljoin, urlparse
 
 from cachetools import cached, TTLCache
 from domain2idna import domain2idna
-from flask import abort
+from flask import abort, has_request_context, request
 import grpc
 import requests
 from requests_hardened import Config, HTTPSession, ip_filter
@@ -161,6 +161,13 @@ Raised from 1MB to 2MB on 2023-07-07.
 * http://httparchive.org/interesting.php#bytesperpage
 """
 HTTP_RESPONSE_TOO_BIG_STATUS_CODE = 422  # Unprocessable Entity
+
+HTTP_CACHE = 'webutil.http_cache'
+"""WSGI environ key that :func:`requests_fn`'s request-local response cache is
+stored under. Dies with the request, so it never needs to be cleared, but tests
+that make multiple logical requests inside a single request context can pop it
+from ``request.environ`` to simulate the boundary.
+"""
 
 FOLLOW_REDIRECTS_CACHE_TIME = 60 * 60 * 24  # 1d expiration
 follow_redirects_cache = TTLCache(1000, FOLLOW_REDIRECTS_CACHE_TIME)
@@ -1876,7 +1883,7 @@ def make_session():
 session = make_session()
 
 
-def requests_fn(url, fn=None, *args, log_data=True, **kwargs):
+def requests_fn(url, fn=None, *args, log_data=True, cache=False, **kwargs):
   """Wraps ``requests.*``, uses our hardened session, logs the HTTP method and URL.
 
   Use :func:`set_user_agent` to change the ``User-Agent`` header to be sent.
@@ -1890,11 +1897,16 @@ def requests_fn(url, fn=None, *args, log_data=True, **kwargs):
       failures and HTTP 4xx and 5xx result in :class:`werkzeug.exceptions.BadGateway`
       (HTTP 502).
     log_data (bool): whether to log ``data`` or ``json``
+    cache (bool): whether to cache this response, and any exception it raises,
+      for the rest of the current Flask request. Only for idempotent methods,
+      ie ``GET`` and ``HEAD``. The cache is keyed on the method, URL, and
+      ``Accept`` header. Credentials are *not* currently part of the key.
 
   Returns:
     requests.Response:
   """
-  logger.info(f'{getattr(fn, "__name__", "request")} {url} {_prune(kwargs, log_data=log_data)}')
+  method = getattr(fn, '__name__', 'request')
+  logger.info(f'{method} {url} {_prune(kwargs, log_data=log_data)}')
 
   gateway = kwargs.pop('gateway', None)
   kwargs.setdefault('timeout', HTTP_TIMEOUT)
@@ -1905,8 +1917,47 @@ def requests_fn(url, fn=None, *args, log_data=True, **kwargs):
     kwargs['headers'] =  {}
   kwargs['headers'].setdefault('User-Agent', user_agent)
 
+  # request-local cache. only keyed on the parts of the request we know can change
+  # the response. notably not credentials, eg auth or an HTTP Signature. if we
+  # eventually want to include those, one way would be to allow callers to pass
+  # a custom cache key (varying by idnetity) in the cache kwarg instead of True.
+  #
+  # https://requests-cache.readthedocs.io/ was another option. We could still
+  # consider it in the future! But compared to this, it would have needed more
+  # custom logic than it gained us in reuse.
+  cache_key = None
+  if cache and has_request_context():
+    cache_key = (method, url, kwargs['headers'].get('Accept'))
+    # in the WSGI environ, not flask.g, which is scoped to the app context, not
+    # the request. they usually coincide, but not when an app context is pushed
+    # around multiple requests, eg in tests. PEP 3333 provides for namespaced
+    # framework keys in the environ.
+    cache_dict = request.environ.setdefault(HTTP_CACHE, {})
+
   try:
-    resp = fn(url, *args, **kwargs)
+    # check cache first
+    #
+    # can't use response's truthiness; Response.__bool__ is False for 4xx and 5xx
+    if cache_key and cache_key in cache_dict:
+      cached = cache_dict[cache_key]
+      # TODO: demote to debug
+      logger.info(f'HTTP cache hit for {method} {url}')
+      if isinstance(cached, BaseException):
+        raise cached
+      resp = cached
+
+    else:
+      try:
+        resp = fn(url, *args, **kwargs)
+      except Exception as e:
+        if cache_key:
+          cache_dict[cache_key] = e
+        raise
+      # only cache responses we've already read. requests_fn streams by default,
+      # so an unread body can't be replayed to a second caller.
+      if cache_key and resp._content is not False:
+        cache_dict[cache_key] = resp
+
     msg = f'Received {resp.status_code} '
     if resp.status_code // 100 == 3:
       msg += f'{resp.headers.get("Location") or "no Location header"}'
