@@ -23,7 +23,14 @@ Contents
 Changelog
 ---
 
-### 2.1 - unreleased
+### 3.0 - unreleased
+
+_Breaking changes:_
+
+* Remove `util.if_changed`.
+
+
+_Non-breaking changes:_
 
 * `flask_util`:
   * Add `bool_param` for getting boolean query params/form arguments.

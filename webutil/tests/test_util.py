@@ -858,26 +858,6 @@ class UtilTest(testutil.TestCase):
     ):
       self.assertEqual(expected, util.parse_http_equiv(input))
 
-  def test_if_changed(self):
-    cache = util.CacheDict()
-    updates = {}
-
-    for val in (0, '', []):  # should all be normalized to None
-      self.assertIsNone(None, util.if_changed(cache, updates, 'x', val))
-      cache['x'] = 0
-      self.assertIsNone(None, util.if_changed(cache, updates, 'x', val))
-      del cache['x']
-
-    self.assertEqual(1, util.if_changed(cache, updates, 'x', 1))
-    self.assertEqual(1, updates['x'])
-    cache['x'] = 1
-    self.assertIsNone(util.if_changed(cache, updates, 'x', 1))
-    self.assertEqual(2, util.if_changed(cache, updates, 'x', 2))
-    self.assertEqual(2, updates['x'])
-
-    self.assertIsNone(util.if_changed(cache, updates, 'x', None))
-    self.assertEqual(None, updates['x'])
-
   def test_generate_secret(self):
     self.assertEqual(24, len(util.generate_secret()))
 
