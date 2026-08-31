@@ -377,6 +377,9 @@ def suppress_warnings():
     # local/lib/python3.12/site-packages/google/cloud/ndb/tasklets.py:319: DeprecationWarning: the (type, exc, tb) signature of throw() is deprecated, use the single-arg signature instead.
     warnings.filterwarnings('ignore', category=DeprecationWarning,
                             message=r'the \(type, exc, tb\) signature of throw\(\) is deprecated')
+    # lib/python3.14/tempfile.py:484: ResourceWarning: Implicitly cleaning up <HTTPError None: OSError(-1, 'foo bar')>
+    warnings.filterwarnings('ignore', category=ResourceWarning,
+                            message=r'Implicitly cleaning up')
     # local/lib/python3.8/site-packages/mf2util.py:556: DeprecationWarning: The 'warn' function is deprecated, use 'warning' instead
     # logging.warn(f'Failed to parse datetime {date_str}')
     warnings.filterwarnings('ignore', module='mf2util',
