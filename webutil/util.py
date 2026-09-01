@@ -1875,7 +1875,8 @@ def requests_fn(url, fn=None, *args, log_data=True, cache=False, **kwargs):
   gateway = kwargs.pop('gateway', None)
   kwargs.setdefault('timeout', HTTP_TIMEOUT)
   # stream to short circuit on too-long response bodies (below)
-  kwargs.setdefault('stream', True)
+  if (stream := kwargs.get('stream')) is None:
+    kwargs['stream'] = True
 
   if kwargs.get('headers') is None:
     kwargs['headers'] =  {}
@@ -1919,12 +1920,6 @@ def requests_fn(url, fn=None, *args, log_data=True, cache=False, **kwargs):
           logger.debug(f'HTTP Caching exception {e}')
           cache_dict[cache_key] = e
         raise
-      # only cache responses we've already read. requests_fn streams by default,
-      # so an unread body can't be replayed to a second caller.
-      if cache_key and resp._content is not False:
-        logger.debug(f'HTTP caching response {resp}')
-        cache_dict[cache_key] = resp
-
     msg = f'Received {resp.status_code} '
     if resp.status_code // 100 == 3:
       msg += f'{resp.headers.get("Location") or "no Location header"}'
@@ -1988,6 +1983,11 @@ def requests_fn(url, fn=None, *args, log_data=True, cache=False, **kwargs):
       resp._content = resp._text.encode('utf-8')
       if gateway:
         resp.raise_for_status()
+
+    if cache_key and not stream:
+      resp.content  # read and buffer the full response body
+      logger.debug(f'HTTP caching response {resp}')
+      cache_dict[cache_key] = resp
 
   return resp
 

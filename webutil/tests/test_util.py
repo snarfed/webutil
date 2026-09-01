@@ -1600,17 +1600,80 @@ class UtilTest(testutil.TestCase):
 
     self.assertEqual(1, mock_get.call_count)
 
-  def test_requests_get_cache_unbuffered_response_not_cached(self):
-    # can't be built inline in a decorator: needs an unread body, ie _content False
-    unbuffered = requests.Response()
-    unbuffered.status_code = 200
-    unbuffered.headers['Content-Type'] = 'image/jpeg'
+  @staticmethod
+  def unbuffered_response(body, content_type):
+    """An unread response, ie _content False, like the streamed ones we get in prod.
 
+    requests_response buffers eagerly, so it can't reproduce this.
+    """
+    resp = requests.Response()
+    resp.status_code = 200
+    resp.headers['Content-Type'] = content_type
+    resp.raw = io.BytesIO(body)
+    resp.encoding = 'utf-8'
+    return resp
+
+  def test_requests_get_cache_buffers_unbuffered_response(self):
     with patch.object(util.session, 'get', side_effect=[
-        unbuffered, requests_response('second')]):
+        self.unbuffered_response(b'first', 'text/html'),
+        requests_response('second'),
+    ]):
       with Flask(__name__).test_request_context('/'):
-        self.assertEqual(200, util.requests_get('http://xyz', cache=True).status_code)
-        self.assertEqual('second', util.requests_get('http://xyz', cache=True).text)
+        for _ in range(2):
+          self.assertEqual('first', util.requests_get('http://xyz', cache=True).text)
+
+  def test_requests_get_cache_cacheable_content_types(self):
+    for content_type in (
+        'text/html; charset=utf-8',
+        'text/plain',
+        'application/json',
+        'application/activity+json',
+        'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
+    ):
+      with patch.object(util.session, 'get', side_effect=[
+          self.unbuffered_response(b'first', content_type),
+          requests_response('second'),
+      ]):
+        with Flask(__name__).test_request_context('/'):
+          for _ in range(2):
+            self.assertEqual('first', util.requests_get('http://xyz', cache=True).text,
+                             content_type)
+
+  def test_requests_get_cache_skips_explicit_stream(self):
+    """Callers that stream on purpose, eg for blobs, shouldn't get buffered."""
+    with patch.object(util.session, 'get', side_effect=[
+        self.unbuffered_response(b'first', 'text/html'),
+        requests_response('second'),
+    ]):
+      with Flask(__name__).test_request_context('/'):
+        self.assertEqual('first', util.requests_get(
+          'http://xyz', cache=True, stream=True).text)
+        self.assertEqual('second', util.requests_get(
+          'http://xyz', cache=True, stream=True).text)
+
+  def test_requests_get_cache_explicit_stream_false(self):
+    with patch.object(util.session, 'get', side_effect=[
+        self.unbuffered_response(b'first', 'text/html'),
+        requests_response('second'),
+    ]):
+      with Flask(__name__).test_request_context('/'):
+        for _ in range(2):
+          self.assertEqual('first', util.requests_get(
+            'http://xyz', cache=True, stream=False).text)
+
+  def test_requests_get_cache_skips_non_text_content_types(self):
+    """Blobs etc are streamed on purpose; buffering them would defeat the
+    MAX_HTTP_RESPONSE_SIZE short circuit."""
+    for content_type in 'image/jpeg', 'video/mp4', '':
+      with patch.object(util.session, 'get', side_effect=[
+          self.unbuffered_response(b'first', content_type),
+          requests_response('second'),
+      ]):
+        with Flask(__name__).test_request_context('/'):
+          self.assertEqual(200, util.requests_get('http://xyz', cache=True).status_code,
+                           content_type)
+          self.assertEqual('second', util.requests_get('http://xyz', cache=True).text,
+                           content_type)
 
   @patch.object(util.session, 'get', side_effect=[
     requests.ConnectionError('nope'),
