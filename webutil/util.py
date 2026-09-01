@@ -1870,7 +1870,7 @@ def requests_fn(url, fn=None, *args, log_data=True, cache=False, **kwargs):
     requests.Response:
   """
   method = getattr(fn, '__name__', 'request')
-  logger.info(f'{method} {url} {_prune(kwargs, log_data=log_data)}')
+  log_msg = f'{url} {_prune(kwargs, log_data=log_data)}'
 
   gateway = kwargs.pop('gateway', None)
   kwargs.setdefault('timeout', HTTP_TIMEOUT)
@@ -1903,16 +1903,15 @@ def requests_fn(url, fn=None, *args, log_data=True, cache=False, **kwargs):
     # check cache first
     #
     # can't use response's truthiness; Response.__bool__ is False for 4xx and 5xx
-    if cache_key:
-      logger.debug(f'Checking HTTP cache for {cache_key}')
     if cache_key and cache_key in cache_dict:
+      logger.info(f'{method} (cached) {log_msg}')
       cached = cache_dict[cache_key]
-      logger.info(f'HTTP cache hit for {cache_key}')
       if isinstance(cached, BaseException):
         raise cached
       resp = cached
 
     else:
+      logger.info(f'{method} {log_msg}')
       try:
         resp = fn(url, *args, **kwargs)
       except Exception as e:
