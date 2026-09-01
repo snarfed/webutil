@@ -36,6 +36,8 @@ MODERN_HEADERS = {
   'Access-Control-Allow-Headers': '*, Authorization',
   'Access-Control-Allow-Methods': '*',
   'Access-Control-Allow-Origin': '*',
+  # DPoP-Nonce for browser OAuth clients, Link for pagination
+  'Access-Control-Expose-Headers': 'DPoP-Nonce, Link',
   # https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cross-Origin-Opener-Policy
   'Cross-Origin-Opener-Policy': 'same-origin',
   # see https://content-security-policy.com/

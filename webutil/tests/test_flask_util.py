@@ -319,6 +319,30 @@ class FlaskUtilTest(unittest.TestCase):
     self.assertEqual(501, resp.status_code)
     self.assertNotIn('A', resp.headers)
 
+  def test_default_modern_headers(self):
+    self.app.after_request(flask_util.default_modern_headers)
+
+    @self.app.route('/foo')
+    def foo():
+      return 'OK'
+
+    @self.app.route('/bar')
+    @flask_util.headers({'Access-Control-Expose-Headers': 'X-Custom'})
+    def bar():
+      return 'OK'
+
+    client = self.app.test_client()
+
+    resp = client.get('/foo')
+    self.assertEqual(200, resp.status_code)
+    self.assertEqual('*', resp.headers['Access-Control-Allow-Origin'])
+    self.assertEqual('DPoP-Nonce, Link',
+                     resp.headers['Access-Control-Expose-Headers'])
+
+    resp = client.get('/bar')
+    self.assertEqual(200, resp.status_code)
+    self.assertEqual('X-Custom', resp.headers['Access-Control-Expose-Headers'])
+
   def test_canonicalize_domain_get(self):
     @self.app.route('/', defaults={'_': ''})
     @self.app.route('/<path:_>')
