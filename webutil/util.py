@@ -1917,7 +1917,7 @@ def requests_fn(url, fn=None, *args, log_data=True, cache=False, **kwargs):
         resp = fn(url, *args, **kwargs)
       except Exception as e:
         if cache_key:
-          logger.debug(f'HTTP Caching exception {e}')
+          logger.info(f'HTTP Caching exception {e}')
           cache_dict[cache_key] = e
         raise
     msg = f'Received {resp.status_code} '
@@ -1986,7 +1986,7 @@ def requests_fn(url, fn=None, *args, log_data=True, cache=False, **kwargs):
 
     if cache_key and not stream:
       resp.content  # read and buffer the full response body
-      logger.debug(f'HTTP caching response {resp}')
+      logger.info(f'HTTP caching response {resp}')
       cache_dict[cache_key] = resp
 
   return resp
