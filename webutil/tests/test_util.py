@@ -1430,402 +1430,6 @@ class UtilTest(testutil.TestCase):
     ):
       self.assert_equals(expected, util.sniff_json_or_form_encoded(input), input)
 
-  @patch.object(util.session, 'post', return_value=requests_response('abc'))
-  def test_requests_post_with_redirects_no_redirect(self, _):
-    resp = util.requests_post_with_redirects('http://xyz')
-    self.assert_equals('abc', resp.text)
-
-  @patch.object(util.session, 'post', side_effect=[
-    requests_response('', status=302, headers={'Location': 'https://second'}),
-    requests_response('', status=301, headers={'Location': 'https://third'}),
-    requests_response('abc', url='https://third'),
-  ])
-  def test_requests_post_with_redirects_two_redirects(self, _):
-    resp = util.requests_post_with_redirects('http://first')
-    self.assert_equals('abc', resp.text)
-    self.assert_equals('https://third', resp.url)
-
-  @patch.object(util.session, 'post', return_value=requests_response('abc', status=400))
-  def test_requests_post_with_redirects_error(self, _):
-    with self.assertRaises(requests.HTTPError) as e:
-      util.requests_post_with_redirects('http://first')
-
-    self.assert_equals('abc', e.exception.response.text)
-    self.assert_equals(400, e.exception.response.status_code)
-
-  @patch.object(util.session, 'post', side_effect=[
-    requests_response('', status=302, headers={'Location': 'https://bad'}),
-    requests_response('abc', status=400),
-  ])
-  def test_requests_post_with_redirects_redirect_then_error(self, _):
-    with self.assertRaises(requests.HTTPError) as e:
-      util.requests_post_with_redirects('http://ok')
-
-    self.assert_equals('abc', e.exception.response.text)
-    self.assert_equals(400, e.exception.response.status_code)
-
-  @patch.object(util.session, 'post',
-               return_value=requests_response('abc', status=302,
-                                             headers={'Location': 'http://xyz'}))
-  def test_requests_post_with_redirects_too_many_redirects(self, _):
-    with self.assertRaises(requests.TooManyRedirects) as e:
-      util.requests_post_with_redirects('http://xyz')
-
-    self.assert_equals('abc', e.exception.response.text)
-    self.assert_equals(302, e.exception.response.status_code)
-    self.assert_equals('http://xyz', e.exception.response.headers['Location'])
-
-  def test_requests_get_too_big(self):
-    too_big = util.MAX_HTTP_RESPONSE_SIZE + 1
-
-    for content_type in 'text/html', 'application/json':
-      with patch.object(util.session, 'get', return_value=requests_response(
-          'abc', headers={'Content-Type': content_type, 'Content-Length': too_big})):
-        self.assertEqual(422, util.requests_get('http://xyz').status_code, content_type)
-
-    for content_type in '', 'image/jpeg':
-      with patch.object(util.session, 'get', return_value=requests_response(
-          'abc', headers={'Content-Type': content_type, 'Content-Length': too_big})):
-        self.assertEqual(200, util.requests_get('http://xyz').status_code, content_type)
-
-  @patch.object(util.session, 'get', side_effect=ValueError())
-  def test_requests_get_unicode_url_ValueError(self, _):
-    """https://console.cloud.google.com/errors/CPzNwYaL3tjb9gE"""
-    self.assertRaises(BadRequest, util.requests_get, 'http://acct:abc⊙de/', gateway=True)
-
-  @patch.object(util.session, 'get', side_effect=requests.ConnectionError())
-  def test_requests_get_unicode_url_ConnectionError(self, _):
-    """https://console.cloud.google.com/errors/CPzNwYaL3tjb9gE"""
-    self.assertRaises(BadGateway, util.requests_get, 'http://acct:abc⊙de/', gateway=True)
-
-  @patch.object(util.session, 'get', side_effect=[
-    requests.exceptions.InvalidURL(),
-    requests_response('ok', url='http://xn--abc-yr2a.de/'),
-  ])
-  def test_requests_get_invalid_emoji_domain_fallback_to_domain2idnaError(self, _):
-    url = 'http://abc⊙.de/'
-    resp = util.requests_get(url)
-    self.assertEqual(200, resp.status_code)
-    self.assertEqual(url, resp.url)
-
-  @patch.object(util.session, 'get', side_effect=[
-    requests.exceptions.InvalidURL(),
-    requests_response('okayie', url='http://xn--abc-yr2a.de/foo?bar'),
-  ])
-  def test_requests_get_invalid_emoji_domain_Host_header(self, _):
-    url = 'http://abc⊙.de/foo?bar'
-    resp = util.requests_get(url)
-    self.assertEqual(200, resp.status_code)
-    self.assertEqual(url, resp.url)
-    self.assertEqual('okayie', resp.text)
-
-  @patch.object(util.session, 'get', side_effect=[
-    requests_response('first'),
-    requests_response('second'),
-  ])
-  def test_requests_get_cache_hit(self, mock_get):
-    with Flask(__name__).test_request_context('/'):
-      for _ in range(2):
-        self.assertEqual('first', util.requests_get('http://xyz', cache=True).text)
-
-    self.assertEqual(1, mock_get.call_count)
-
-  @patch.object(util.session, 'get', side_effect=[
-    requests_response('first'),
-    requests_response('second'),
-  ])
-  def test_requests_get_cache_off_by_default(self, _):
-    with Flask(__name__).test_request_context('/'):
-      self.assertEqual('first', util.requests_get('http://xyz').text)
-      self.assertEqual('second', util.requests_get('http://xyz').text)
-
-  @patch.object(util.session, 'get', side_effect=[
-    requests_response('first'),
-    requests_response('second'),
-  ])
-  def test_requests_get_cache_different_url(self, _):
-    with Flask(__name__).test_request_context('/'):
-      self.assertEqual('first', util.requests_get('http://xyz', cache=True).text)
-      self.assertEqual('second', util.requests_get('http://abc', cache=True).text)
-
-  @patch.object(util.session, 'get', side_effect=[
-    requests_response('first'),
-    requests_response('second'),
-  ])
-  def test_requests_get_cache_different_accept(self, _):
-    with Flask(__name__).test_request_context('/'):
-      self.assertEqual('first', util.requests_get(
-        'http://xyz', cache=True, headers={'Accept': 'text/html'}).text)
-      self.assertEqual('second', util.requests_get(
-        'http://xyz', cache=True, headers={'Accept': 'application/activity+json'}).text)
-
-  @patch.object(util.session, 'get', side_effect=[
-    requests_response('first'),
-    requests_response('second'),
-  ])
-  def test_requests_get_cache_not_shared_across_requests(self, _):
-    """The cache is on the request, not flask.g, which is scoped to the app context.
-
-    Tests often push one app context around multiple requests, so g would leak.
-    """
-    app = Flask(__name__)
-
-    @app.route('/')
-    def index():
-      return util.requests_get('http://xyz', cache=True).text
-
-    with app.app_context():
-      client = app.test_client()
-      self.assertEqual('first', client.get('/').text)
-      self.assertEqual('second', client.get('/').text)
-
-  @patch.object(util.session, 'get', side_effect=[
-    requests_response('first'),
-    requests_response('second'),
-  ])
-  def test_requests_get_cache_no_request_context(self, _):
-    self.assertEqual('first', util.requests_get('http://xyz', cache=True).text)
-    self.assertEqual('second', util.requests_get('http://xyz', cache=True).text)
-
-  @patch.object(util.session, 'get', side_effect=[
-    requests_response('first'),
-    requests_response('second'),
-  ])
-  def test_requests_get_cache_ignores_auth(self, mock_get):
-    """Credentials aren't part of the key; callers pass a principal if it matters."""
-    with Flask(__name__).test_request_context('/'):
-      for auth in ('alice', 'alice'), ('bob', 'bob'):
-        self.assertEqual('first', util.requests_get(
-          'http://xyz', cache=True, auth=auth).text)
-
-    self.assertEqual(1, mock_get.call_count)
-
-  @staticmethod
-  def unbuffered_response(body, content_type):
-    """An unread response, ie _content False, like the streamed ones we get in prod.
-
-    requests_response buffers eagerly, so it can't reproduce this.
-    """
-    resp = requests.Response()
-    resp.status_code = 200
-    resp.headers['Content-Type'] = content_type
-    resp.raw = io.BytesIO(body)
-    resp.encoding = 'utf-8'
-    return resp
-
-  def test_requests_get_cache_buffers_unbuffered_response(self):
-    with patch.object(util.session, 'get', side_effect=[
-        self.unbuffered_response(b'first', 'text/html'),
-        requests_response('second'),
-    ]):
-      with Flask(__name__).test_request_context('/'):
-        for _ in range(2):
-          self.assertEqual('first', util.requests_get('http://xyz', cache=True).text)
-
-  def test_requests_get_cache_cacheable_content_types(self):
-    for content_type in (
-        'text/html; charset=utf-8',
-        'text/plain',
-        'application/json',
-        'application/activity+json',
-        'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
-    ):
-      with patch.object(util.session, 'get', side_effect=[
-          self.unbuffered_response(b'first', content_type),
-          requests_response('second'),
-      ]):
-        with Flask(__name__).test_request_context('/'):
-          for _ in range(2):
-            self.assertEqual('first', util.requests_get('http://xyz', cache=True).text,
-                             content_type)
-
-  def test_requests_get_cache_skips_explicit_stream(self):
-    """Callers that stream on purpose, eg for blobs, shouldn't get buffered."""
-    with patch.object(util.session, 'get', side_effect=[
-        self.unbuffered_response(b'first', 'text/html'),
-        requests_response('second'),
-    ]):
-      with Flask(__name__).test_request_context('/'):
-        self.assertEqual('first', util.requests_get(
-          'http://xyz', cache=True, stream=True).text)
-        self.assertEqual('second', util.requests_get(
-          'http://xyz', cache=True, stream=True).text)
-
-  def test_requests_get_cache_explicit_stream_false(self):
-    with patch.object(util.session, 'get', side_effect=[
-        self.unbuffered_response(b'first', 'text/html'),
-        requests_response('second'),
-    ]):
-      with Flask(__name__).test_request_context('/'):
-        for _ in range(2):
-          self.assertEqual('first', util.requests_get(
-            'http://xyz', cache=True, stream=False).text)
-
-  def test_requests_get_cache_skips_non_text_content_types(self):
-    """Blobs etc are streamed on purpose; buffering them would defeat the
-    MAX_HTTP_RESPONSE_SIZE short circuit."""
-    for content_type in 'image/jpeg', 'video/mp4', '':
-      with patch.object(util.session, 'get', side_effect=[
-          self.unbuffered_response(b'first', content_type),
-          requests_response('second'),
-      ]):
-        with Flask(__name__).test_request_context('/'):
-          self.assertEqual(200, util.requests_get('http://xyz', cache=True).status_code,
-                           content_type)
-          self.assertEqual('second', util.requests_get('http://xyz', cache=True).text,
-                           content_type)
-
-  @patch.object(util.session, 'get', side_effect=[
-    requests.ConnectionError('nope'),
-    requests_response('second'),
-  ])
-  def test_requests_get_cache_exception(self, mock_get):
-    with Flask(__name__).test_request_context('/'):
-      for _ in range(2):
-        with self.assertRaises(requests.ConnectionError):
-          util.requests_get('http://xyz', cache=True)
-
-    self.assertEqual(1, mock_get.call_count)
-
-  @patch.object(util.session, 'get', side_effect=[
-    requests.exceptions.InvalidURL(),
-    requests_response('ok', url='http://xn--abc-yr2a.de/'),
-    requests_response('ok', url='http://xn--abc-yr2a.de/'),
-  ])
-  def test_requests_get_cache_invalid_url_punycode_retry(self, mock_get):
-    """A cached exception is re-raised inside the try, so the retry below still runs.
-
-    The second call skips the doomed request and goes straight to the punycode retry.
-    """
-    with Flask(__name__).test_request_context('/'):
-      for _ in range(2):
-        self.assertEqual(200, util.requests_get('http://abc⊙.de/', cache=True).status_code)
-
-    self.assertEqual(3, mock_get.call_count)
-
-  @patch.object(util.session, 'get',
-                return_value=requests_response('nope', status=404))
-  def test_requests_get_cache_gateway_still_applies(self, mock_get):
-    """gateway isn't part of the key, so it has to be re-applied on cache hits."""
-    with Flask(__name__).test_request_context('/'):
-      self.assertEqual(404, util.requests_get('http://xyz', cache=True).status_code)
-      with self.assertRaises(BadGateway):
-        util.requests_get('http://xyz', cache=True, gateway=True)
-
-    self.assertEqual(1, mock_get.call_count)
-
-  @patch.object(util.session, 'get', return_value=requests_response('abc'))
-  def test_set_user_agent_requests(self, _):
-    util.set_user_agent('Fooey')
-    self.assertEqual(200, util.requests_get('http://xyz').status_code)
-
-  @patch.object(util.urllib.request, 'urlopen',
-               return_value=UrlopenResult(200, 'abc'))
-  def test_set_user_agent_urlopen(self, _):
-    util.set_user_agent('Fooey')
-    self.assertEqual(200, util.urlopen('http://xyz').status_code)
-
-  @patch.multiple('webutil.util', DEBUG=False, TESTING=False, LOCAL_SERVER=False)
-  @patch('socket.getaddrinfo', return_value=[
-      (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('192.168.1.1', 80)),
-  ])
-  def test_urlopen_ssrf_blocked(self, _):
-    # https://github.com/snarfed/webutil/issues/11
-    with self.assertRaises(InvalidIPAddress):
-      util.urlopen('http://example.com/')
-
-  @patch.multiple('webutil.util', DEBUG=False, TESTING=False, LOCAL_SERVER=False)
-  @patch('socket.getaddrinfo', return_value=[
-      (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('10.0.0.1', 443)),
-  ])
-  def test_check_ssrf_blocked(self, _):
-    util.check_ssrf.cache_clear()
-    with self.assertRaises(InvalidIPAddress):
-      util.check_ssrf('private.example.com')
-
-  @patch('urllib3.connectionpool.HTTPConnectionPool.urlopen')
-  @patch.multiple('webutil.util', DEBUG=False, TESTING=False, LOCAL_SERVER=False)
-  def test_check_ssrf_blocked_ip(self, _):
-    with patch('webutil.util.session', util.make_session()):
-      with self.assertRaises(InvalidIPAddress):
-        util.requests_get('http://169.254.169.254/foo')
-
-      with self.assertRaises(BadRequest):
-        resp = util.requests_get('http://169.254.169.254/foo', gateway=True)
-
-  @patch('socket.getaddrinfo', return_value=[
-      (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('93.184.216.34', 443)),
-  ])
-  def test_cached_get_ip_address(self, mock_getaddrinfo):
-    util.ip_address_cache.clear()
-
-    expected = (ipaddress.ip_address('93.184.216.34'), 443)
-    self.assertEqual(expected, util.cached_get_ip_address('example.com', 443, False))
-    # repeated call with the same args is served from the cache
-    self.assertEqual(expected, util.cached_get_ip_address('example.com', 443, False))
-    self.assertEqual(1, mock_getaddrinfo.call_count)
-
-    # a different host re-resolves
-    util.cached_get_ip_address('other.example.com', 443, False)
-    self.assertEqual(2, mock_getaddrinfo.call_count)
-
-  @patch('socket.getaddrinfo', return_value=[
-      (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('10.0.0.1', 443)),
-  ])
-  def test_cached_get_ip_address_doesnt_cache_failures(self, mock_getaddrinfo):
-    util.ip_address_cache.clear()
-
-    for _ in range(2):
-      with self.assertRaises(InvalidIPAddress):
-        util.cached_get_ip_address('private.example.com', 443, False)
-    self.assertEqual(2, mock_getaddrinfo.call_count)
-
-  @patch.multiple('webutil.util', DEBUG=False, TESTING=False, LOCAL_SERVER=False)
-  @patch('urllib3.connectionpool.HTTPConnectionPool.urlopen')
-  @patch('socket.getaddrinfo', return_value=[
-      (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('93.184.216.34', 443)),
-  ])
-  def test_requests_get_hardened_session_integration(self, mock_getaddrinfo,
-                                                     mock_urlopen):
-    """Full prod path: requests_fn => HTTPSession => IPFilterAdapter => DNS cache.
-
-    Mocks below the adapter (socket DNS, urllib3's urlopen) so the adapter, its
-    pool-key resolution, and the connection pool all run for real.
-    """
-    util.ip_address_cache.clear()
-    mock_urlopen.side_effect = lambda *args, **kwargs: urllib3.HTTPResponse(
-        body=io.BytesIO(b''), headers={}, status=200, reason='OK',
-        preload_content=False, decode_content=False)
-
-    session = util.make_session()
-
-    # the prod adapter is mounted, with the bigger connection pool
-    adapter = session.get_adapter('https://example.com/')
-    self.assertIsInstance(adapter, IPFilterAdapter)
-    self.assertEqual(500, adapter._pool_connections)
-    self.assertEqual(20, adapter._pool_maxsize)
-
-    for _ in range(2):
-      resp = util.requests_get('https://example.com/', session=session)
-      self.assertEqual(200, resp.status_code)
-
-    self.assertEqual(2, mock_urlopen.call_count)
-    # DNS was resolved once and cached, so both requests reused a single
-    # connection pool keyed on the resolved IP, instead of a fresh pool (and
-    # TLS handshake) each.
-    self.assertEqual(1, mock_getaddrinfo.call_count)
-    self.assertEqual(1, len(adapter.poolmanager.pools))
-
-  @patch.multiple('webutil.util', DEBUG=False, TESTING=False, LOCAL_SERVER=False)
-  @patch('socket.getaddrinfo', return_value=[
-      (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('10.0.0.1', 443)),
-  ])
-  def test_websocket_connect_ssrf_blocked(self, _):
-    util.check_ssrf.cache_clear()
-    with self.assertRaises(InvalidIPAddress):
-      with util.websocket_connect('wss://evil.example.com/'):
-        pass
-
   @patch.object(util.session, 'get',
                return_value=requests_response(
                  '<html><body class="h-entry"><p class="e-content">asdf</p></body></html>',
@@ -2257,6 +1861,404 @@ class UtilTest(testutil.TestCase):
     prepared = util.session.prepare_request(
       requests.Request('GET', 'https://example.com/page2'))
     self.assertNotIn('Cookie', prepared.headers)
+
+
+class RequestsTest(testutil.TestCase):
+  @staticmethod
+  def unbuffered_response(body, content_type):
+    """An unread response, ie _content False, like the streamed ones we get in prod.
+
+    requests_response buffers eagerly, so it can't reproduce this.
+    """
+    resp = requests.Response()
+    resp.status_code = 200
+    resp.headers['Content-Type'] = content_type
+    resp.raw = io.BytesIO(body)
+    resp.encoding = 'utf-8'
+    return resp
+
+  @patch.object(util.session, 'post', return_value=requests_response('abc'))
+  def test_requests_post_with_redirects_no_redirect(self, _):
+    resp = util.requests_post_with_redirects('http://xyz')
+    self.assert_equals('abc', resp.text)
+
+  @patch.object(util.session, 'post', side_effect=[
+    requests_response('', status=302, headers={'Location': 'https://second'}),
+    requests_response('', status=301, headers={'Location': 'https://third'}),
+    requests_response('abc', url='https://third'),
+  ])
+  def test_requests_post_with_redirects_two_redirects(self, _):
+    resp = util.requests_post_with_redirects('http://first')
+    self.assert_equals('abc', resp.text)
+    self.assert_equals('https://third', resp.url)
+
+  @patch.object(util.session, 'post', return_value=requests_response('abc', status=400))
+  def test_requests_post_with_redirects_error(self, _):
+    with self.assertRaises(requests.HTTPError) as e:
+      util.requests_post_with_redirects('http://first')
+
+    self.assert_equals('abc', e.exception.response.text)
+    self.assert_equals(400, e.exception.response.status_code)
+
+  @patch.object(util.session, 'post', side_effect=[
+    requests_response('', status=302, headers={'Location': 'https://bad'}),
+    requests_response('abc', status=400),
+  ])
+  def test_requests_post_with_redirects_redirect_then_error(self, _):
+    with self.assertRaises(requests.HTTPError) as e:
+      util.requests_post_with_redirects('http://ok')
+
+    self.assert_equals('abc', e.exception.response.text)
+    self.assert_equals(400, e.exception.response.status_code)
+
+  @patch.object(util.session, 'post',
+               return_value=requests_response('abc', status=302,
+                                             headers={'Location': 'http://xyz'}))
+  def test_requests_post_with_redirects_too_many_redirects(self, _):
+    with self.assertRaises(requests.TooManyRedirects) as e:
+      util.requests_post_with_redirects('http://xyz')
+
+    self.assert_equals('abc', e.exception.response.text)
+    self.assert_equals(302, e.exception.response.status_code)
+    self.assert_equals('http://xyz', e.exception.response.headers['Location'])
+
+  def test_requests_get_too_big(self):
+    too_big = util.MAX_HTTP_RESPONSE_SIZE + 1
+
+    for content_type in 'text/html', 'application/json':
+      with patch.object(util.session, 'get', return_value=requests_response(
+          'abc', headers={'Content-Type': content_type, 'Content-Length': too_big})):
+        self.assertEqual(422, util.requests_get('http://xyz').status_code, content_type)
+
+    for content_type in '', 'image/jpeg':
+      with patch.object(util.session, 'get', return_value=requests_response(
+          'abc', headers={'Content-Type': content_type, 'Content-Length': too_big})):
+        self.assertEqual(200, util.requests_get('http://xyz').status_code, content_type)
+
+  @patch.object(util.session, 'get', side_effect=ValueError())
+  def test_requests_get_unicode_url_ValueError(self, _):
+    """https://console.cloud.google.com/errors/CPzNwYaL3tjb9gE"""
+    self.assertRaises(BadRequest, util.requests_get, 'http://acct:abc⊙de/', gateway=True)
+
+  @patch.object(util.session, 'get', side_effect=requests.ConnectionError())
+  def test_requests_get_unicode_url_ConnectionError(self, _):
+    """https://console.cloud.google.com/errors/CPzNwYaL3tjb9gE"""
+    self.assertRaises(BadGateway, util.requests_get, 'http://acct:abc⊙de/', gateway=True)
+
+  @patch.object(util.session, 'get', side_effect=[
+    requests.exceptions.InvalidURL(),
+    requests_response('ok', url='http://xn--abc-yr2a.de/'),
+  ])
+  def test_requests_get_invalid_emoji_domain_fallback_to_domain2idnaError(self, _):
+    url = 'http://abc⊙.de/'
+    resp = util.requests_get(url)
+    self.assertEqual(200, resp.status_code)
+    self.assertEqual(url, resp.url)
+
+  @patch.object(util.session, 'get', side_effect=[
+    requests.exceptions.InvalidURL(),
+    requests_response('okayie', url='http://xn--abc-yr2a.de/foo?bar'),
+  ])
+  def test_requests_get_invalid_emoji_domain_Host_header(self, _):
+    url = 'http://abc⊙.de/foo?bar'
+    resp = util.requests_get(url)
+    self.assertEqual(200, resp.status_code)
+    self.assertEqual(url, resp.url)
+    self.assertEqual('okayie', resp.text)
+
+  @patch.object(util.session, 'get', side_effect=[
+    requests_response('first'),
+    requests_response('second'),
+  ])
+  def test_requests_get_cache_hit(self, mock_get):
+    with Flask(__name__).test_request_context('/'):
+      for _ in range(2):
+        self.assertEqual('first', util.requests_get('http://xyz', cache=True).text)
+
+    self.assertEqual(1, mock_get.call_count)
+
+  @patch.object(util.session, 'get', side_effect=[
+    requests_response('first'),
+    requests_response('second'),
+  ])
+  def test_requests_get_cache_off_by_default(self, _):
+    with Flask(__name__).test_request_context('/'):
+      self.assertEqual('first', util.requests_get('http://xyz').text)
+      self.assertEqual('second', util.requests_get('http://xyz').text)
+
+  @patch.object(util.session, 'get', side_effect=[
+    requests_response('first'),
+    requests_response('second'),
+  ])
+  def test_requests_get_cache_different_url(self, _):
+    with Flask(__name__).test_request_context('/'):
+      self.assertEqual('first', util.requests_get('http://xyz', cache=True).text)
+      self.assertEqual('second', util.requests_get('http://abc', cache=True).text)
+
+  @patch.object(util.session, 'get', side_effect=[
+    requests_response('first'),
+    requests_response('second'),
+  ])
+  def test_requests_get_cache_different_accept(self, _):
+    with Flask(__name__).test_request_context('/'):
+      self.assertEqual('first', util.requests_get(
+        'http://xyz', cache=True, headers={'Accept': 'text/html'}).text)
+      self.assertEqual('second', util.requests_get(
+        'http://xyz', cache=True, headers={'Accept': 'application/activity+json'}).text)
+
+  @patch.object(util.session, 'get', side_effect=[
+    requests_response('first'),
+    requests_response('second'),
+  ])
+  def test_requests_get_cache_not_shared_across_requests(self, _):
+    """The cache is on the request, not flask.g, which is scoped to the app context.
+
+    Tests often push one app context around multiple requests, so g would leak.
+    """
+    app = Flask(__name__)
+
+    @app.route('/')
+    def index():
+      return util.requests_get('http://xyz', cache=True).text
+
+    with app.app_context():
+      client = app.test_client()
+      self.assertEqual('first', client.get('/').text)
+      self.assertEqual('second', client.get('/').text)
+
+  @patch.object(util.session, 'get', side_effect=[
+    requests_response('first'),
+    requests_response('second'),
+  ])
+  def test_requests_get_cache_no_request_context(self, _):
+    self.assertEqual('first', util.requests_get('http://xyz', cache=True).text)
+    self.assertEqual('second', util.requests_get('http://xyz', cache=True).text)
+
+  @patch.object(util.session, 'get', side_effect=[
+    requests_response('first'),
+    requests_response('second'),
+  ])
+  def test_requests_get_cache_ignores_auth(self, mock_get):
+    """Credentials aren't part of the key; callers pass a principal if it matters."""
+    with Flask(__name__).test_request_context('/'):
+      for auth in ('alice', 'alice'), ('bob', 'bob'):
+        self.assertEqual('first', util.requests_get(
+          'http://xyz', cache=True, auth=auth).text)
+
+    self.assertEqual(1, mock_get.call_count)
+
+  def test_requests_get_cache_buffers_unbuffered_response(self):
+    with patch.object(util.session, 'get', side_effect=[
+        self.unbuffered_response(b'first', 'text/html'),
+        requests_response('second'),
+    ]):
+      with Flask(__name__).test_request_context('/'):
+        for _ in range(2):
+          self.assertEqual('first', util.requests_get('http://xyz', cache=True).text)
+
+  def test_requests_get_cache_cacheable_content_types(self):
+    for content_type in (
+        'text/html; charset=utf-8',
+        'text/plain',
+        'application/json',
+        'application/activity+json',
+        'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
+    ):
+      with patch.object(util.session, 'get', side_effect=[
+          self.unbuffered_response(b'first', content_type),
+          requests_response('second'),
+      ]):
+        with Flask(__name__).test_request_context('/'):
+          for _ in range(2):
+            self.assertEqual('first', util.requests_get('http://xyz', cache=True).text,
+                             content_type)
+
+  def test_requests_get_cache_skips_explicit_stream(self):
+    """Callers that stream on purpose, eg for blobs, shouldn't get buffered."""
+    with patch.object(util.session, 'get', side_effect=[
+        self.unbuffered_response(b'first', 'text/html'),
+        requests_response('second'),
+    ]):
+      with Flask(__name__).test_request_context('/'):
+        self.assertEqual('first', util.requests_get(
+          'http://xyz', cache=True, stream=True).text)
+        self.assertEqual('second', util.requests_get(
+          'http://xyz', cache=True, stream=True).text)
+
+  def test_requests_get_cache_explicit_stream_false(self):
+    with patch.object(util.session, 'get', side_effect=[
+        self.unbuffered_response(b'first', 'text/html'),
+        requests_response('second'),
+    ]):
+      with Flask(__name__).test_request_context('/'):
+        for _ in range(2):
+          self.assertEqual('first', util.requests_get(
+            'http://xyz', cache=True, stream=False).text)
+
+  def test_requests_get_cache_skips_non_text_content_types(self):
+    """Blobs etc are streamed on purpose; buffering them would defeat the
+    MAX_HTTP_RESPONSE_SIZE short circuit."""
+    for content_type in 'image/jpeg', 'video/mp4', '':
+      with patch.object(util.session, 'get', side_effect=[
+          self.unbuffered_response(b'first', content_type),
+          requests_response('second'),
+      ]):
+        with Flask(__name__).test_request_context('/'):
+          self.assertEqual(200, util.requests_get('http://xyz', cache=True).status_code,
+                           content_type)
+          self.assertEqual('second', util.requests_get('http://xyz', cache=True).text,
+                           content_type)
+
+  @patch.object(util.session, 'get', side_effect=[
+    requests.ConnectionError('nope'),
+    requests_response('second'),
+  ])
+  def test_requests_get_cache_exception(self, mock_get):
+    with Flask(__name__).test_request_context('/'):
+      for _ in range(2):
+        with self.assertRaises(requests.ConnectionError):
+          util.requests_get('http://xyz', cache=True)
+
+    self.assertEqual(1, mock_get.call_count)
+
+  @patch.object(util.session, 'get', side_effect=[
+    requests.exceptions.InvalidURL(),
+    requests_response('ok', url='http://xn--abc-yr2a.de/'),
+    requests_response('ok', url='http://xn--abc-yr2a.de/'),
+  ])
+  def test_requests_get_cache_invalid_url_punycode_retry(self, mock_get):
+    """A cached exception is re-raised inside the try, so the retry below still runs.
+
+    The second call skips the doomed request and goes straight to the punycode retry.
+    """
+    with Flask(__name__).test_request_context('/'):
+      for _ in range(2):
+        self.assertEqual(200, util.requests_get('http://abc⊙.de/', cache=True).status_code)
+
+    self.assertEqual(3, mock_get.call_count)
+
+  @patch.object(util.session, 'get',
+                return_value=requests_response('nope', status=404))
+  def test_requests_get_cache_gateway_still_applies(self, mock_get):
+    """gateway isn't part of the key, so it has to be re-applied on cache hits."""
+    with Flask(__name__).test_request_context('/'):
+      self.assertEqual(404, util.requests_get('http://xyz', cache=True).status_code)
+      with self.assertRaises(BadGateway):
+        util.requests_get('http://xyz', cache=True, gateway=True)
+
+    self.assertEqual(1, mock_get.call_count)
+
+  @patch.object(util.session, 'get', return_value=requests_response('abc'))
+  def test_set_user_agent_requests(self, _):
+    util.set_user_agent('Fooey')
+    self.assertEqual(200, util.requests_get('http://xyz').status_code)
+
+  @patch.object(util.urllib.request, 'urlopen',
+               return_value=UrlopenResult(200, 'abc'))
+  def test_set_user_agent_urlopen(self, _):
+    util.set_user_agent('Fooey')
+    self.assertEqual(200, util.urlopen('http://xyz').status_code)
+
+  @patch.multiple('webutil.util', DEBUG=False, TESTING=False, LOCAL_SERVER=False)
+  @patch('socket.getaddrinfo', return_value=[
+      (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('192.168.1.1', 80)),
+  ])
+  def test_urlopen_ssrf_blocked(self, _):
+    # https://github.com/snarfed/webutil/issues/11
+    with self.assertRaises(InvalidIPAddress):
+      util.urlopen('http://example.com/')
+
+  @patch.multiple('webutil.util', DEBUG=False, TESTING=False, LOCAL_SERVER=False)
+  @patch('socket.getaddrinfo', return_value=[
+      (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('10.0.0.1', 443)),
+  ])
+  def test_check_ssrf_blocked(self, _):
+    util.check_ssrf.cache_clear()
+    with self.assertRaises(InvalidIPAddress):
+      util.check_ssrf('private.example.com')
+
+  @patch('urllib3.connectionpool.HTTPConnectionPool.urlopen')
+  @patch.multiple('webutil.util', DEBUG=False, TESTING=False, LOCAL_SERVER=False)
+  def test_check_ssrf_blocked_ip(self, _):
+    with patch('webutil.util.session', util.make_session()):
+      with self.assertRaises(InvalidIPAddress):
+        util.requests_get('http://169.254.169.254/foo')
+
+      with self.assertRaises(BadRequest):
+        resp = util.requests_get('http://169.254.169.254/foo', gateway=True)
+
+  @patch('socket.getaddrinfo', return_value=[
+      (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('93.184.216.34', 443)),
+  ])
+  def test_cached_get_ip_address(self, mock_getaddrinfo):
+    util.ip_address_cache.clear()
+
+    expected = (ipaddress.ip_address('93.184.216.34'), 443)
+    self.assertEqual(expected, util.cached_get_ip_address('example.com', 443, False))
+    # repeated call with the same args is served from the cache
+    self.assertEqual(expected, util.cached_get_ip_address('example.com', 443, False))
+    self.assertEqual(1, mock_getaddrinfo.call_count)
+
+    # a different host re-resolves
+    util.cached_get_ip_address('other.example.com', 443, False)
+    self.assertEqual(2, mock_getaddrinfo.call_count)
+
+  @patch('socket.getaddrinfo', return_value=[
+      (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('10.0.0.1', 443)),
+  ])
+  def test_cached_get_ip_address_doesnt_cache_failures(self, mock_getaddrinfo):
+    util.ip_address_cache.clear()
+
+    for _ in range(2):
+      with self.assertRaises(InvalidIPAddress):
+        util.cached_get_ip_address('private.example.com', 443, False)
+    self.assertEqual(2, mock_getaddrinfo.call_count)
+
+  @patch.multiple('webutil.util', DEBUG=False, TESTING=False, LOCAL_SERVER=False)
+  @patch('urllib3.connectionpool.HTTPConnectionPool.urlopen')
+  @patch('socket.getaddrinfo', return_value=[
+      (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('93.184.216.34', 443)),
+  ])
+  def test_requests_get_hardened_session_integration(self, mock_getaddrinfo,
+                                                     mock_urlopen):
+    """Full prod path: requests_fn => HTTPSession => IPFilterAdapter => DNS cache.
+
+    Mocks below the adapter (socket DNS, urllib3's urlopen) so the adapter, its
+    pool-key resolution, and the connection pool all run for real.
+    """
+    util.ip_address_cache.clear()
+    mock_urlopen.side_effect = lambda *args, **kwargs: urllib3.HTTPResponse(
+        body=io.BytesIO(b''), headers={}, status=200, reason='OK',
+        preload_content=False, decode_content=False)
+
+    session = util.make_session()
+
+    # the prod adapter is mounted, with the bigger connection pool
+    adapter = session.get_adapter('https://example.com/')
+    self.assertIsInstance(adapter, IPFilterAdapter)
+    self.assertEqual(500, adapter._pool_connections)
+    self.assertEqual(20, adapter._pool_maxsize)
+
+    for _ in range(2):
+      resp = util.requests_get('https://example.com/', session=session)
+      self.assertEqual(200, resp.status_code)
+
+    self.assertEqual(2, mock_urlopen.call_count)
+    # DNS was resolved once and cached, so both requests reused a single
+    # connection pool keyed on the resolved IP, instead of a fresh pool (and
+    # TLS handshake) each.
+    self.assertEqual(1, mock_getaddrinfo.call_count)
+    self.assertEqual(1, len(adapter.poolmanager.pools))
+
+  @patch.multiple('webutil.util', DEBUG=False, TESTING=False, LOCAL_SERVER=False)
+  @patch('socket.getaddrinfo', return_value=[
+      (socket.AF_INET, socket.SOCK_STREAM, 0, '', ('10.0.0.1', 443)),
+  ])
+  def test_websocket_connect_ssrf_blocked(self, _):
+    util.check_ssrf.cache_clear()
+    with self.assertRaises(InvalidIPAddress):
+      with util.websocket_connect('wss://evil.example.com/'):
+        pass
 
 
 class GrpcLoggingInterceptorTest(testutil.TestCase):
