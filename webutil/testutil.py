@@ -14,6 +14,7 @@ import warnings
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 import requests
+import urllib3
 
 from . import appengine_info, models, util
 from .util import json_dumps, json_loads, HTTP_TIMEOUT
@@ -49,7 +50,11 @@ def requests_response(body='', url=None, status=200, content_type=None,
 
     resp._text = body
     resp._content = body.encode('utf-8') if isinstance(body, str) else body
-    resp.raw = io.BytesIO(resp._content)  # needed for close()
+    # urllib3 rather than a bare BytesIO so that resp.raw.stream() works, ie
+    # for code that streams responses. no headers, so it never tries to decode
+    # a Content-Encoding that the body isn't actually encoded with.
+    resp.raw = urllib3.HTTPResponse(body=io.BytesIO(resp._content), status=status,
+                                    preload_content=False)
     resp.encoding = encoding if encoding is not None else 'utf-8'
 
     resp.url = url

@@ -36,6 +36,8 @@ _Non-breaking changes:_
   * Add `bool_param` for getting boolean query params/form arguments.
 * `models`:
   * Fix missing import in `Cache.get`/`Cache.put`.
+* `testutil`:
+  * `requests_response`: back the returned response with a `urllib3.HTTPResponse` instead of a bare `BytesIO`, so that `resp.raw.stream()` works for code that streams responses.
 * `util`:
   * `requests_*`: add `cache` kwarg, an opt-in Flask-request-local cache of GET/HEAD responses and exceptions, keyed on method, URL, and `Accept` header.
   * `encode`: fix `encoding` kwarg, it was ignored for nested values and always used UTF-8.
