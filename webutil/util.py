@@ -334,7 +334,7 @@ def to_xml(value):
     return str(value)
 
 
-def trim_nulls(value, ignore=()):
+def trim_nulls(value, ignore=(), keep_empty_values_in=()):
   """Recursively removes dict and list elements with None or empty values.
 
   Args:
@@ -342,16 +342,21 @@ def trim_nulls(value, ignore=()):
     ignore (sequence): optional, keys that may have None/empty values.
       Transitive: ignored keys' *entire contents* are ignored and allowed to
       have nulls, all the way down!
+    keep_empty_values_in (sequence of str): optional, keys to not trim null values
+      inside. Unlike ``ignore``, these keys are still removed if their values
+      themselves are null.
   """
   NULLS = (None, {}, [], (), '', set(), frozenset())
+  kwargs = {'ignore': ignore, 'keep_empty_values_in': keep_empty_values_in}
 
   if isinstance(value, dict):
-    trimmed = {k: (v if k in ignore else trim_nulls(v, ignore=ignore))
+    trimmed = {k: (v if k in ignore or k in keep_empty_values_in
+                   else trim_nulls(v, **kwargs))
                for k, v in value.items()}
     return {k: v for k, v in trimmed.items() if k in ignore or v not in NULLS}
   elif (isinstance(value, (tuple, list, set, frozenset, Iterator)) or
         inspect.isgenerator(value)):
-    trimmed = [trim_nulls(v, ignore=ignore) for v in value]
+    trimmed = [trim_nulls(v, **kwargs) for v in value]
     ret = (v for v in trimmed if v not in NULLS)
     if isinstance(value, Iterator) or inspect.isgenerator(value):
       return ret

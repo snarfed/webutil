@@ -119,6 +119,17 @@ class UtilTest(testutil.TestCase):
     self.assertEqual({'a': {'b': None}}, util.trim_nulls({'a': {'b': None}},
                                                          ignore=('a', 'b')))
 
+    # keep_empty_values_in
+    self.assertEqual(
+      {'a': {'b': ''}},
+      util.trim_nulls({'a': {'b': ''}, 'c': None}, keep_empty_values_in=('a',)))
+    self.assertEqual(
+      {'x': [{'a': {'b': None, 'c': [None]}}]},
+      util.trim_nulls({'x': [{'a': {'b': None, 'c': [None]}, 'd': ''}]},
+                      keep_empty_values_in=['a']))
+    self.assertEqual({}, util.trim_nulls({'a': {}, 'b': {'a': None}},
+                                         keep_empty_values_in={'a'}))
+
   def test_uniquify(self):
     self.assertEqual([], util.uniquify(None))
     self.assertEqual([], util.uniquify([]))
