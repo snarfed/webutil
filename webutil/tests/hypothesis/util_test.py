@@ -4,11 +4,12 @@
 https://hypothesis.readthedocs.io/
 """
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 import re
 from string import ascii_letters, ascii_lowercase, digits
 import urllib.parse
 
-from hypothesis import assume, given, strategies as st
+from hypothesis import assume, example, given, strategies as st
 from hypothesis.provisional import urls
 
 from ... import testutil, util
@@ -192,8 +193,13 @@ class UtilHypothesisTest(testutil.TestCase):
     self.assertEqual(str[start:], wide[start:])
 
   @given(DATETIMES)
+  # 9pm is ambiguous here, DST ends at 10pm
+  @example(datetime(2024, 4, 6, 21, tzinfo=ZoneInfo('Pacific/Easter')))
   def test_parse_iso8601_round_trips(self, dt):
     iso = dt.isoformat()
+    if dt.tzinfo:
+      # aware datetimes at ambiguous times never == other timezones
+      dt = dt.replace(tzinfo=timezone(dt.utcoffset()))
     self.assertEqual(dt, util.parse_iso8601(iso))
     self.assertEqual(dt, util.parse_iso8601(f'  {iso} \n'))
     # offset without a colon, and Z instead of +00:00
@@ -241,8 +247,13 @@ class UtilHypothesisTest(testutil.TestCase):
     self.assertEqual(input, util.maybe_timestamp_to_iso8601(input))
 
   @given(DATETIMES)
+  # 9pm is ambiguous here, DST ends at 10pm
+  @example(datetime(2024, 4, 6, 21, tzinfo=ZoneInfo('Pacific/Easter')))
   def test_maybe_iso8601_to_rfc3339(self, dt):
     got = util.maybe_iso8601_to_rfc3339(dt.isoformat())
+    if dt.tzinfo:
+      # aware datetimes at ambiguous times never == other timezones
+      dt = dt.replace(tzinfo=timezone(dt.utcoffset()))
     self.assertEqual(dt, util.parse_iso8601(got))
     self.assertEqual(got, util.maybe_iso8601_to_rfc3339(got))
 
