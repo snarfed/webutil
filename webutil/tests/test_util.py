@@ -593,6 +593,12 @@ class UtilTest(testutil.TestCase):
                      pl('http://<a>b'))
     self.assertEqual('<a href="http://%3Ca%3Eb">d&lt;e</a>',
                       pl('http://<a>b', text='d<e'))
+    self.assertEqual('<a href="http://foo/&quot;a">foo/&quot;a</a>',
+                     pl('http://foo/"a'))
+    self.assertEqual('<a href="http://foo?a=b&amp;c=d">foo?a=b&amp;c=d</a>',
+                     pl('http://foo?a=b&c=d'))
+    self.assertEqual('<a attr="&quot;&gt;&lt;b&gt;" href="http://foo">foo</a>',
+                     pl('http://foo', attrs={'attr': '"><b>'}))
 
     self.assertEqual('<a href="http://foo">foo <span class="glyphicon glyphicon-bar"></span></a>',
                      pl('http://foo', glyphicon='bar'))

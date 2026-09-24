@@ -45,6 +45,7 @@ _Non-breaking changes:_
   * `linkify`, `tokenize_links`: fix duplicated trailing punctuation after a link, eg `http://foo.com/a).. ` became `http://foo.com/a)..... `.
   * `clean_url`: fix query params with escaped delimiters, eg `?a=b%26c` lost the `%26c`. The query string was unescaped before it was parsed.
   * `maybe_iso8601_to_rfc3339`: return non-string inputs unchanged instead of raising `AttributeError`.
+  * `pretty_link`: HTML-escape the URL in `href` and the `attrs` values.
   * `to_utc_timestamp`: fix timezone aware datetimes, they were read as wall clock time and their UTC offset was ignored.
   * `trim_nulls`: add `keep_empty_values_in` kwarg.
 

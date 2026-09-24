@@ -941,7 +941,7 @@ def pretty_link(url, text=None, text_prefix=None, keep_host=True,
   if glyphicon is not None:
     escaped_text += f' <span class="glyphicon glyphicon-{glyphicon}"></span>'
 
-  attr_str = (''.join(f'{attr}="{val}" ' for attr, val in list(attrs.items()))
+  attr_str = (''.join(f'{attr}="{html.escape(val)}" ' for attr, val in list(attrs.items()))
               if attrs else '')
   target = 'target="_blank" ' if new_tab else ''
   return ('<a %s%s%shref="%s">%s</a>' %
@@ -949,7 +949,7 @@ def pretty_link(url, text=None, text_prefix=None, keep_host=True,
            attr_str, target,
            # not using urllib.parse.quote because it quotes a ton of chars we
            # want to pass through, including most unicode chars
-           url.replace('<', '%3C').replace('>', '%3E'),
+           html.escape(url.replace('<', '%3C').replace('>', '%3E')),
            escaped_text))
 
 
