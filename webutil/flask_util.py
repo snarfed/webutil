@@ -31,7 +31,6 @@ from . import util
 logger = logging.getLogger(__name__)
 
 # Modern HTTP headers for CORS, CSP, other security, etc.
-CSP_HOSTS = 'localhost:8080 127.0.0.1:8080 my.dev.com:8080' if LOCAL_SERVER else ''
 MODERN_HEADERS = {
   'Access-Control-Allow-Headers': '*, Authorization',
   'Access-Control-Allow-Methods': '*',
@@ -42,7 +41,7 @@ MODERN_HEADERS = {
   'Cross-Origin-Opener-Policy': 'same-origin',
   # see https://content-security-policy.com/
   'Content-Security-Policy':
-    f"script-src https: {CSP_HOSTS} 'unsafe-inline'; frame-ancestors 'self'",
+    f"script-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'self'",
   # 16070400 seconds is 6 months
   'Strict-Transport-Security': 'max-age=16070400; preload',
   'X-Content-Type-Options': 'nosniff',

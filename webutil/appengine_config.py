@@ -27,38 +27,6 @@ if DEBUG:
   os.environ.setdefault('GOOGLE_CLOUD_PROJECT', 'app')
   os.environ.setdefault('DATASTORE_EMULATOR_HOST', 'localhost:8089')
 
-# NDB (Cloud Datastore)
-try:
-  # https://googleapis.dev/python/python-ndb/latest/migrating.html#setting-up-a-connection
-  from google.cloud import ndb
-  db = os.environ.get('DATASTORE_DB')
-  ndb_client = thread_local.ndb_client = \
-    ndb.Client(database=db) if db else ndb.Client()
-except ImportError:
-  pass
-
-# Tasks
-# https://docs.cloud.google.com/python/docs/reference/cloudtasks/latest/google.cloud.tasks_v2.services.cloud_tasks.CloudTasksClient
-try:
-  from google.cloud import tasks_v2
-  tasks_client = tasks_v2.CloudTasksClient()
-  if DEBUG or LOCAL_SERVER:
-    tasks_client.host = 'localhost:9999'
-    tasks_client.secure = False
-except ImportError:
-  pass
-
-# Error Reporting
-# https://docs.cloud.google.com/python/docs/reference/clouderrorreporting/latest/client
-try:
-  from google.cloud import error_reporting
-  error_reporting_client = error_reporting.Client()
-  if DEBUG or LOCAL_SERVER:
-    error_reporting_client.host = 'localhost:9999'
-    error_reporting_client.secure = False
-except ImportError:
-  pass
-
 # Logging
 # https://docs.cloud.google.com/python/docs/reference/logging/latest/google.cloud.logging_v2.client.Client
 try:
@@ -89,3 +57,43 @@ except ImportError:
 for logger in ('charset_normalizer', 'google.cloud', 'oauthlib', 'requests',
                'requests_cache', 'requests_oauthlib', 'urllib3'):
   logging.getLogger(logger).setLevel(logging.INFO)
+
+logger = logging.getLogger(__name__)
+
+
+# NDB (Cloud Datastore)
+try:
+  # https://googleapis.dev/python/python-ndb/latest/migrating.html#setting-up-a-connection
+  from google.cloud import ndb
+  db = os.environ.get('DATASTORE_DB')
+  ndb_client = thread_local.ndb_client = \
+    ndb.Client(database=db) if db else ndb.Client()
+  logger.info(f'Connecting to Datastore for {ndb_client.project} at {ndb_client.host} db {ndb_client.database}')
+except ImportError:
+  pass
+
+
+# Tasks
+# https://docs.cloud.google.com/python/docs/reference/cloudtasks/latest/google.cloud.tasks_v2.services.cloud_tasks.CloudTasksClient
+try:
+  from google.cloud import tasks_v2
+  tasks_client = tasks_v2.CloudTasksClient()
+  if DEBUG or LOCAL_SERVER:
+    tasks_client.host = 'localhost:9999'
+    tasks_client.secure = False
+  logger.info(f'Connecting to Cloud Tasks for {ndb_client.project} at {tasks_client.host} db {ndb_client.database}')
+except ImportError:
+  pass
+
+
+# Error Reporting
+# https://docs.cloud.google.com/python/docs/reference/clouderrorreporting/latest/client
+try:
+  from google.cloud import error_reporting
+  error_reporting_client = error_reporting.Client()
+  if DEBUG or LOCAL_SERVER:
+    error_reporting_client.host = 'localhost:9999'
+    error_reporting_client.secure = False
+  logger.info(f'Connecting to Error Reporting for {error_reporting_client.project} at {error_reporting_client.host}')
+except ImportError:
+  pass
