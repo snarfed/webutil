@@ -81,7 +81,7 @@ try:
   if DEBUG or LOCAL_SERVER:
     tasks_client.host = 'localhost:9999'
     tasks_client.secure = False
-  logger.info(f'Connecting to Cloud Tasks for {ndb_client.project} at {tasks_client.host} db {ndb_client.database}')
+  logger.info(f'Connecting to Cloud Tasks for {tasks_client.project} at {tasks_client.host} db {tasks_client.database}')
 except ImportError:
   pass
 
