@@ -27,6 +27,8 @@ if DEBUG:
   os.environ.setdefault('GOOGLE_CLOUD_PROJECT', 'app')
   os.environ.setdefault('DATASTORE_EMULATOR_HOST', 'localhost:8089')
 
+client_options = {'api_endpoint': 'localhost:9999'} if DEBUG or LOCAL_SERVER else None
+
 # Logging
 # https://docs.cloud.google.com/python/docs/reference/logging/latest/google.cloud.logging_v2.client.Client
 try:
@@ -68,7 +70,7 @@ try:
   db = os.environ.get('DATASTORE_DB')
   ndb_client = thread_local.ndb_client = \
     ndb.Client(database=db) if db else ndb.Client()
-  logger.info(f'Connecting to Datastore for {ndb_client.project} at {ndb_client.host} db {ndb_client.database}')
+  logger.info(f'Connecting to Datastore for {ndb_client.project} db {ndb_client.database} at {ndb_client.host}')
 except ImportError:
   pass
 
@@ -77,11 +79,8 @@ except ImportError:
 # https://docs.cloud.google.com/python/docs/reference/cloudtasks/latest/google.cloud.tasks_v2.services.cloud_tasks.CloudTasksClient
 try:
   from google.cloud import tasks_v2
-  tasks_client = tasks_v2.CloudTasksClient()
-  if DEBUG or LOCAL_SERVER:
-    tasks_client.host = 'localhost:9999'
-    tasks_client.secure = False
-  logger.info(f'Connecting to Cloud Tasks at {tasks_client.host}')
+  tasks_client = tasks_v2.CloudTasksClient(client_options=client_options)
+  logger.info(f'Connecting to Cloud Tasks at {tasks_client.api_endpoint}')
 except ImportError:
   pass
 
@@ -90,10 +89,8 @@ except ImportError:
 # https://docs.cloud.google.com/python/docs/reference/clouderrorreporting/latest/client
 try:
   from google.cloud import error_reporting
-  error_reporting_client = error_reporting.Client()
-  if DEBUG or LOCAL_SERVER:
-    error_reporting_client.host = 'localhost:9999'
-    error_reporting_client.secure = False
-  logger.info(f'Connecting to Error Reporting for {error_reporting_client.project} at {error_reporting_client.host}')
+  error_reporting_client = error_reporting.Client(client_options=client_options)
+  logger.info(f'Connecting to Error Reporting for {error_reporting_client.project} at {client_options.get("api_endpoint") if client_options else "[prod]"}')
 except ImportError:
   pass
+
