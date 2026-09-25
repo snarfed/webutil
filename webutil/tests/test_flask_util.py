@@ -338,10 +338,32 @@ class FlaskUtilTest(unittest.TestCase):
     self.assertEqual('*', resp.headers['Access-Control-Allow-Origin'])
     self.assertEqual('DPoP-Nonce, Link',
                      resp.headers['Access-Control-Expose-Headers'])
+    self.assertNotIn('Content-Security-Policy', resp.headers)
+    self.assertEqual(
+      "script-src 'self'; object-src 'none'; base-uri 'none'; report-to csp",
+      resp.headers['Content-Security-Policy-Report-Only'])
+    self.assertEqual('csp="/csp-report"', resp.headers['Reporting-Endpoints'])
 
     resp = client.get('/bar')
     self.assertEqual(200, resp.status_code)
     self.assertEqual('X-Custom', resp.headers['Access-Control-Expose-Headers'])
+
+  def test_csp_report(self):
+    self.app.post(flask_util.CSP_REPORT_PATH)(flask_util.csp_report)
+    client = self.app.test_client()
+
+    with self.assertLogs(flask_util.logger) as logs:
+      resp = client.post('/csp-report', content_type='application/reports+json',
+                         data='[{"type": "csp-violation", "body": {}}]')
+
+    self.assertEqual(204, resp.status_code)
+    self.assertEqual(["""\
+INFO:webutil.flask_util:CSP report: [
+  {
+    "type": "csp-violation",
+    "body": {}
+  }
+]"""], logs.output)
 
   def test_canonicalize_domain_get(self):
     @self.app.route('/', defaults={'_': ''})

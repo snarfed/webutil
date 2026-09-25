@@ -34,6 +34,8 @@ _Non-breaking changes:_
 
 * `flask_util`:
   * Add `bool_param` for getting boolean query params/form arguments.
+  * Add `csp_report` handler for logging `Content-Security-Policy` violation reports.
+  * `MODERN_HEADERS`: tighten `Content-Security-Policy` significantly.
 * `models`:
   * Fix missing import in `Cache.get`/`Cache.put`.
 * `testutil`:

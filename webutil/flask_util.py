@@ -30,6 +30,9 @@ from . import util
 
 logger = logging.getLogger(__name__)
 
+# install csp_report here
+CSP_REPORT_PATH = '/csp-report'
+
 # Modern HTTP headers for CORS, CSP, other security, etc.
 MODERN_HEADERS = {
   'Access-Control-Allow-Headers': '*, Authorization',
@@ -39,9 +42,11 @@ MODERN_HEADERS = {
   'Access-Control-Expose-Headers': 'DPoP-Nonce, Link',
   # https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cross-Origin-Opener-Policy
   'Cross-Origin-Opener-Policy': 'same-origin',
-  # see https://content-security-policy.com/
-  'Content-Security-Policy':
-    f"script-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'self'",
+  # see https://content-security-policy.com/ . report-only for now. browsers
+  # ignore frame-ancestors in report-only; X-Frame-Options below covers it.
+  'Content-Security-Policy-Report-Only':
+    "script-src 'self'; object-src 'none'; base-uri 'none'; report-to csp",
+  'Reporting-Endpoints': f'csp="{CSP_REPORT_PATH}"',
   # 16070400 seconds is 6 months
   'Strict-Transport-Security': 'max-age=16070400; preload',
   'X-Content-Type-Options': 'nosniff',
@@ -344,6 +349,17 @@ def default_modern_headers(resp):
     resp.headers.setdefault(name, value)
 
   return resp
+
+
+def csp_report():
+  """Flask handler that logs Content-Security-Policy violation reports.
+
+  Expects the ``report-to`` format, ``application/reports+json``. Install with:
+
+      app.post(CSP_REPORT_PATH)(csp_report)
+  """
+  logger.info(f'CSP report: {util.json_dumps(request.json, indent=2)}')
+  return 'OK', 204
 
 
 def block(cidrs=(), user_agents=()):
