@@ -1,6 +1,7 @@
 """Unit test utilities."""
 from datetime import datetime, timezone
 import difflib
+import doctest
 import email
 import functools
 import io
@@ -13,6 +14,7 @@ import urllib.error, urllib.parse, urllib.request
 import warnings
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from lxml import doctestcompare
 import requests
 import urllib3
 
@@ -302,6 +304,22 @@ Actual value:
 not found in:
 
 {act}""")
+
+  def assert_html_equals(self, expected, actual):
+    """Compares two HTML strings, ignoring insignificant whitespace.
+
+    Uses :class:`lxml.doctestcompare.LHTMLOutputChecker`, which also ignores
+    attribute order.
+    """
+    # wrap fragments so that lxml's diff output handles top-level text
+    if not re.match(r'\s*<(!doctype|html)', expected, re.I):
+      expected = f'<div>{expected}</div>'
+      actual = f'<div>{actual}</div>'
+
+    checker = doctestcompare.LHTMLOutputChecker()
+    if not checker.check_output(expected, actual, doctestcompare.PARSE_HTML):
+      self.fail(checker.output_difference(doctest.Example('', expected), actual,
+                                          doctestcompare.PARSE_HTML))
 
   @staticmethod
   def _normalize_lines(val, ignore_blanks=False):

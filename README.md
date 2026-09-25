@@ -41,6 +41,7 @@ _Non-breaking changes:_
 * `models`:
   * Fix missing import in `Cache.get`/`Cache.put`.
 * `testutil`:
+  * Add `assert_html_equals`, which compares HTML strings and ignores insignificant whitespace and attribute order.
   * `requests_response`: back the returned response with a `urllib3.HTTPResponse` instead of a bare `BytesIO`, so that `resp.raw.stream()` works for code that streams responses.
 * `util`:
   * `requests_*`: add `cache` kwarg, an opt-in Flask-request-local cache of GET/HEAD responses and exceptions, keyed on method, URL, and `Accept` header.
