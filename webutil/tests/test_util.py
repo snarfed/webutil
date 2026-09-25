@@ -638,8 +638,10 @@ class UtilTest(testutil.TestCase):
     self.assertEqual('<a href="http://a☕⊙b.com">a☕⊙b.com</a>',
                      pl('http://a☕⊙b.com'))
 
-    # no scheme, shouldn't try to strip it
-    self.assertEqual('<a href="foo.com">foo.com</a>', pl('foo.com'))
+    # non-web schemes aren't linked
+    self.assertEqual('javascript:aler...', pl('javascript:alert(1)'))
+    self.assertEqual('x&lt;y', pl('javascript:alert(1)', text='x<y'))
+    self.assertEqual('abc', pl('data:text/html,<b>', text='abc'))
 
   @patch.object(util, 'PRETTY_LINK_TITLE_MAX_LEN', new=11)
   def test_pretty_link_title_max_len(self):

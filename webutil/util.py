@@ -902,7 +902,8 @@ def pretty_link(url, text=None, text_prefix=None, keep_host=True,
     max_length (int): max link text length in characters. ellipsized beyond this.
 
   Returns:
-    str: HTML snippet with ``<a>`` tag
+    str: HTML snippet with ``<a>`` tag, or just the link text if ``url``
+    isn't ``http`` or ``https``
   """
   title = None
   if text:
@@ -940,6 +941,9 @@ def pretty_link(url, text=None, text_prefix=None, keep_host=True,
     escaped_text = f'{text_prefix} {escaped_text}'
   if glyphicon is not None:
     escaped_text += f' <span class="glyphicon glyphicon-{glyphicon}"></span>'
+
+  if not is_web(url):
+    return escaped_text
 
   attr_str = (''.join(f'{attr}="{html.escape(val)}" ' for attr, val in list(attrs.items()))
               if attrs else '')

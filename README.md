@@ -27,7 +27,9 @@ Changelog
 
 _Breaking changes:_
 
-* Remove `util.if_changed`.
+* `util`:
+  * Remove `if_changed`.
+  * `pretty_link`: only link `http` and `https` URLs. For other URLs, return just the link text.
 
 
 _Non-breaking changes:_
