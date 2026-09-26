@@ -44,7 +44,7 @@ MODERN_HEADERS = {
   'Cross-Origin-Opener-Policy': 'same-origin',
   # see https://content-security-policy.com/ . report-only for now. browsers
   # ignore frame-ancestors in report-only; X-Frame-Options below covers it.
-  'Content-Security-Policy-Report-Only':
+  'Content-Security-Policy':
     "script-src 'self'; object-src 'none'; base-uri 'none'; report-to csp",
   'Reporting-Endpoints': f'csp="{CSP_REPORT_PATH}"',
   # 16070400 seconds is 6 months

@@ -338,10 +338,9 @@ class FlaskUtilTest(unittest.TestCase):
     self.assertEqual('*', resp.headers['Access-Control-Allow-Origin'])
     self.assertEqual('DPoP-Nonce, Link',
                      resp.headers['Access-Control-Expose-Headers'])
-    self.assertNotIn('Content-Security-Policy', resp.headers)
     self.assertEqual(
       "script-src 'self'; object-src 'none'; base-uri 'none'; report-to csp",
-      resp.headers['Content-Security-Policy-Report-Only'])
+      resp.headers['Content-Security-Policy'])
     self.assertEqual('csp="/csp-report"', resp.headers['Reporting-Endpoints'])
 
     resp = client.get('/bar')
