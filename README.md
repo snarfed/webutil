@@ -23,7 +23,7 @@ Contents
 Changelog
 ---
 
-### 3.0 - unreleased
+### 3.0 - 2026-10-14
 
 _Breaking changes:_
 

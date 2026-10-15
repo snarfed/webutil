@@ -43,6 +43,63 @@ Contents
 Changelog
 ---------
 
+3.0 - 2026-10-14
+~~~~~~~~~~~~~~~~
+
+*Breaking changes:*
+
+- ``util``:
+
+  - Remove ``if_changed``.
+  - ``pretty_link``: only link ``http`` and ``https`` URLs. For other
+    URLs, return just the link text.
+
+*Non-breaking changes:*
+
+- ``flask_util``:
+
+  - Add ``bool_param`` for getting boolean query params/form arguments.
+  - Add ``csp_report`` handler for logging ``Content-Security-Policy``
+    violation reports.
+  - ``MODERN_HEADERS``: tighten ``Content-Security-Policy``
+    significantly.
+
+- ``models``:
+
+  - Fix missing import in ``Cache.get``/``Cache.put``.
+
+- ``testutil``:
+
+  - Add ``assert_html_equals``, which compares HTML strings and ignores
+    insignificant whitespace and attribute order.
+  - ``requests_response``: back the returned response with a
+    ``urllib3.HTTPResponse`` instead of a bare ``BytesIO``, so that
+    ``resp.raw.stream()`` works for code that streams responses.
+
+- ``util``:
+
+  - ``requests_*``: add ``cache`` kwarg, an opt-in Flask-request-local
+    cache of GET/HEAD responses and exceptions, keyed on method, URL,
+    and ``Accept`` header.
+  - ``encode``: fix ``encoding`` kwarg, it was ignored for nested values
+    and always used UTF-8.
+  - ``is_connection_failure``: make ``prawcore`` import optional.
+  - ``linkify``, ``tokenize_links``: fix duplicated trailing punctuation
+    after a link, eg ``http://foo.com/a)..`` became
+    ``http://foo.com/a).....``.
+  - ``clean_url``: fix query params with escaped delimiters, eg
+    ``?a=b%26c`` lost the ``%26c``. The query string was unescaped
+    before it was parsed.
+  - ``maybe_iso8601_to_rfc3339``: return non-string inputs unchanged
+    instead of raising ``AttributeError``.
+  - ``pretty_link``: HTML-escape the URL in ``href`` and the ``attrs``
+    values.
+  - ``to_utc_timestamp``: fix timezone aware datetimes, they were read
+    as wall clock time and their UTC offset was ignored.
+  - ``trim_nulls``: add ``keep_empty_values_in`` kwarg.
+
+.. _section-1:
+
 2.0 - 2026-06-29
 ~~~~~~~~~~~~~~~~
 
@@ -72,7 +129,7 @@ Changelog
 
   - ``requests_*``: add new ``log_data`` boolean kwarg.
 
-.. _section-1:
+.. _section-2:
 
 1.0 - 2026-05-27
 ~~~~~~~~~~~~~~~~
@@ -90,7 +147,7 @@ Here’s how to package, test, and ship a new release.
     ``sh  git checkout main  git pull``
 
 2.  Run the unit tests.
-    ``sh  source local/bin/activate.csh  gcloud emulators firestore start --host-port=:8089 --database-mode=datastore-mode < /dev/null >& /dev/null &  python -m unittest discover``
+    ``sh  source .venv/bin/activate.csh  gcloud emulators firestore start --host-port=:8089 --database-mode=datastore-mode < /dev/null >& /dev/null &  python -m unittest discover  python -m unittest webutil/tests/hypothesis/*.py``
 
 3.  Bump the version number in ``pyproject.toml`` and ``docs/conf.py``.
     ``git grep`` the old version number to make sure it only appears in
@@ -109,10 +166,10 @@ Here’s how to package, test, and ship a new release.
        git commit -am "release v$ver"
 
 6.  Upload to `test.pypi.org <https://test.pypi.org/>`__ for testing.
-    ``sh  uv build  twine upload -r pypitest dist/pywebutil-$ver.tar.gz``
+    ``sh  uv build  twine upload -r pypitest dist/pywebutil-$ver.tar.gz dist/pywebutil-$ver-py3-none-any.whl``
 
 7.  Install from test.pypi.org.
-    ``sh  cd /tmp  python -m venv local  source local/bin/activate.csh  pip install --upgrade pip  pip install -i https://test.pypi.org/simple --extra-index-url https://pypi.org/simple pywebutil``
+    ``sh  cd /tmp  python3 -m venv .venv  source .venv/bin/activate.csh  pip3 install -i https://test.pypi.org/simple --extra-index-url https://pypi.org/simple pywebutil``
 
 8.  Smoke test that the code trivially loads and runs.
     ``sh  python  # run test code below`` Test code to paste into the
@@ -133,4 +190,4 @@ Here’s how to package, test, and ship a new release.
     description text box.
 
 11. Upload to `pypi.org <https://pypi.org/>`__!
-    ``sh  twine upload dist/pywebutil-$ver.tar.gz``
+    ``sh  twine upload dist/pywebutil-$ver-* dist/pywebutil-$ver.*``
