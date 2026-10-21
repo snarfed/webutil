@@ -109,7 +109,7 @@ Here's how to package, test, and ship a new release.
     cd /tmp
     python3 -m venv .venv
     source .venv/bin/activate.csh
-    pip3 install -i https://test.pypi.org/simple --extra-index-url https://pypi.org/simple pywebutil
+    'pip' install -i https://test.pypi.org/simple --extra-index-url https://pypi.org/simple pywebutil
     ```
 1. Smoke test that the code trivially loads and runs.
     ```sh

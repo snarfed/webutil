@@ -25,6 +25,7 @@ import threading
 import traceback
 import urllib.error, urllib.parse, urllib.request
 from urllib.parse import urljoin, urlparse
+import zlib
 
 from cachetools import cached, TTLCache
 from domain2idna import domain2idna
@@ -1634,6 +1635,7 @@ def is_connection_failure(exception):
       socket.herror,
       socket.timeout,
       TimeoutError,
+      zlib.error,
       ssl.SSLError,
   ]
   if prawcore:
