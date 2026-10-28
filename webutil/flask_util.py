@@ -46,7 +46,7 @@ MODERN_HEADERS = {
   # ignore frame-ancestors in report-only; X-Frame-Options below covers it.
   'Content-Security-Policy':
     "script-src 'self'; object-src 'none'; base-uri 'none'; report-to csp",
-  'Reporting-Endpoints': f'csp="{CSP_REPORT_PATH}"',
+  # 'Reporting-Endpoints': f'csp="{CSP_REPORT_PATH}"',
   # 16070400 seconds is 6 months
   'Strict-Transport-Security': 'max-age=16070400; preload',
   'X-Content-Type-Options': 'nosniff',
