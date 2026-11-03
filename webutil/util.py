@@ -1870,7 +1870,9 @@ def requests_fn(url, fn=None, *args, log_data=True, cache=False, **kwargs):
       True, errors will be raised as appropriate Flask HTTP exceptions. Malformed
       URLs result in :class:`werkzeug.exceptions.BadRequest` (HTTP 400), connection
       failures and HTTP 4xx and 5xx result in :class:`werkzeug.exceptions.BadGateway`
-      (HTTP 502).
+      (HTTP 502). Its ``requests_response`` attribute is the
+      :class:`requests.Response` for HTTP errors, ``None`` for connection
+      failures.
     log_data (bool): whether to log ``data`` or ``json``
     cache (bool): whether to cache this response, and any exception it raises,
       for the rest of the current Flask request. Only for idempotent methods,
@@ -1972,7 +1974,9 @@ def requests_fn(url, fn=None, *args, log_data=True, cache=False, **kwargs):
         msg += f' ; {e.response.text[:500]}'
       logger.warning(msg)
       logger.debug('\n'.join(traceback.format_tb(sys.exc_info()[2])))
-      abort(502, msg)
+      err = werkzeug.exceptions.BadGateway(msg)
+      err.requests_response = e.response
+      raise err
     raise
 
   if url != resp.url:

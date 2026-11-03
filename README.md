@@ -23,6 +23,13 @@ Contents
 Changelog
 ---
 
+### 3.1 - unreleased
+
+_Non-breaking changes:_
+
+* `util`:
+  * `requests_fn` etc: with `gateway=True`, attach the underlying `requests.Response` to raised `BadGateway`s as `requests_response`.
+
 ### 3.0 - 2026-10-14
 
 _Breaking changes:_

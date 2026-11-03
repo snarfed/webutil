@@ -1964,6 +1964,22 @@ class RequestsTest(testutil.TestCase):
     """https://console.cloud.google.com/errors/CPzNwYaL3tjb9gE"""
     self.assertRaises(BadGateway, util.requests_get, 'http://acct:abc⊙de/', gateway=True)
 
+  @patch.object(util.session, 'get',
+                return_value=requests_response('nope', status=403))
+  def test_requests_get_gateway_http_error_attaches_response(self, _):
+    with self.assertRaises(BadGateway) as e:
+      util.requests_get('http://xyz', gateway=True)
+
+    self.assertEqual(403, e.exception.requests_response.status_code)
+    self.assertEqual('nope', e.exception.requests_response.text)
+
+  @patch.object(util.session, 'get', side_effect=requests.ConnectionError())
+  def test_requests_get_gateway_connection_error_no_response(self, _):
+    with self.assertRaises(BadGateway) as e:
+      util.requests_get('http://xyz', gateway=True)
+
+    self.assertIsNone(e.exception.requests_response)
+
   @patch.object(util.session, 'get', side_effect=[
     requests.exceptions.InvalidURL(),
     requests_response('ok', url='http://xn--abc-yr2a.de/'),
