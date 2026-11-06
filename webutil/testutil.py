@@ -349,6 +349,9 @@ class TestCase(Asserts, unittest.TestCase):
     util.now = lambda tz=timezone.utc: NOW.replace(tzinfo=tz)
     self.addCleanup(setattr, util, 'now', orig_now)
 
+    self.start_patch(util.session, 'send',
+                     side_effect=AssertionError('unmocked HTTP request!'))
+
   def start_patch(self, obj, attr, **kwargs):
     # TODO: replace with self.enterContext(patch.object(...)) once we require
     # Python >= 3.11.
