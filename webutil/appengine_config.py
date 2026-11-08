@@ -32,6 +32,7 @@ client_options = {'api_endpoint': 'localhost:9999'} if DEBUG or LOCAL_SERVER els
 # Logging
 # https://docs.cloud.google.com/python/docs/reference/logging/latest/google.cloud.logging_v2.client.Client
 try:
+  import google.auth
   import google.cloud.logging
   from google.cloud.logging_v2.handlers.structured_log import StructuredLogHandler
   logging_client = thread_local.logging_client = None
@@ -39,8 +40,14 @@ try:
   if CLOUD_RUN:
     # Cloud Run captures stdout and parses JSON structured logs automatically.
     # https://docs.cloud.google.com/run/docs/logging#container-logs
-    logging.basicConfig(handlers=[StructuredLogHandler(stream=sys.stdout)],
-                        level=logging.DEBUG)
+    #
+    # the handler needs the project id to write the trace as the full
+    # projects/[PROJECT]/traces/[TRACE_ID], which Cloud Logging requires to link
+    # log entries to their request and trace
+    # https://docs.cloud.google.com/logging/docs/structured-logging#structured_logging_special_fields
+    _, project = google.auth.default()
+    handler = StructuredLogHandler(stream=sys.stdout, project_id=project)
+    logging.basicConfig(handlers=[handler], level=logging.DEBUG)
   elif GAE:
     logging_client = thread_local.logging_client = google.cloud.logging.Client()
     logging_client.setup_logging(log_level=logging.DEBUG)

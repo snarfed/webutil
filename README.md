@@ -27,6 +27,8 @@ Changelog
 
 _Non-breaking changes:_
 
+* `appengine_config`:
+  * On Cloud Run, include the project id in log entries' trace ids so that Cloud Logging links them to their requests and traces.
 * `util`:
   * `requests_fn` etc: with `gateway=True`, attach the underlying `requests.Response` to raised `BadGateway`s as `requests_response`.
 
