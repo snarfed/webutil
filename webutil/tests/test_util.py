@@ -1157,6 +1157,13 @@ class UtilTest(testutil.TestCase):
                      ihc(prawcore.exceptions.ResponseException(
                        testutil.requests_response('foo bar', status=504))))
 
+  @patch.object(util, 'websockets', None)
+  @patch.dict(util.__dict__)
+  def test_interpret_http_exception_connection_failure_without_websockets(self):
+    del util.InvalidStatus, util.InvalidStatusCode
+    self.assertEqual(('504', 'foo bar'),
+                     util.interpret_http_exception(socket.timeout('foo bar')))
+
   def test_ignore_http_4xx_error(self):
     x = 0
     with util.ignore_http_4xx_error():

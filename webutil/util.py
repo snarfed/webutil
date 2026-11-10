@@ -1601,10 +1601,9 @@ def interpret_http_exception(exception):
   if code == '500':
     code = '502'
   elif (is_connection_failure(e)
-          # websockets exceptions. InvalidHandshake is a connection failure, but
-          # these are subclasses of InvalidHandshake and are HTTP-level errors)
-          and not isinstance(e, InvalidStatus)
-          and not isinstance(e, InvalidStatusCode)):
+        # websockets exceptions. InvalidHandshake is a connection failure, but
+        # these are subclasses of InvalidHandshake and are HTTP-level errors)
+        and not (websockets and isinstance(e, (InvalidStatus, InvalidStatusCode)))):
     code = '504'
     if not body:
       body = str(e)
