@@ -31,6 +31,9 @@ _Non-breaking changes:_
   * On Cloud Run, include the project id in log entries' trace ids so that Cloud Logging links them to their requests and traces.
 * `util`:
   * `requests_fn` etc: with `gateway=True`, attach the underlying `requests.Response` to raised `BadGateway`s as `requests_response`.
+  * `GrpcLoggingInterceptor` is now only defined if `grpcio` is installed.
+* Drop `grpcio` dependency.
+
 
 ### 3.0 - 2026-10-14
 

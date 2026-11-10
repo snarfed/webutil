@@ -30,7 +30,6 @@ import zlib
 from cachetools import cached, TTLCache
 from domain2idna import domain2idna
 from flask import abort, has_request_context, request
-import grpc
 import requests
 from requests_hardened import Config, HTTPSession, ip_filter
 from requests_hardened.ip_filter import get_ip_address, InvalidIPAddress
@@ -118,6 +117,11 @@ try:
   import mf2py
 except ImportError:
   mf2py = None
+
+try:
+  import grpc
+except ImportError:
+  grpc = None
 
 try:
   import prawcore
@@ -2680,48 +2684,49 @@ def tb():
   traceback.print_stack()
 
 
-class GrpcLoggingInterceptor(grpc.UnaryUnaryClientInterceptor,
-                             grpc.UnaryStreamClientInterceptor,
-                             grpc.StreamUnaryClientInterceptor,
-                             grpc.StreamStreamClientInterceptor):
-  """gRPC client interceptor that logs requests and responses.
+if grpc:
+  class GrpcLoggingInterceptor(grpc.UnaryUnaryClientInterceptor,
+                               grpc.UnaryStreamClientInterceptor,
+                               grpc.StreamUnaryClientInterceptor,
+                               grpc.StreamStreamClientInterceptor):
+    """gRPC client interceptor that logs requests and responses.
 
-  Install with eg:
+    Install with eg:
 
-    channel = grpc.intercept_channel(
-      grpc.secure_channel(grpc.ssl_channel_credentials()),
-      GrpcLoggingInterceptor())
-    hub = [myservice]_pb2_grpc.MyServiceStub(channel)
+      channel = grpc.intercept_channel(
+        grpc.secure_channel(grpc.ssl_channel_credentials()),
+        GrpcLoggingInterceptor())
+      hub = [myservice]_pb2_grpc.MyServiceStub(channel)
 
-  Attrs:
-    target (str): optional, eg host:port, included in log messages since
-      details.method only has the RPC path, not the channel's target
-    logger (logging.Logger)
-    level (int)
-  """
-  def __init__(self, target=None, logger=grpc_logger, level=logging.DEBUG):
-    self.target = target
-    self.logger = logger
-    self.level = level
+    Attrs:
+      target (str): optional, eg host:port, included in log messages since
+        details.method only has the RPC path, not the channel's target
+      logger (logging.Logger)
+      level (int)
+    """
+    def __init__(self, target=None, logger=grpc_logger, level=logging.DEBUG):
+      self.target = target
+      self.logger = logger
+      self.level = level
 
-  def _intercept(self, continuation, details, req_or_iter, req_stream, resp_stream):
-    prefix = f'{self.target} ' if self.target else ''
-    requests = list(req_or_iter) if req_stream else [req_or_iter]
-    for r in requests:
-      self.logger.log(self.level, f'gRPC → {prefix}{details.method}: {r}')
+    def _intercept(self, continuation, details, req_or_iter, req_stream, resp_stream):
+      prefix = f'{self.target} ' if self.target else ''
+      requests = list(req_or_iter) if req_stream else [req_or_iter]
+      for r in requests:
+        self.logger.log(self.level, f'gRPC → {prefix}{details.method}: {r}')
 
-    call = continuation(details, iter(requests) if req_stream else requests[0])
-    if resp_stream:
-      def _logged():
-        for item in call:
-          self.logger.log(self.level, f'gRPC ← {prefix}{details.method}: {item}')
-          yield item
-      return _logged()
-    else:
-      self.logger.log(self.level, f'gRPC ← {prefix}{details.method}: {call.result()}')
-      return call
+      call = continuation(details, iter(requests) if req_stream else requests[0])
+      if resp_stream:
+        def _logged():
+          for item in call:
+            self.logger.log(self.level, f'gRPC ← {prefix}{details.method}: {item}')
+            yield item
+        return _logged()
+      else:
+        self.logger.log(self.level, f'gRPC ← {prefix}{details.method}: {call.result()}')
+        return call
 
-  intercept_unary_unary   = lambda self, *args: self._intercept(*args, False, False)
-  intercept_unary_stream  = lambda self, *args: self._intercept(*args, False, True)
-  intercept_stream_unary  = lambda self, *args: self._intercept(*args, True, False)
-  intercept_stream_stream = lambda self, *args: self._intercept(*args, True, True)
+    intercept_unary_unary   = lambda self, *args: self._intercept(*args, False, False)
+    intercept_unary_stream  = lambda self, *args: self._intercept(*args, False, True)
+    intercept_stream_unary  = lambda self, *args: self._intercept(*args, True, False)
+    intercept_stream_stream = lambda self, *args: self._intercept(*args, True, True)

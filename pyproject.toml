@@ -37,7 +37,6 @@ dependencies = [
     'cryptography>=35.0.0',
     'domain2idna>=1.12',
     'Flask>=2.3',
-    'grpcio>=1.59.0',
     'humanize>=4.0',
     'requests>=2.0',
     'requests-hardened>=1.0',
@@ -47,6 +46,7 @@ dependencies = [
 [project.optional-dependencies]
 tests = [
     'flask-caching>=2.1.0',
+    'grpcio>=1.59.0',
     'httplib2>=0.18',
     'hypothesis>=6.0',
     'lxml>=6.0',
