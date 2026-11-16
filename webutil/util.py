@@ -1956,7 +1956,7 @@ def requests_fn(url, fn=None, *args, log_data=True, cache=False, **kwargs):
         punycode_domain = urlparse(punycode).netloc
         domain = urlparse(url).netloc
         kwargs['headers']['Host'] = punycode_domain
-        resp = requests_fn(punycode, fn=fn, *args, **kwargs)
+        resp = requests_fn(punycode, fn=fn, *args, gateway=gateway, **kwargs)
         resp.url = resp.url.replace(punycode_domain, domain)
         return resp
 

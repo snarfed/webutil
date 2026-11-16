@@ -31,6 +31,7 @@ _Non-breaking changes:_
   * On Cloud Run, include the project id in log entries' trace ids so that Cloud Logging links them to their requests and traces.
 * `util`:
   * `requests_fn` etc: with `gateway=True`, attach the underlying `requests.Response` to raised `BadGateway`s as `requests_response`.
+  * `requests_fn` etc: with `gateway=True`, when the punycode retry for an invalid IDNA 2008 domain also fails, raise `BadRequest` (HTTP 400) instead of the raw `InvalidURL`.
   * `GrpcLoggingInterceptor` is now only defined if `grpcio` is installed.
 * Drop `grpcio` dependency.
 

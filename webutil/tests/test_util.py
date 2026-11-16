@@ -2009,6 +2009,15 @@ class RequestsTest(testutil.TestCase):
     self.assertEqual('okayie', resp.text)
 
   @patch.object(util.session, 'get', side_effect=[
+    requests.exceptions.InvalidURL(),
+    requests.exceptions.InvalidURL(),
+  ])
+  def test_requests_get_invalid_domain_punycode_retry_fails_gateway(self, _):
+    """https://console.cloud.google.com/errors/COLzgISI47vpMg"""
+    self.assertRaises(BadRequest, util.requests_get, 'https://bsky…/',
+                      gateway=True)
+
+  @patch.object(util.session, 'get', side_effect=[
     requests_response('first'),
     requests_response('second'),
   ])
