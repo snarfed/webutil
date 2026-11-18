@@ -370,7 +370,7 @@ INFO:webutil.flask_util:CSP report: [
     def view(_):
       return '', 204
 
-    self.app.before_request(flask_util.canonicalize_domain('from.com', 'to.org'))
+    self.app.before_request(flask_util.canonicalize_domain('to.org', from_domains='from.com'))
 
     # should redirect
     for url in '/', '/a/b/c', '/d?x=y':
@@ -391,7 +391,7 @@ INFO:webutil.flask_util:CSP report: [
       return '', 204
 
     self.app.before_request(
-      flask_util.canonicalize_domain(('from.com', 'from.net'), 'to.org'))
+      flask_util.canonicalize_domain('to.org', from_domains=('from.com', 'from.net')))
 
     # should redirect and include *args
     for base_url in 'http://from.com', 'http://from.net':
@@ -405,9 +405,30 @@ INFO:webutil.flask_util:CSP report: [
       self.assertEqual(204, resp.status_code)
       self.assertNotIn('Location', resp.headers)
 
+  def test_canonicalize_domain_from_all(self):
+    @self.app.route('/<path:_>')
+    def view(_):
+      return '', 204
+
+    self.app.before_request(flask_util.canonicalize_domain('to.org'))
+
+    # should redirect
+    for base_url in 'http://abc.net', 'https://x.to.org', 'http://to.org:8080':
+      resp = self.client.get('/x?y=z', base_url=base_url)
+      self.assertEqual(301, resp.status_code)
+      self.assertEqual(f'{base_url.split(":")[0]}://to.org/x?y=z',
+                       resp.headers['Location'])
+
+    # shouldn't redirect
+    for base_url in ('https://to.org', 'http://localhost', 'http://localhost:8080',
+                     'http://127.0.0.1', 'http://127.0.0.1:5000'):
+      resp = self.client.get('/x', base_url=base_url)
+      self.assertEqual(204, resp.status_code)
+      self.assertNotIn('Location', resp.headers)
+
   def test_canonicalize_request_domain_decorator(self):
     @self.app.route('/x')
-    @flask_util.canonicalize_request_domain('foo.com', 'bar.com')
+    @flask_util.canonicalize_request_domain('bar.com', from_domains='foo.com')
     def view():
       return 'OK'
 

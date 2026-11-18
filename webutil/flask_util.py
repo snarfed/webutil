@@ -534,7 +534,7 @@ def cloud_tasks_only(log=True):
   return decorator
 
 
-def canonicalize_domain(from_domains, to_domain):
+def canonicalize_domain(to_domain, from_domains=None):
   """WSGI middleware that redirects one or more domains to a canonical domain.
 
   Preserves scheme, path, and query.
@@ -542,44 +542,52 @@ def canonicalize_domain(from_domains, to_domain):
   Install with eg::
 
       app = flask.Flask(...)
-      app.before_request(canonicalize_domain(('old1.com', 'old2.org'), 'new.com'))
+      app.before_request(canonicalize_domain('new.com', from_domains=('old1.com', 'old2.org')))
 
   Args:
-    from_domains: str or sequence of str
     to_domain: str
+    from_domains: str or sequence of str, or None for all domains except
+      ``to_domain``, ``localhost``, and ``127.0.0.1``, on any port
   """
   if isinstance(from_domains, str):
     from_domains = [from_domains]
 
   def fn():
-    parts = list(urllib.parse.urlparse(request.url))
+    parsed = urllib.parse.urlparse(request.url)
     # not using request.host because it includes port
-    if parts[1] in from_domains:  # netloc
-      parts[1] = to_domain
-      return redirect(urllib.parse.urlunparse(parts), code=301)
+    if from_domains is None:
+      should_redirect = (parsed.netloc != to_domain
+                         and parsed.hostname not in ('localhost', '127.0.0.1'))
+    else:
+      should_redirect = parsed.netloc in from_domains
+
+    if should_redirect:
+      canonicalized = urllib.parse.urlunparse(parsed._replace(netloc=to_domain))
+      return redirect(canonicalized, code=301)
 
   return fn
 
 
-def canonicalize_request_domain(from_domains, to_domain):
+def canonicalize_request_domain(to_domain, from_domains=None):
   """Flask handler decorator that redirects to a canonical domain.
 
 
   Use *below* :meth:`flask.Flask.route`, eg::
 
       @app.route('/path')
-      @canonicalize_request_domain('foo.com', 'bar.com')
+      @canonicalize_request_domain('bar.com', from_domains='foo.com')
       def handler():
           ...
 
   Args:
-    from_domains: str or sequence of str
     to_domain: str
+    from_domains: str or sequence of str, or None for all domains. See
+      :func:`canonicalize_domain`.
   """
   def decorator(fn):
     @functools.wraps(fn)
     def decorated(*args, **kwargs):
-      return canonicalize_domain(from_domains, to_domain)() or fn(*args, **kwargs)
+      return canonicalize_domain(to_domain, from_domains=from_domains)() or fn(*args, **kwargs)
 
     return decorated
 

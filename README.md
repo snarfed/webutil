@@ -23,7 +23,12 @@ Contents
 Changelog
 ---
 
-### 3.1 - unreleased
+### 4.0 - unreleased
+
+_Breaking changes:_
+
+* `flask_util`:
+  * `canonicalize_domain`, `canonicalize_request_domain`: swap argument order to `(to_domain, from_domains=None)`. `from_domains=None` redirects all domains except `localhost` and `127.0.0.1`, on any port.
 
 _Non-breaking changes:_
 
